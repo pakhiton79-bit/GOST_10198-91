@@ -1180,6 +1180,7 @@ const TOREC_2_IMG_B64 = "data:image/png;base64,__IMG:torec_2.png__"; // нату
 const TOREC_0_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_0.jpg__"; // натуральный размер 1354x1134 (вариант без раскосины, H<=600мм либо W<=600мм)
 
 const KRYSHKA_IMG_B64 = "data:image/png;base64,__IMG:kryshka.png__"; // натуральный размер 1718x1274
+const KRYSHKA_2BEAMS_IMG_B64 = "data:image/jpeg;base64,__IMG:kryshka_2beams.jpg__"; // натуральный размер 1157x839 (вариант с 2 поперечными брусьями)
 
 // наконечник считается вручную по углу линии, чтобы кончик точно совпадал с указанной точкой
 const BOKOVOY_1_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_1.png__"; // натуральный размер 1752x1093 (вариант с 1 раскосиной)
@@ -1357,7 +1358,7 @@ function diagramEndPanel(k32val, k30val, w31val, sectionsVal, hasRaskosinaVal, i
   return diagramPlaceholder('Щит торцевой');
 }
 
-function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm){
+function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm){
   // Длина крышки = длина груза + (толщина доски торца + толщина планки торца)*2 (см. k9Base).
   const valLen        = Math.round(lengthMm + t30*2 + t32*2);
   // Ширина груза + толщина основной доски боковой стенки*2.
@@ -1398,6 +1399,47 @@ function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm
   ];
 
   return renderDiagram(KRYSHKA_IMG_B64, 'Крышка - схема расположения деталей', 1718, 1274, records, null, photoStrokeScale(1718));
+}
+
+function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm){
+  // Фото-чертёж для варианта с 2 поперечными брусьями (натуральный размер 1157×839).
+  const valLen      = Math.round(lengthMm + t30*2 + t32*2);
+  const valWidth    = Math.round(widthMm + t41*2);
+  const valPlankaThick = Math.round(t40);
+  const valEdgePlanka  = Math.round(edgeDistKryshkaMm);
+  const valEdgeBeam    = crossBeamQty > 0
+    ? Math.round((valLen - crossBeamQty*crossBeamWidthMm) / (crossBeamQty + 1))
+    : Math.round(valLen);
+
+  const records = [
+    {type:'line', x1:373, y1:758, x2:433, y2:865},
+    {type:'line', x1:244, y1:734, x2:353, y2:939},
+    {type:'line', x1:320, y1:877, x2:420, y2:843},
+    {type:'single', x1:81, y1:828, x2:372, y2:857, lx:53, ly:799, text: valEdgePlanka+' мм'},
+    {type:'line', x1:184, y1:175, x2:-107, y2:268},
+    {type:'line', x1:222, y1:236, x2:-82, y2:331},
+    {type:'line', x1:-76, y1:256, x2:-50, y2:320},
+    {type:'single', x1:250, y1:-31, x2:-63, y2:289, lx:301, ly:-65, text: valPlankaThick+' мм'},
+    {type:'line', x1:1098, y1:453, x2:1199, y2:642},
+    {type:'double', x1:347, y1:929, x2:1200, y2:641, lx:805, ly:779, text: valLen+' мм'},
+    {type:'line', x1:764, y1:62, x2:995, y2:-13},
+    {type:'line', x1:1007, y1:552, x2:1234, y2:480},
+    {type:'double', x1:996, y1:-13, x2:1236, y2:479, lx:1155, ly:205, text: valWidth+' мм'},
+    {type:'line', x1:173, y1:351, x2:75, y2:384},
+    {type:'single', x1:28, y1:607, x2:117, y2:371, lx:5, ly:639, text: valEdgeBeam+' мм'}
+  ];
+
+  return renderDiagram(KRYSHKA_2BEAMS_IMG_B64, 'Крышка (2 поперечных бруса) - схема расположения деталей', 1157, 839, records, null, photoStrokeScale(1157));
+}
+
+function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm){
+  // Для 2 поперечных брусьев — отдельное фото. Для остального количества (1, 3, 4...)
+  // используется прежнее фото (сделано под 3 бруса, но размеры на нём общие для
+  // любого количества, кроме конкретно 2, под которое сделано отдельное фото).
+  if(crossBeamQty === 2){
+    return diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm);
+  }
+  return diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm);
 }
 
 function diagramBokovoy1Raskosina(heightPlusFloorVal, overhangVal, boardLenVal){
