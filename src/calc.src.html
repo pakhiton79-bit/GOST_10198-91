@@ -9,20 +9,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #fff8f1;
-    --panel: #ffffff;
-    --ink: #1d1e1c;
-    --ink-soft: #615f5c;
-    --wood: #8e8b87;
-    --wood-dark: #1d1e1c;
-    --rule: #e3d6c5;
-    --border-input: #c0bbb6;
-    --accent: #fa5d00;
-    --accent-hover: #e2530a;
-    --accent-wash: #fee3b5;
-    --ok: #5b8a54;
-    --shadow-sm: 0 1px 4px rgba(0,0,0,.2);
-    --shadow-lg: 6px 4px 24px rgba(250,166,0,.25);
+    /* Палитра и токены — см. design.md (WOODCALC UI DESIGN SPEC v1.0) */
+    --bg: #F7F5F2;
+    --panel: #FFFFFF;
+    --panel-hover: #FBFAF8;
+    --table-header-bg: #FAF8F5;
+    --ink: #1F1B18;
+    --ink-soft: #6B625D;
+    --rule: #E8E3DD;
+    --border-input: #E8E3DD;
+    --border-btn: #D7D0C8;
+    --secondary-hover: #F5F3F0;
+    --accent: #4E342E;
+    --accent-hover: #5D4037;
+    --accent-wash: #EFE9E6;
+    --ok: #2E7D32;
+    --warn: #B7791F;
+    --warn-wash: #FBF3E4;
+    --shadow-sm: 0 1px 2px rgba(31,27,24,.06);
+    --shadow-lg: 0 8px 24px rgba(31,27,24,.10);
   }
   *{box-sizing:border-box;}
   html{overflow-x:hidden;}
@@ -33,7 +38,7 @@
     font-family:'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size:16px;
     letter-spacing:.015em;
-    line-height:1.5;
+    line-height:1.35;
     overflow-x:hidden;
   }
   .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
@@ -53,10 +58,10 @@
     margin-bottom:8px;
   }
   h1{
-    font-size:28px;
+    font-size:30px;
     margin:0 0 6px;
     color:var(--ink);
-    font-weight:700;
+    font-weight:600;
   }
   .subtitle{
     font-size:14px;
@@ -67,7 +72,7 @@
   .card{
     background:var(--panel);
     border:1px solid var(--rule);
-    border-radius:20px;
+    border-radius:12px;
     padding:32px;
     margin-bottom:24px;
     box-shadow:var(--shadow-sm);
@@ -105,7 +110,7 @@
     width:100%;
     padding:12px 14px;
     border:1px solid var(--border-input);
-    border-radius:16px;
+    border-radius:10px;
     font-family:inherit;
     font-size:16px;
     background:#ffffff;
@@ -122,7 +127,7 @@
     min-height:110px;
     padding:14px 16px;
     border:1px solid var(--border-input);
-    border-radius:16px;
+    border-radius:10px;
     font-family:inherit;
     font-size:15px;
     line-height:1.5;
@@ -151,12 +156,21 @@
     font-weight:600;
     letter-spacing:.015em;
     cursor:pointer;
-    border-radius:16px;
+    border-radius:10px;
     box-shadow:var(--shadow-sm);
     transition:background-color .15s ease;
   }
   button:hover{background:var(--accent-hover);}
   .action-card button:first-child{margin-top:0;}
+
+  /* Secondary — второстепенные действия (см. design.md: белая, рамка, hover-фон) */
+  .btn-secondary{
+    background:#ffffff;
+    color:var(--ink);
+    border:1px solid var(--border-btn);
+    box-shadow:none;
+  }
+  .btn-secondary:hover{background:var(--secondary-hover);}
 
   .calc-check{
     display:inline-flex;
@@ -182,16 +196,11 @@
   }
 
   .print-btn{
-    background:transparent;
-    color:var(--ink);
-    border:1px solid var(--border-input);
     margin-top:20px;
     margin-left:12px;
     padding:12px 22px;
     font-size:13px;
-    font-weight:600;
   }
-  .print-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
 
   .summary-row{
     display:flex;
@@ -205,7 +214,7 @@
     height:auto;
     display:block;
     border:1px solid var(--rule);
-    border-radius:16px;
+    border-radius:12px;
     background:var(--panel);
     padding:12px;
     box-shadow:var(--shadow-sm);
@@ -221,7 +230,7 @@
     gap:1px;
     background:var(--rule);
     border:1px solid var(--rule);
-    border-radius:20px;
+    border-radius:12px;
     overflow:hidden;
   }
   .summary div{background:var(--panel);padding:18px 16px;}
@@ -260,6 +269,7 @@
     border-bottom:1px solid var(--rule);
   }
   th{
+    background:var(--table-header-bg);
     color:var(--ink-soft);
     text-transform:uppercase;
     font-size:11px;
@@ -295,9 +305,9 @@
   .note{
     font-size:13px;
     color:var(--ink-soft);
-    background:var(--accent-wash);
-    border-left:3px solid var(--accent);
-    border-radius:0 12px 12px 0;
+    background:var(--warn-wash);
+    border-left:3px solid var(--warn);
+    border-radius:0 10px 10px 0;
     padding:14px 16px;
     margin-top:20px;
     font-family:inherit;
@@ -400,7 +410,7 @@
     gap:12px;
     padding:12px 14px;
     border:1px solid var(--border-input);
-    border-radius:16px;
+    border-radius:10px;
     background:#ffffff;
     color:var(--ink);
     font-family:inherit;
@@ -408,7 +418,7 @@
     cursor:pointer;
     text-align:left;
   }
-  .thickness-dropdown-btn:hover{border-color:var(--accent);}
+  .thickness-dropdown-btn:hover{background:#ffffff;border-color:var(--accent);}
   .thickness-dropdown-btn span:first-child{
     overflow:hidden;
     text-overflow:ellipsis;
@@ -424,7 +434,7 @@
     right:0;
     background:var(--panel);
     border:1px solid var(--rule);
-    border-radius:16px;
+    border-radius:12px;
     box-shadow:var(--shadow-lg);
     padding:16px;
     max-height:340px;
@@ -466,7 +476,7 @@
   }
   .thickness-checkbox-list input{margin:0;accent-color:var(--accent);}
   @media (max-width:640px){
-    .thickness-checkbox-list{grid-template-rows:repeat(75,auto);}
+    .thickness-checkbox-list{grid-template-rows:repeat(14,auto);}
   }
   .fastening-option-list{
     display:flex;
@@ -499,7 +509,7 @@
     padding:12px 14px;
     background:var(--bg);
     border:1px solid var(--rule);
-    border-radius:14px;
+    border-radius:12px;
   }
   .strap-distance-label{
     display:block;
@@ -514,12 +524,9 @@
     font-family:inherit;
     font-size:14px;
     border:1px solid var(--border-input);
-    border-radius:12px;
+    border-radius:10px;
     background:var(--panel);
     color:var(--ink);
-  }
-  @media (max-width:420px){
-    .thickness-checkbox-list{grid-template-rows:repeat(100,auto);}
   }
 </style>
 
@@ -568,21 +575,21 @@
   #printArea{
     background:#fff;
     font-family:'Courier New', monospace;
-    color:#2b2420;
+    color:#1F1B18;
     font-size:16px;
     font-weight:700;
     line-height:1.4;
   }
-  #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#5e3c22;font-weight:700;}
-  #printArea .print-subtitle{color:#6b5f52;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
+  #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#4E342E;font-weight:700;}
+  #printArea .print-subtitle{color:#6B625D;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
 
   /* Внутренние размеры груза + Итог — рядом, на одном уровне */
   #printArea .print-summary-row{display:flex;gap:calc(var(--pk)*24px);flex-wrap:nowrap;margin-bottom:0;align-items:center;}
   #printArea .print-summary-block{flex:0 0 auto;}
-  #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#5e3c22;margin:0 0 6px;font-weight:700;}
+  #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#4E342E;margin:0 0 6px;font-weight:700;}
   #printArea .print-plain-table{border-collapse:collapse;width:auto;}
   #printArea .print-plain-table td{padding:calc(var(--pk)*2px) calc(var(--pk)*14px) calc(var(--pk)*2px) 0;text-align:left;font-size:calc(var(--pk)*13px);font-weight:700;white-space:nowrap;}
-  #printArea .print-plain-table td.k{color:#6b5f52;}
+  #printArea .print-plain-table td.k{color:#6B625D;}
 
   /* Таблицы конфигурации досок.
      Ширины колонок подобраны под бюджет: «Подполозная» и «2450» влезают
@@ -591,12 +598,12 @@
   #printArea .spec-table th:first-child, #printArea .spec-table td:first-child{width:48%;}
   #printArea .spec-table th:not(:first-child), #printArea .spec-table td:not(:first-child){width:13%;}
   #printArea .spec-table th, #printArea .spec-table td{
-    text-align:left;padding:calc(var(--pk)*6px) calc(var(--pk)*4px);font-size:calc(var(--pk)*19px);font-weight:700;border-bottom:1px solid #ccc3b2;white-space:nowrap;overflow:hidden;
+    text-align:left;padding:calc(var(--pk)*6px) calc(var(--pk)*4px);font-size:calc(var(--pk)*19px);font-weight:700;border-bottom:1px solid #E8E3DD;white-space:nowrap;overflow:hidden;
   }
-  #printArea .spec-table th{color:#6b5f52;text-transform:uppercase;font-size:calc(var(--pk)*10px);letter-spacing:0;font-weight:700;}
+  #printArea .spec-table th{color:#6B625D;text-transform:uppercase;font-size:calc(var(--pk)*10px);letter-spacing:0;font-weight:700;}
   #printArea .spec-table td.num, #printArea .spec-table th.num{text-align:right;}
 
-  #printArea .part-title{font-size:calc(var(--pk)*20px);font-weight:700;color:#5e3c22;margin:0 0 calc(var(--pk)*6px);}
+  #printArea .part-title{font-size:calc(var(--pk)*20px);font-weight:700;color:#4E342E;margin:0 0 calc(var(--pk)*6px);}
 
   /* Секция = заголовок узла + (чертёж | таблица). Обычный блочный контейнер:
      на нём браузер надёжно соблюдает «не разрывать между листами». */
@@ -607,7 +614,7 @@
     line-height:1.5;
     white-space:pre-wrap;
     word-break:break-word;
-    border:1px solid #ccc3b2;
+    border:1px solid #E8E3DD;
     border-radius:2px;
     padding:calc(var(--pk)*10px) calc(var(--pk)*12px);
   }
@@ -628,7 +635,7 @@
   #printArea .diagram-labels{position:absolute;inset:0;pointer-events:none;}
   #printArea .diagram-label{
     position:absolute;transform:translate(-50%,-50%);background:#fff;
-    border:calc(var(--pk)*2px) solid #5e3c22;color:#2b2420;font-size:calc(var(--pk)*15px);font-weight:700;
+    border:calc(var(--pk)*2px) solid #4E342E;color:#1F1B18;font-size:calc(var(--pk)*15px);font-weight:700;
     padding:calc(var(--pk)*2px) calc(var(--pk)*6px);white-space:nowrap;line-height:1.3;
   }
   #printArea .diagram-label-vertical{
@@ -688,8 +695,8 @@
       </button>
       <div class="thickness-dropdown-panel" id="thicknessDropdownPanel">
         <div class="thickness-dropdown-actions">
-          <button type="button" onclick="setAllThickness(true)">Выбрать все</button>
-          <button type="button" onclick="setAllThickness(false)">Снять все</button>
+          <button type="button" class="btn-secondary" onclick="setAllThickness(true)">Выбрать все</button>
+          <button type="button" class="btn-secondary" onclick="setAllThickness(false)">Снять все</button>
         </div>
         <div class="thickness-checkbox-list" id="thicknessCheckboxList"></div>
       </div>
@@ -765,7 +772,7 @@
   <div class="card action-card">
     <button onclick="calculate()">Рассчитать</button>
     <span class="calc-check" id="calcCheck"><span class="mark">&#10003;</span>Расчёт выполнен</span>
-    <button class="print-btn" onclick="printBox()">🖨 Печать</button>
+    <button class="print-btn btn-secondary" onclick="printBox()">🖨 Печать</button>
     <div class="error" id="err"></div>
   </div>
 
@@ -1225,17 +1232,17 @@ function renderDiagram(imgB64, altText, IW, IH, records, widthPx, strokeScale){
     const hasLabel = ('lx' in r);
     if(hasLine){
       if(r.type==='line'){
-        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" stroke="#fa5d00" stroke-width="${lineWidth}"/>`;
+        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" stroke="#4E342E" stroke-width="${lineWidth}"/>`;
       } else if(r.type==='double'){
         const headStart = headTriangle(r.x2,r.y2,r.x1,r.y1,scale);
         const headEnd   = headTriangle(r.x1,r.y1,r.x2,r.y2,scale);
-        shapes += `<line x1="${headStart.bx.toFixed(1)}" y1="${headStart.by.toFixed(1)}" x2="${headEnd.bx.toFixed(1)}" y2="${headEnd.by.toFixed(1)}" stroke="#fa5d00" stroke-width="${lineWidth}"/>`;
-        shapes += `<polygon points="${headStart.poly}" fill="#fa5d00"/>`;
-        shapes += `<polygon points="${headEnd.poly}" fill="#fa5d00"/>`;
+        shapes += `<line x1="${headStart.bx.toFixed(1)}" y1="${headStart.by.toFixed(1)}" x2="${headEnd.bx.toFixed(1)}" y2="${headEnd.by.toFixed(1)}" stroke="#4E342E" stroke-width="${lineWidth}"/>`;
+        shapes += `<polygon points="${headStart.poly}" fill="#4E342E"/>`;
+        shapes += `<polygon points="${headEnd.poly}" fill="#4E342E"/>`;
       } else if(r.type==='single'){
         const head = headTriangle(r.x1,r.y1,r.x2,r.y2,scale);
-        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${head.bx.toFixed(1)}" y2="${head.by.toFixed(1)}" stroke="#fa5d00" stroke-width="${lineWidth}"/>`;
-        shapes += `<polygon points="${head.poly}" fill="#fa5d00"/>`;
+        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${head.bx.toFixed(1)}" y2="${head.by.toFixed(1)}" stroke="#4E342E" stroke-width="${lineWidth}"/>`;
+        shapes += `<polygon points="${head.poly}" fill="#4E342E"/>`;
       }
     }
     if(hasLabel){
