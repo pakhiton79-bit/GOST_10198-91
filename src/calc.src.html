@@ -1,0 +1,2220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расчёт ящика — ГОСТ 10198 тип 1, комплектация 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #fff8f1;
+    --panel: #ffffff;
+    --ink: #1d1e1c;
+    --ink-soft: #615f5c;
+    --wood: #8e8b87;
+    --wood-dark: #1d1e1c;
+    --rule: #e3d6c5;
+    --border-input: #c0bbb6;
+    --accent: #fa5d00;
+    --accent-hover: #e2530a;
+    --accent-wash: #fee3b5;
+    --ok: #5b8a54;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.2);
+    --shadow-lg: 6px 4px 24px rgba(250,166,0,.25);
+  }
+  *{box-sizing:border-box;}
+  html{overflow-x:hidden;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size:16px;
+    letter-spacing:.015em;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+
+  header{
+    border-bottom:1px solid var(--rule);
+    padding-bottom:20px;
+    margin-bottom:32px;
+  }
+  .eyebrow{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+  h1{
+    font-size:28px;
+    margin:0 0 6px;
+    color:var(--ink);
+    font-weight:700;
+  }
+  .subtitle{
+    font-size:14px;
+    color:var(--ink-soft);
+    font-family:inherit;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:20px;
+    padding:32px;
+    margin-bottom:24px;
+    box-shadow:var(--shadow-sm);
+  }
+  .card h2{
+    font-size:16px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink);
+    margin:0 0 16px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--rule);
+  }
+
+  .inputs{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+  }
+  @media (max-width:640px){
+    .inputs{grid-template-columns:repeat(2,1fr);}
+  }
+  label{
+    display:block;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  input[type=number]{
+    width:100%;
+    padding:12px 14px;
+    border:1px solid var(--border-input);
+    border-radius:16px;
+    font-family:inherit;
+    font-size:16px;
+    background:#ffffff;
+    color:var(--ink);
+  }
+  input[type=number]:focus{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+    border-color:var(--accent);
+  }
+
+  .comment-field{
+    width:100%;
+    min-height:110px;
+    padding:14px 16px;
+    border:1px solid var(--border-input);
+    border-radius:16px;
+    font-family:inherit;
+    font-size:15px;
+    line-height:1.5;
+    background:#ffffff;
+    color:var(--ink);
+    resize:vertical;
+    box-sizing:border-box;
+  }
+  .comment-field:focus{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+    border-color:var(--accent);
+  }
+  .comment-field::placeholder{
+    color:var(--ink-soft);
+  }
+
+  button{
+    margin-top:20px;
+    background:var(--accent);
+    color:#ffffff;
+    border:none;
+    padding:12px 24px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.015em;
+    cursor:pointer;
+    border-radius:16px;
+    box-shadow:var(--shadow-sm);
+    transition:background-color .15s ease;
+  }
+  button:hover{background:var(--accent-hover);}
+  .action-card button:first-child{margin-top:0;}
+
+  .calc-check{
+    display:inline-flex;
+    visibility:hidden;
+    align-items:center;
+    margin-left:14px;
+    color:var(--ok);
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    vertical-align:middle;
+  }
+  .calc-check .mark{
+    display:inline-block;
+    width:20px;height:20px;
+    line-height:20px;
+    text-align:center;
+    border-radius:50%;
+    background:var(--ok);
+    color:#fff;
+    font-weight:700;
+    margin-right:6px;
+  }
+
+  .print-btn{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--border-input);
+    margin-top:20px;
+    margin-left:12px;
+    padding:12px 22px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .print-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  .summary-row{
+    display:flex;
+    gap:24px;
+    align-items:center;
+  }
+  .summary-row .summary{flex:1;min-width:0;}
+  .box-view{
+    flex:0 0 280px;
+    width:280px;
+    height:auto;
+    display:block;
+    border:1px solid var(--rule);
+    border-radius:16px;
+    background:var(--panel);
+    padding:12px;
+    box-shadow:var(--shadow-sm);
+  }
+  @media (max-width:700px){
+    .summary-row{flex-direction:column;align-items:stretch;}
+    .box-view{flex-basis:auto;width:100%;max-width:280px;margin:0 auto;}
+  }
+
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--rule);
+    border:1px solid var(--rule);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .summary div{background:var(--panel);padding:18px 16px;}
+  .summary .label{
+    font-family:inherit;
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .summary .value{
+    font-size:24px;
+    font-weight:700;
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .summary .value span{font-size:13px;font-weight:400;color:var(--ink-soft);}
+
+  table{
+    width:100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+    margin-bottom:8px;
+  }
+  th:first-child, td:first-child{width:34%;}
+  th:not(:first-child), td:not(:first-child){width:16.5%;}
+  th,td{
+    text-align:left;
+    padding:9px 10px;
+    font-family:inherit;
+    font-size:14px;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0;
+    border-bottom:1px solid var(--rule);
+  }
+  th{
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    font-size:11px;
+    letter-spacing:.05em;
+    font-weight:600;
+  }
+  th.num{text-align:right;}
+  td.num{text-align:right;}
+  tr.total td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none;}
+
+  .spec-table{margin-bottom:26px;}
+  .spec-table:last-child{margin-bottom:0;}
+  .editable-cell{
+    cursor:text;
+    border-bottom:1px dashed var(--accent);
+    border-radius:4px;
+  }
+  .editable-cell:hover{background:var(--accent-wash);}
+  .editable-cell:focus{
+    outline:none;
+    background:var(--accent-wash);
+    border-bottom:1px solid var(--accent);
+  }
+
+  .part-title{
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+    margin:22px 0 8px;
+  }
+  .part-title:first-child{margin-top:0;}
+
+  .note{
+    font-size:13px;
+    color:var(--ink-soft);
+    background:var(--accent-wash);
+    border-left:3px solid var(--accent);
+    border-radius:0 12px 12px 0;
+    padding:14px 16px;
+    margin-top:20px;
+    font-family:inherit;
+    line-height:1.6;
+  }
+
+  .disclaimer{
+    font-size:12px;
+    color:var(--ink-soft);
+    opacity:.75;
+    font-family:inherit;
+    line-height:1.5;
+    text-align:center;
+  }
+
+  #results{display:none;}
+  .error{color:#c23b2c;font-family:inherit;font-size:13px;font-weight:600;margin-top:12px;}
+
+  .spec-row-diagram{
+    display:flex;
+    gap:34px;
+    align-items:flex-start;
+  }
+  .spec-row-diagram .spec-table{flex:1;min-width:0;margin-bottom:0;}
+
+  .diagram-slot{
+    flex:0 0 300px;
+    width:300px;
+    position:relative;
+    overflow:visible;
+    margin-left:32px;
+    margin-top:24px;
+  }
+  .diagram-wrap{
+    position:relative;
+    flex:0 0 260px;
+    width:260px;
+  }
+  .diagram-wrap img{
+    display:block;
+    width:100%;
+    height:auto;
+  }
+  .diagram-arrows{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    overflow:visible;
+    pointer-events:none;
+  }
+  .diagram-labels{
+    position:absolute;
+    inset:0;
+    z-index:10;
+    pointer-events:none;
+  }
+  .diagram-label{
+    position:absolute;
+    transform:translate(-50%,-50%);
+    background:#fff;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:6px;
+    white-space:nowrap;
+    line-height:1.3;
+  }
+  .diagram-label-vertical{
+    transform:translate(-50%,-50%) rotate(-90deg);
+  }
+
+  @media (max-width: 700px){
+    .spec-row-diagram{
+      flex-direction:column;
+      gap:16px !important;
+    }
+    .diagram-slot{
+      width:100% !important;
+      flex-basis:auto !important;
+    }
+    .diagram-wrap{
+      width:100% !important;
+      flex-basis:auto !important;
+      max-width:240px;
+      margin:0 auto;
+    }
+  }
+
+  /* ============ Фильтр толщин пиломатериала "в наличии" ============ */
+  .thickness-filter{position:relative;}
+  .thickness-dropdown-btn{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    border:1px solid var(--border-input);
+    border-radius:16px;
+    background:#ffffff;
+    color:var(--ink);
+    font-family:inherit;
+    font-size:14px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .thickness-dropdown-btn:hover{border-color:var(--accent);}
+  .thickness-dropdown-btn span:first-child{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .thickness-dropdown-arrow{flex:0 0 auto;color:var(--ink-soft);}
+  .thickness-dropdown-panel{
+    display:none;
+    position:absolute;
+    z-index:30;
+    top:calc(100% + 6px);
+    left:0;
+    right:0;
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:16px;
+    box-shadow:var(--shadow-lg);
+    padding:16px;
+    max-height:340px;
+    overflow-y:auto;
+  }
+  .thickness-dropdown-panel.open{display:block;}
+  .thickness-dropdown-actions{
+    display:flex;
+    gap:10px;
+    margin-bottom:12px;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--rule);
+  }
+  .thickness-dropdown-actions button{
+    margin:0;
+    padding:8px 14px;
+    font-size:12px;
+  }
+  .thickness-checkbox-list{
+    display:grid;
+    /* Заполнение по столбцам: значения идут подряд сверху вниз в пределах
+       столбца, затем продолжаются в следующем. Число строк подобрано под
+       THICKNESS_MAX=300 так, чтобы делиться без остатка на число столбцов
+       (300/50=6, 300/75=4, 300/100=3) - если THICKNESS_MAX в JS изменится,
+       эти числа тоже нужно будет пересчитать. */
+    grid-auto-flow:column;
+    grid-template-rows:repeat(50,auto);
+    grid-auto-columns:1fr;
+    gap:5px 12px;
+  }
+  .thickness-checkbox-list label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:inherit;
+    font-size:13px;
+    text-transform:none;
+    letter-spacing:0;
+    color:var(--ink);
+    margin:0;
+    cursor:pointer;
+  }
+  .thickness-checkbox-list input{margin:0;accent-color:var(--accent);}
+  @media (max-width:640px){
+    .thickness-checkbox-list{grid-template-rows:repeat(75,auto);}
+  }
+  .fastening-option-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .fastening-option-list label{
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--ink);
+    text-transform:none;
+    letter-spacing:0;
+    margin:0;
+    cursor:pointer;
+  }
+  .fastening-option-list input{margin-top:3px;flex:0 0 auto;accent-color:var(--accent);}
+  .fastening-option-disabled{opacity:.45;cursor:not-allowed !important;}
+  .fastening-option-disabled input{cursor:not-allowed !important;}
+  .fastening-option-list .option-hint{
+    display:block;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:3px;
+  }
+  .strap-distance-wrap{
+    margin-left:26px;
+    padding:12px 14px;
+    background:var(--bg);
+    border:1px solid var(--rule);
+    border-radius:14px;
+  }
+  .strap-distance-label{
+    display:block;
+    font-family:inherit;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .strap-distance-wrap select{
+    width:100%;
+    padding:9px 12px;
+    font-family:inherit;
+    font-size:14px;
+    border:1px solid var(--border-input);
+    border-radius:12px;
+    background:var(--panel);
+    color:var(--ink);
+  }
+  @media (max-width:420px){
+    .thickness-checkbox-list{grid-template-rows:repeat(100,auto);}
+  }
+</style>
+
+<style>
+  /* ================= ПЕЧАТЬ =================
+     Печатный блок всегда отрисован (сдвинут за экран, но НЕ display:none) —
+     благодаря этому перед печатью можно измерить его настоящую высоту.
+
+     Бюджет листа А4 при полях 8 мм:
+        ширина  = (210 - 16) мм = 733 px
+        высота  = (297 - 16) мм = 1062 px
+     Ширина — жёсткий лимит, т.к. чертёж и таблица стоят в один ряд:
+        чертёж 388 + отступ 16 + зазор 20 + таблица 309 = 733
+     Размеры ниже подобраны под этот бюджет: самая длинная подпись
+     («Подполозная доска», «ТОЛЩИНА», «2450») помещается без обрезки.
+     Оставшуюся высоту распределяет JS (см. printBox) — за счёт этого лист
+     заполняется целиком, а не наполовину. */
+  #printArea{
+    position:fixed;
+    left:-100000px;
+    top:0;
+    overflow:hidden;   /* иначе при масштабировании появляется полоса прокрутки */
+  }
+  /* Внутренний слой — его и масштабируем. Внешний #printArea всегда остаётся
+     шириной с печатное поле, поэтому браузер не видит переполнения и не
+     применяет собственное «сжать до листа» поверх нашего (из-за этого
+     страница уменьшалась дважды и треть листа пустовала). */
+  #printScale{ transform-origin:top left; position:relative; --pk:1; }
+  #printArea, #printArea *{ box-sizing:border-box; }
+
+  /* Водяной знак — в правом нижнем углу. Общий вид ящика встроен в строку
+     шапки как обычный флекс-элемент (не абсолютом), чтобы он не мог
+     наложиться на значения «Итога». По высоте он ниже строки, поэтому
+     дополнительной высоты странице не добавляет. */
+  #printArea .print-box-view{
+    margin-left:auto;
+    align-self:center;
+    width:calc(var(--pk)*195px);height:auto;
+    flex:0 0 calc(var(--pk)*195px);
+  }
+  #printArea .print-watermark{
+    position:absolute;right:4px;bottom:0;
+    width:88px;height:auto;
+    opacity:.11;
+  }
+  #printArea{
+    background:#fff;
+    font-family:'Courier New', monospace;
+    color:#2b2420;
+    font-size:16px;
+    font-weight:700;
+    line-height:1.4;
+  }
+  #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#5e3c22;font-weight:700;}
+  #printArea .print-subtitle{color:#6b5f52;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
+
+  /* Внутренние размеры груза + Итог — рядом, на одном уровне */
+  #printArea .print-summary-row{display:flex;gap:calc(var(--pk)*24px);flex-wrap:nowrap;margin-bottom:0;align-items:center;}
+  #printArea .print-summary-block{flex:0 0 auto;}
+  #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#5e3c22;margin:0 0 6px;font-weight:700;}
+  #printArea .print-plain-table{border-collapse:collapse;width:auto;}
+  #printArea .print-plain-table td{padding:calc(var(--pk)*2px) calc(var(--pk)*14px) calc(var(--pk)*2px) 0;text-align:left;font-size:calc(var(--pk)*13px);font-weight:700;white-space:nowrap;}
+  #printArea .print-plain-table td.k{color:#6b5f52;}
+
+  /* Таблицы конфигурации досок.
+     Ширины колонок подобраны под бюджет: «Подполозная» и «2450» влезают
+     без переноса при шрифте 20px. */
+  #printArea .spec-table table{width:100%;table-layout:fixed;border-collapse:collapse;margin:0;}
+  #printArea .spec-table th:first-child, #printArea .spec-table td:first-child{width:48%;}
+  #printArea .spec-table th:not(:first-child), #printArea .spec-table td:not(:first-child){width:13%;}
+  #printArea .spec-table th, #printArea .spec-table td{
+    text-align:left;padding:calc(var(--pk)*6px) calc(var(--pk)*4px);font-size:calc(var(--pk)*19px);font-weight:700;border-bottom:1px solid #ccc3b2;white-space:nowrap;overflow:hidden;
+  }
+  #printArea .spec-table th{color:#6b5f52;text-transform:uppercase;font-size:calc(var(--pk)*10px);letter-spacing:0;font-weight:700;}
+  #printArea .spec-table td.num, #printArea .spec-table th.num{text-align:right;}
+
+  #printArea .part-title{font-size:calc(var(--pk)*20px);font-weight:700;color:#5e3c22;margin:0 0 calc(var(--pk)*6px);}
+
+  /* Секция = заголовок узла + (чертёж | таблица). Обычный блочный контейнер:
+     на нём браузер надёжно соблюдает «не разрывать между листами». */
+  #printArea .print-section{break-inside:avoid-page;page-break-inside:avoid;}
+  #printArea .print-comment{
+    font-size:calc(var(--pk)*15px);
+    font-weight:700;
+    line-height:1.5;
+    white-space:pre-wrap;
+    word-break:break-word;
+    border:1px solid #ccc3b2;
+    border-radius:2px;
+    padding:calc(var(--pk)*10px) calc(var(--pk)*12px);
+  }
+  #printArea .spec-row-diagram{display:flex;gap:calc(var(--pk)*16px);align-items:center;page-break-inside:avoid;margin:0;}
+  #printArea .spec-row-diagram .spec-table{flex:1;min-width:0;margin:0;}
+  /* 310px / отступ 26px — измеренный максимальный вылет подписей вправо и влево
+     для старых (маленьких) чертежей. У Дна (2008×1212, длинная подпись у левого
+     края) вылет больше — отступ увеличен до 44px; вертикальные вылеты по-прежнему
+     резервируются из JS (reserveDiagramOverflow). Правый край при необходимости
+     обрезается — по договорённости с пользователем. */
+  #printArea .diagram-slot{flex:0 0 calc(var(--pk)*300px);width:calc(var(--pk)*300px);margin-left:calc(var(--pk)*44px);position:relative;overflow:visible;}
+  /* ширина самих чертежей проставляется из JS (у них разный масштаб) */
+  #printArea .diagram-wrap{position:relative;}
+  #printArea .diagram-wrap img{display:block;width:100%;height:auto;}
+  #printArea .diagram-arrows{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
+  /* Стрелки на чертежах — при печати заметно толще, чем на экране */
+  #printArea .diagram-arrows line{stroke-width:calc(var(--pk)*3px) !important;}
+  #printArea .diagram-labels{position:absolute;inset:0;pointer-events:none;}
+  #printArea .diagram-label{
+    position:absolute;transform:translate(-50%,-50%);background:#fff;
+    border:calc(var(--pk)*2px) solid #5e3c22;color:#2b2420;font-size:calc(var(--pk)*15px);font-weight:700;
+    padding:calc(var(--pk)*2px) calc(var(--pk)*6px);white-space:nowrap;line-height:1.3;
+  }
+  #printArea .diagram-label-vertical{
+    transform:translate(-50%,-50%) rotate(-90deg);
+  }
+</style>
+
+<style media="print">
+  @page{ size:A4 portrait; margin:8mm; }
+  body > *:not(#printArea){ display:none !important; }
+  html, body{ background:#fff !important; }
+  #printArea{
+    /* relative (а не static): блок остаётся в потоке страницы, но при этом
+       служит точкой отсчёта для общего вида ящика и водяного знака в углах */
+    position:relative !important;
+    left:auto !important;
+    top:auto !important;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">ООО «Сильван» · внутренний прототип</div>
+    <h1>Расчёт дощатого ящика</h1>
+    <div class="subtitle">ГОСТ 10198-91 · тип 1, комплектация 3 (плотный ящик с полозьями)</div>
+  </header>
+
+  <div class="card">
+    <h2>Внутренние размеры груза, мм</h2>
+    <div class="inputs">
+      <div>
+        <label for="L">Длина</label>
+        <input type="number" id="L" value="2350" min="1">
+      </div>
+      <div>
+        <label for="W">Ширина</label>
+        <input type="number" id="W" value="1400" min="1">
+      </div>
+      <div>
+        <label for="H">Высота</label>
+        <input type="number" id="H" value="900" min="1">
+      </div>
+      <div>
+        <label for="M">Масса груза, кг</label>
+        <input type="number" id="M" value="1000" min="1">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Толщины пиломатериала в наличии</h2>
+    <div class="thickness-filter dropdown-wrap">
+      <button type="button" class="thickness-dropdown-btn" id="thicknessDropdownBtn" onclick="toggleThicknessDropdown()">
+        <span id="thicknessDropdownLabel">—</span>
+        <span class="thickness-dropdown-arrow">▾</span>
+      </button>
+      <div class="thickness-dropdown-panel" id="thicknessDropdownPanel">
+        <div class="thickness-dropdown-actions">
+          <button type="button" onclick="setAllThickness(true)">Выбрать все</button>
+          <button type="button" onclick="setAllThickness(false)">Снять все</button>
+        </div>
+        <div class="thickness-checkbox-list" id="thicknessCheckboxList"></div>
+      </div>
+    </div>
+    <div class="note" id="thicknessNote" style="display:none;margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Тип крепления груза (сечение полоза)</h2>
+    <div class="thickness-filter dropdown-wrap">
+      <button type="button" class="thickness-dropdown-btn" id="fasteningDropdownBtn" onclick="toggleFasteningDropdown()">
+        <span id="fasteningDropdownLabel">—</span>
+        <span class="thickness-dropdown-arrow">▾</span>
+      </button>
+      <div class="thickness-dropdown-panel" id="fasteningDropdownPanel">
+        <div class="fastening-option-list">
+          <label>
+            <input type="radio" name="fasteningType" value="skid" checked onchange="onFasteningTypeChange(this)">
+            <span>Стропление за полозья / за изделие (п.1.6.5)<span class="option-hint">Сечение полоза по массе груза (таблица п.1.6.5) - текущий расчёт по умолчанию</span></span>
+          </label>
+          <label class="fastening-option-disabled">
+            <input type="radio" name="fasteningType" value="frame" disabled onchange="onFasteningTypeChange(this)">
+            <span>На раме без опорных площадок, груз до 1000 кг (п.1.6.7)<span class="option-hint">Пока не рассчитываем - будет отдельный файл</span></span>
+          </label>
+          <label class="fastening-option-disabled">
+            <input type="radio" name="fasteningType" value="beyond_base" disabled onchange="onFasteningTypeChange(this)">
+            <span>Штабелируемые / стропление за полозья за пределами груза (п.1.6.6, Прил.9)<span class="option-hint">Пока не рассчитываем - будет отдельный файл</span></span>
+          </label>
+          <div class="strap-distance-wrap" id="strapDistanceWrap" style="display:none;">
+            <label for="strapDistance" class="strap-distance-label">Расстояние от края жёсткого основания груза до точки захвата полоза стропами</label>
+            <select id="strapDistance" onchange="onStrapDistanceChange()">
+              <option value="">— выберите значение —</option>
+              <option value="200">200 мм</option>
+              <option value="300">300 мм</option>
+              <option value="400">400 мм</option>
+              <option value="500">500 мм</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:14px;">Не добавлены: крепление к доскам дна по Приложению 7 (п.1.6.9) и крепление на крепёжных брусьях по Приложению 8 (п.1.6.10) - обе таблицы используют параметр «рабочая длина полоза», который нигде в тексте ГОСТ 10198-91 явно не определён; добавим после уточнения у инженера. Крепление на крепёжных брусьях также требует отдельной детали (крепёжный брус), которой сейчас нет в спецификации.</div>
+  </div>
+
+  <div class="card">
+    <h2>Дополнительные опции</h2>
+    <div class="fastening-option-list">
+      <label>
+        <input type="checkbox" id="optimizeSizes">
+        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм</span></span>
+      </label>
+      <label>
+        <input type="checkbox" id="seaTransport">
+        <span>Морские перевозки<span class="option-hint">Длина полоза и подполозной доски увеличивается на 50 мм (на остальные детали — доску крышки, доску бока, количество планок — не влияет)</span></span>
+      </label>
+      <label>
+        <input type="checkbox" id="removeFloorBoards">
+        <span>Убрать доски дна<span class="option-hint">Доска дна не включается в спецификацию, её объём не учитывается в норме времени. Толщина доски дна обнуляется полностью — это уменьшает наружную высоту ящика и высоту щита торцевого и щита бокового на эту толщину (они физически опираются на доску дна)</span></span>
+      </label>
+      <label>
+        <input type="checkbox" id="removeSkidBoards">
+        <span>Убрать подполозные доски<span class="option-hint">Подполозная доска не включается в спецификацию, её объём не учитывается в норме времени, из чертежа дна убирается</span></span>
+      </label>
+      <label>
+        <input type="checkbox" id="forkliftLoading">
+        <span>Погрузка авто/электропогрузчиком<span class="option-hint">Толщина подполозной доски не менее 50 мм (если по массе груза не требуется больше), длина не менее 300 мм. Если требование по длине не выполняется - в таблице подполозной доски вместо размеров выводится ⚠, дополнительно выводится текстовое предупреждение</span></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="disclaimer" style="margin:4px 2px 16px;">Чертежи схематичны и могут не отражать действительность.</div>
+
+  <div class="card action-card">
+    <button onclick="calculate()">Рассчитать</button>
+    <span class="calc-check" id="calcCheck"><span class="mark">&#10003;</span>Расчёт выполнен</span>
+    <button class="print-btn" onclick="printBox()">🖨 Печать</button>
+    <div class="error" id="err"></div>
+  </div>
+
+  <div id="results">
+    <div class="note" id="warningsTop" style="margin-bottom:16px;"></div>
+
+    <div class="card">
+      <h2>Итог</h2>
+      <div class="summary-row">
+        <img class="box-view" id="boxView" alt="Общий вид ящика">
+        <div class="summary">
+          <div>
+            <div class="label">Наружные размеры</div>
+            <div class="value" id="outDims">— <span>мм</span></div>
+          </div>
+          <div>
+            <div class="label">Расход пиломатериала</div>
+            <div class="value" id="outVolume">— <span>м³</span></div>
+          </div>
+          <div>
+            <div class="label">Норма времени</div>
+            <div class="value" id="outTime">— <span>ч</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Спецификация досок</h2>
+      <div id="boardTables"></div>
+    </div>
+
+    <div class="card">
+      <h2>Комментарий</h2>
+      <textarea id="userComment" class="comment-field" placeholder="Заметки по расчёту, пожелания заказчика, особенности партии и т.п. - попадут и в печатную версию."></textarea>
+    </div>
+
+    <div class="disclaimer" style="margin-top:20px;">Калькулятор может ошибаться. Проверяйте результаты перед использованием в производстве.</div>
+  </div>
+</div>
+
+<div id="printArea"><div id="printScale"></div></div>
+
+<script>
+function roundup(x, decimals){
+  const f = Math.pow(10, decimals);
+  return Math.ceil(x*f - 1e-9)/f;
+}
+function ceilInt(x){
+  return Math.ceil(x - 1e-9);
+}
+function vol(t,w,l,qty){ // m3, dims in mm
+  return (t*w*l)/1e9*qty;
+}
+
+// ============ Фильтр толщин пиломатериала "в наличии" ============
+// Пользователь отмечает галочками, какие толщины (1-300 мм) есть на складе.
+// Выбор хранится в localStorage отдельно для этой комплектации ящика
+// (ГОСТ 10198-91, тип 1, комплектация 3) и переживает перезагрузку страницы.
+// Если ничего не выбрано - округление до складских номиналов не применяется,
+// расчёт идёт строго по значениям, которые даёт сам ГОСТ 10198-91.
+const THICKNESS_STORAGE_KEY = 'silvan-gost10198-t1-k3-available-thickness';
+const THICKNESS_MIN = 1, THICKNESS_MAX = 300;
+
+function loadAvailableThicknesses(){
+  try{
+    const raw = localStorage.getItem(THICKNESS_STORAGE_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw).filter(v => Number.isInteger(v) && v>=THICKNESS_MIN && v<=THICKNESS_MAX);
+    return arr.sort((a,b)=>a-b);
+  }catch(e){ return []; }
+}
+function saveAvailableThicknesses(){
+  try{ localStorage.setItem(THICKNESS_STORAGE_KEY, JSON.stringify(availableThicknesses)); }catch(e){}
+}
+
+let availableThicknesses = loadAvailableThicknesses();
+let thicknessLimitExceeded = false; // взводится в roundUpToAvailable(), если расчётная толщина больше максимальной выбранной "в наличии"
+
+// Округление вверх до ближайшей выбранной толщины "в наличии".
+// Список пуст -> округление не выполняется, толщина возвращается как есть (строго по ГОСТ).
+function roundUpToAvailable(t){
+  if(availableThicknesses.length === 0) return t;
+  for(const a of availableThicknesses){ if(t<=a) return a; }
+  thicknessLimitExceeded = true;
+  return availableThicknesses[availableThicknesses.length-1];
+}
+
+function buildThicknessCheckboxList(){
+  const list = document.getElementById('thicknessCheckboxList');
+  let html = '';
+  for(let t=THICKNESS_MIN; t<=THICKNESS_MAX; t++){
+    const checked = availableThicknesses.includes(t) ? ' checked' : '';
+    html += `<label><input type="checkbox" value="${t}"${checked} onchange="onThicknessCheckboxChange(this)"> ${t} мм</label>`;
+  }
+  list.innerHTML = html;
+}
+
+function onThicknessCheckboxChange(el){
+  const v = parseInt(el.value, 10);
+  if(el.checked){
+    if(!availableThicknesses.includes(v)) availableThicknesses.push(v);
+  } else {
+    availableThicknesses = availableThicknesses.filter(x=>x!==v);
+  }
+  availableThicknesses.sort((a,b)=>a-b);
+  saveAvailableThicknesses();
+  updateThicknessSummary();
+  document.getElementById('calcCheck').style.visibility = 'hidden'; // результаты устарели после смены фильтра
+}
+
+function setAllThickness(state){
+  availableThicknesses = state ? Array.from({length:THICKNESS_MAX-THICKNESS_MIN+1}, (_,i)=>i+THICKNESS_MIN) : [];
+  buildThicknessCheckboxList();
+  saveAvailableThicknesses();
+  updateThicknessSummary();
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+}
+
+function updateThicknessSummary(){
+  const label = document.getElementById('thicknessDropdownLabel');
+  const note  = document.getElementById('thicknessNote');
+  const total = THICKNESS_MAX - THICKNESS_MIN + 1;
+  if(availableThicknesses.length === 0){
+    label.textContent = 'Толщины не выбраны - расчёт строго по ГОСТ';
+    note.innerHTML = '⚠ Толщины пиломатериала "в наличии" не выбраны - округление до складских номиналов не применяется, расчёт ведётся строго по значениям ГОСТ 10198-91.';
+    note.style.display = 'block';
+  } else if(availableThicknesses.length === total){
+    label.textContent = 'Выбраны все толщины (1-300 мм)';
+    note.style.display = 'none';
+  } else {
+    const shown = availableThicknesses.slice(0,8).join(', ');
+    const more = availableThicknesses.length > 8 ? `, ещё ${availableThicknesses.length-8} знач.` : '';
+    label.textContent = `Выбрано (${availableThicknesses.length}): ${shown} мм${more}`;
+    note.style.display = 'none';
+  }
+}
+
+function toggleThicknessDropdown(){
+  document.getElementById('thicknessDropdownPanel').classList.toggle('open');
+}
+// Общий обработчик для всех выпадающих списков (толщины, тип крепления и т.п.):
+// закрывает панель, если клик произошёл вне её обёртки .dropdown-wrap.
+document.addEventListener('click', e=>{
+  document.querySelectorAll('.dropdown-wrap').forEach(wrap=>{
+    if(!wrap.contains(e.target)){
+      const p = wrap.querySelector('.thickness-dropdown-panel');
+      if(p) p.classList.remove('open');
+    }
+  });
+});
+
+buildThicknessCheckboxList();
+updateThicknessSummary();
+
+// ============ Тип крепления груза (сечение полоза) ============
+// Выбор хранится в localStorage отдельно для этой комплектации ящика, как и
+// фильтр толщин. Добавлены варианты из ГОСТ 10198-91, не требующие новой детали
+// в спецификации; вариант «за пределами груза» (п.1.6.6, Прил.9) дополнительно
+// требует расстояния до точки захвата стропами - это отдельный выбор пользователя,
+// у которого по умолчанию ничего не выбрано (см. пояснение под списком).
+const FASTENING_STORAGE_KEY = 'silvan-gost10198-t1-k3-fastening-type';
+const STRAP_DISTANCE_STORAGE_KEY = 'silvan-gost10198-t1-k3-strap-distance';
+const FASTENING_LABELS = {
+  skid:        'За полозья / за изделие (п.1.6.5)',
+  frame:       'На раме без опорных площадок, до 1000 кг (п.1.6.7)',
+  beyond_base: 'Штабелируемые / за пределами груза (п.1.6.6)'
+};
+
+function loadFasteningType(){
+  // Временно считаем только «за полозья / за изделие» (п.1.6.5) - остальные типы
+  // отключены в интерфейсе, поэтому даже если в localStorage с прошлых сессий
+  // сохранён другой тип, он игнорируется.
+  return 'skid';
+}
+function saveFasteningType(){
+  try{ localStorage.setItem(FASTENING_STORAGE_KEY, fasteningType); }catch(e){}
+}
+
+// Расстояние до точки захвата стропами (Прил.9). Пустая строка = «не выбрано»,
+// сознательно без значения по умолчанию - пользователь обязан выбрать сам.
+function loadStrapDistance(){
+  try{
+    const v = localStorage.getItem(STRAP_DISTANCE_STORAGE_KEY);
+    return (v === '200' || v === '300' || v === '400' || v === '500') ? v : '';
+  }catch(e){ return ''; }
+}
+function saveStrapDistance(){
+  try{ localStorage.setItem(STRAP_DISTANCE_STORAGE_KEY, strapDistance); }catch(e){}
+}
+
+let fasteningType = loadFasteningType();
+let strapDistance = loadStrapDistance();
+
+function onFasteningTypeChange(el){
+  fasteningType = el.value;
+  saveFasteningType();
+  updateFasteningSummary();
+  document.getElementById('calcCheck').style.visibility = 'hidden'; // результаты устарели после смены типа крепления
+}
+
+function onStrapDistanceChange(){
+  strapDistance = document.getElementById('strapDistance').value;
+  saveStrapDistance();
+  updateFasteningSummary();
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+}
+
+function updateFasteningSummary(){
+  const wrap = document.getElementById('strapDistanceWrap');
+  const isBeyondBase = (fasteningType === 'beyond_base');
+  wrap.style.display = isBeyondBase ? 'block' : 'none';
+
+  let label = FASTENING_LABELS[fasteningType];
+  if(isBeyondBase){
+    label += strapDistance ? `, ${strapDistance} мм` : ' - расстояние не выбрано';
+  }
+  document.getElementById('fasteningDropdownLabel').textContent = label;
+  document.querySelectorAll('input[name="fasteningType"]').forEach(r=>{ r.checked = (r.value === fasteningType); });
+  const distSelect = document.getElementById('strapDistance');
+  if(distSelect.value !== strapDistance) distSelect.value = strapDistance;
+}
+
+function toggleFasteningDropdown(){
+  document.getElementById('fasteningDropdownPanel').classList.toggle('open');
+}
+
+updateFasteningSummary();
+
+// ГОСТ 10198-91, п.1.6.11: толщина подполозной доски в зависимости от массы груза.
+function subfloorThicknessRaw(mass){
+  if(mass<=1000) return 25;
+  if(mass<=5000) return 32;
+  if(mass<=10000) return 40;
+  return 50;
+}
+
+// ГОСТ 10198-91, п.1.6.15: толщина досок, планок и раскосов боковых, торцовых
+// стенок и крышки ящиков типов I-3, I-4 в зависимости от массы груза.
+// Пункт задаёт только два диапазона — стандарт для этого типа рассчитан на грузы до 3000 кг.
+function wallThickness(mass){
+  if(mass<=1000) return {value:19, exceeded:false};
+  if(mass<=3000) return {value:22, exceeded:false};
+  return {value:22, exceeded:true}; // за пределами явно описанного диапазона типа I-3/I-4
+}
+
+// ГОСТ 10198-91, п.1.6.5: высота и ширина полозьев для грузов со сплошным жёстким
+// основанием при строплении за полозья в пределах основания груза — зависит
+// только от массы груза, без привязки к длине.
+function polozSection165(mass){
+  const table = [
+    {max:800,  h:44,  w:100},
+    {max:1000, h:50,  w:100},
+    {max:3000, h:75,  w:125},
+    {max:5000, h:100, w:100},
+    {max:10000,h:125, w:150},
+    {max:20000,h:150, w:175},
+  ];
+  let row = table.find(r=>mass<=r.max);
+  let exceeded = false;
+  if(!row){ row = table[table.length-1]; exceeded = true; }
+  return {h:row.h, w:row.w, exceeded};
+}
+
+// ГОСТ 10198-91, п.1.6.7: для грузов массой до 1000 кг, не имеющих опорных площадок
+// и закреплённых на металлических или деревянных рамах, продольные элементы которых
+// опираются на полозья по всей их длине — сечение полоза фиксировано и от массы не зависит.
+function polozSection167(mass){
+  return {h:40, w:100, exceeded: mass>1000};
+}
+
+// ГОСТ 10198-91, Приложение 9 (табл. 21), п.1.6.6: высота и ширина полозьев для
+// грузов, конструкция которых рассчитана на восприятие нагрузки штабеля, а также
+// для грузов со сплошным жёстким основанием при строплении за полозья ЗА ПРЕДЕЛАМИ
+// основания груза. Столбцы таблицы - расстояние от края жёсткого основания груза
+// до точки захвата полоза стропами (см. примечание 1 к табл. 21), мм: 200/300/400/500.
+// Данные сверены по двум независимым источникам (присланный PDF ГОСТа и
+// независимая копия текста стандарта), построчно, без расхождений.
+const TABLE21_DISTANCES = [200,300,400,500];
+const TABLE21 = [
+  {mass:500, rows:[{skids:2, s:[[40,100], [50,100], [60,100], [75,100]]}, {skids:3, s:[[32,100], [40,100], [50,100], [60,100]]}]},
+  {mass:800, rows:[{skids:2, s:[[50,100], [60,100], [75,100], [75,100]]}, {skids:3, s:[[40,100], [50,100], [60,100], [60,100]]}]},
+  {mass:1000, rows:[{skids:2, s:[[60,100], [75,100], [75,100], [75,100]]}, {skids:3, s:[[60,100], [60,100], [60,100], [60,100]]}]},
+  {mass:1500, rows:[{skids:2, s:[[75,100], [75,100], [100,100], [100,100]]}, {skids:3, s:[[60,100], [75,100], [100,75], [100,75]]}]},
+  {mass:2000, rows:[{skids:2, s:[[75,100], [75,125], [100,100], [100,125]]}, {skids:3, s:[[60,100], [75,100], [75,125], [100,100]]}]},
+  {mass:2500, rows:[{skids:2, s:[[75,100], [100,100], [125,100], [100,125]]}, {skids:3, s:[[75,100], [75,100], [100,100], [100,100]]}]},
+  {mass:3000, rows:[{skids:2, s:[[75,125], [100,100], [125,100], [125,125]]}, {skids:3, s:[[75,100], [75,125], [100,125], [125,100]]}]},
+  {mass:4000, rows:[{skids:2, s:[[100,100], [100,125], [125,125], [125,150]]}, {skids:3, s:[[75,125], [100,100], [125,100], [125,125]]}, {skids:4, s:[[75,100], [75,125], [100,100], [100,125]]}]},
+  {mass:5000, rows:[{skids:2, s:[[100,125], [125,100], [125,150], [150,125]]}, {skids:3, s:[[100,100], [100,125], [125,125], [125,150]]}, {skids:4, s:[[75,100], [100,100], [125,100], [125,100]]}]},
+  {mass:6000, rows:[{skids:2, s:[[125,100], [125,125], [150,150], [150,150]]}, {skids:3, s:[[100,100], [125,100], [125,150], [150,125]]}, {skids:4, s:[[75,100], [100,100], [125,100], [125,125]]}]},
+  {mass:7000, rows:[{skids:2, s:[[125,100], [125,150], [150,150], [150,175]]}, {skids:3, s:[[100,125], [125,125], [150,125], [150,150]]}, {skids:4, s:[[100,100], [100,125], [125,125], [125,125]]}]},
+  {mass:8000, rows:[{skids:2, s:[[125,125], [125,150], [150,175], [175,150]]}, {skids:3, s:[[125,100], [125,125], [150,150], [150,175]]}, {skids:4, s:[[100,100], [125,100], [125,125], [150,125]]}]},
+  {mass:9000, rows:[{skids:2, s:[[125,150], [150,150], [150,175], [175,175]]}, {skids:3, s:[[125,125], [150,125], [150,150], [175,150]]}, {skids:4, s:[[100,125], [125,100], [125,150], [150,150]]}]},
+  {mass:10000, rows:[{skids:3, s:[[125,150], [150,150], [150,150], [175,175]]}, {skids:4, s:[[100,125], [125,125], [150,125], [150,175]]}, {skids:5, s:[[100,100], [125,100], [125,125], [125,150]]}]},
+  {mass:11000, rows:[{skids:3, s:[[125,150], [150,175], [175,150], [175,175]]}, {skids:4, s:[[100,125], [125,150], [150,150], [175,175]]}, {skids:5, s:[[100,100], [125,125], [125,150], [150,150]]}]},
+  {mass:12000, rows:[{skids:3, s:[[125,150], [150,175], [175,150], [175,200]]}, {skids:4, s:[[125,100], [125,150], [150,150], [150,175]]}, {skids:5, s:[[100,125], [125,125], [125,150], [150,150]]}]},
+  {mass:13000, rows:[{skids:3, s:[[150,125], [175,150], [175,175], [200,175]]}, {skids:4, s:[[125,125], [150,125], [150,175], [175,150]]}, {skids:5, s:[[125,100], [125,125], [150,125], [150,175]]}]},
+  {mass:14000, rows:[{skids:3, s:[[150,125], [175,150], [175,175], [200,175]]}, {skids:4, s:[[125,125], [150,125], [150,175], [175,150]]}, {skids:5, s:[[125,100], [125,125], [150,125], [150,175]]}]},
+  {mass:15000, rows:[{skids:3, s:[[150,150], [175,150], [175,200], [200,200]]}, {skids:4, s:[[125,125], [150,150], [175,150], [175,175]]}, {skids:5, s:[[125,100], [125,150], [150,150], [150,175]]}]},
+  {mass:16000, rows:[{skids:3, s:[[150,150], [175,150], [175,200], [200,200]]}, {skids:4, s:[[125,125], [150,150], [175,150], [175,175]]}, {skids:5, s:[[125,100], [125,150], [150,150], [150,175]]}]},
+  {mass:17000, rows:[{skids:3, s:[[150,150], [175,175], [200,175], [200,225]]}, {skids:4, s:[[125,150], [150,175], [175,150], [175,200]]}, {skids:5, s:[[125,125], [150,125], [150,175], [175,175]]}]},
+  {mass:18000, rows:[{skids:3, s:[[150,150], [175,175], [200,175], [200,225]]}, {skids:4, s:[[125,150], [150,175], [175,150], [175,200]]}, {skids:5, s:[[125,125], [150,125], [150,175], [175,175]]}]},
+  {mass:19000, rows:[{skids:3, s:[[150,175], [175,175], [200,200], [225,200]]}, {skids:4, s:[[150,125], [150,175], [175,175], [200,175]]}, {skids:5, s:[[125,125], [150,125], [150,175], [175,175]]}]},
+  {mass:20000, rows:[{skids:3, s:[[150,175], [175,175], [200,200], [225,200]]}, {skids:4, s:[[150,125], [150,175], [175,175], [200,175]]}, {skids:5, s:[[125,125], [150,150], [150,175], [175,175]]}]},
+];
+
+// ГОСТ 10198-91, п.1.6.2: "Расстояние между осями смежных полозьев не должно
+// превышать 1200 мм". Это общее требование для любого типа крепления, не привязанное
+// к конкретной таблице сечений - отсюда минимально необходимое количество полозьев
+// по ширине груза. Грубая оценка (внутренняя ширина груза как приближение пролёта
+// между крайними полозьями), но направление верное: чем шире груз, тем больше
+// полозьев нужно, чтобы уложиться в шаг 1200 мм.
+function minSkidsByWidth162(widthMm){
+  return Math.max(2, Math.ceil(widthMm / 1200) + 1);
+}
+
+// preferredSkids — количество полозьев, которое даёт стандартная логика файла
+// (по ширине груза). Если в таблице для этой массы нет строки с таким количеством
+// (минимум для данной массы больше preferredSkids), количество увеличивается до
+// минимально необходимого по таблице — это фиксируется в skidsChanged.
+function polozSection166(mass, distance, preferredSkids){
+  let m = mass;
+  if(m < 500) m = 500; // п.1.6.6: для грузов св.200 до 500 кг сечение берут как для 500 кг
+  let massExceeded = false;
+  let row = TABLE21.find(r => m <= r.mass);
+  if(!row){ row = TABLE21[TABLE21.length-1]; massExceeded = true; }
+
+  const distIdx = TABLE21_DISTANCES.indexOf(distance);
+  const availableSkids = row.rows.map(r=>r.skids);
+  const minAvailable = Math.min(...availableSkids);
+  let effectiveSkids = Math.max(preferredSkids, minAvailable);
+  let skidRow = row.rows.find(r=>r.skids===effectiveSkids);
+  if(!skidRow){
+    const bigger = availableSkids.filter(s=>s>=effectiveSkids).sort((a,b)=>a-b);
+    effectiveSkids = bigger.length ? bigger[0] : Math.max(...availableSkids);
+    skidRow = row.rows.find(r=>r.skids===effectiveSkids);
+  }
+  const [h,w] = skidRow.s[distIdx];
+  return {
+    h, w,
+    skids: effectiveSkids,
+    skidsChanged: effectiveSkids !== preferredSkids,
+    massExceeded,
+    massRowUsed: row.mass
+  };
+}
+
+// ГОСТ 10198-91, п.1.6.8: толщина и ширина торцовых брусьев дна по массе груза.
+function endBeamSection(mass){
+  if(mass<=1000) return {h:44,w:100};
+  if(mass<=2000) return {h:60,w:100};
+  if(mass<=3500) return {h:75,w:100};
+  if(mass<=5000) return {h:100,w:100};
+  return {h:125,w:125};
+}
+
+// ГОСТ 10198-91, Таблица 4 (п.1.6.9): толщина досок дна при креплении груза
+// к доскам дна, по удельной нагрузке и расстоянию между осями смежных полозьев.
+const T4_LOADS = [0.10,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
+const T4_DISTANCES = [500,600,800,1000,1200];
+const TABLE4 = [
+  [19,19,19,22,25],
+  [19,19,22,32,32],
+  [19,22,25,32,40],
+  [19,22,32,40,40],
+  [19,22,32,40,50],
+  [22,25,32,40,50],
+  [22,25,40,50,50],
+  [22,32,40,50,50],
+];
+function floorBoardThickness(mass, Lmm, Wmm, distanceMm){
+  const S_cm2 = (Lmm/10)*(Wmm/10);
+  const udel = mass/S_cm2;
+  let exceeded = false;
+  if(udel<0.10) return {value:19, udel, exceeded:false}; // примечание 2 к табл.4
+  let rowIdx = T4_LOADS.findIndex(v=>udel<=v);
+  if(rowIdx===-1){ rowIdx = T4_LOADS.length-1; exceeded = true; }
+  let colIdx = T4_DISTANCES.findIndex(v=>distanceMm<=v);
+  if(colIdx===-1){ colIdx = T4_DISTANCES.length-1; exceeded = true; }
+  return {value:TABLE4[rowIdx][colIdx], udel, exceeded};
+}
+
+// ГОСТ 10198-91, Таблица 14: толщина поперечных брусьев крышки для нештабелируемых
+// ящиков (тип I-3 — именно такой, по табл. 1 стандарта), по массе груза и наружной ширине.
+const T14_WIDTHS = [1000,1500,2000,2500,3200];
+const TABLE14 = [
+  {maxMass:1000,  t:[32,32,32,40,40]},
+  {maxMass:3000,  t:[32,32,40,50,50]},
+  {maxMass:5000,  t:[32,40,50,60,75]},
+  {maxMass:8000,  t:[40,50,60,75,75]},
+  {maxMass:12000, t:[40,60,75,75,100]},
+  {maxMass:20000, t:[50,75,75,100,100]},
+];
+function crossBeamThickness(mass, outerWmm){
+  let exceeded=false;
+  let row = TABLE14.find(r=>mass<=r.maxMass);
+  if(!row){ row=TABLE14[TABLE14.length-1]; exceeded=true; }
+  let colIdx = T14_WIDTHS.findIndex(w=>outerWmm<=w);
+  if(colIdx===-1){ colIdx=T14_WIDTHS.length-1; exceeded=true; }
+  return {value:row.t[colIdx], exceeded};
+}
+
+const DNO_IMG_B64 = "data:image/png;base64,__IMG:dno.png__"; // натуральный размер 385x197
+
+// Схема "Дно": картинка на заднем плане, стрелки - SVG-слой в пиксельных
+// координатах картинки (не масштабируется вместе с текстом), подписи - обычные
+const TOREC_1_IMG_B64 = "data:image/png;base64,__IMG:torec_1.png__"; // натуральный размер 1352x1158 (вариант с 1 раскосиной)
+const TOREC_2_IMG_B64 = "data:image/png;base64,__IMG:torec_2.png__"; // натуральный размер 1811x842 (вариант с 2 раскосинами)
+const TOREC_0_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_0.jpg__"; // натуральный размер 1354x1134 (вариант без раскосины, H<=600мм либо W<=600мм)
+
+const KRYSHKA_IMG_B64 = "data:image/png;base64,__IMG:kryshka.png__"; // натуральный размер 1718x1274
+
+// наконечник считается вручную по углу линии, чтобы кончик точно совпадал с указанной точкой
+const BOKOVOY_1_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_1.png__"; // натуральный размер 1752x1093 (вариант с 1 раскосиной)
+const BOKOVOY_2_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_2.png__"; // натуральный размер 1811x1077 (вариант с 2+ раскосинами)
+
+function headTriangle(fromX,fromY,toX,toY,scale){
+  const angle = Math.atan2(toY-fromY, toX-fromX);
+  const headLen = 9*scale, headW = 6.5*scale;
+  const bx = toX - headLen*Math.cos(angle), by = toY - headLen*Math.sin(angle);
+  const px1 = bx + (headW/2)*Math.sin(angle), py1 = by - (headW/2)*Math.cos(angle);
+  const px2 = bx - (headW/2)*Math.sin(angle), py2 = by + (headW/2)*Math.cos(angle);
+  return {bx,by,poly:`${toX},${toY} ${px1.toFixed(1)},${py1.toFixed(1)} ${px2.toFixed(1)},${py2.toFixed(1)}`};
+}
+
+// общий рендер схемы: картинка на заднем плане + стрелки/линии (SVG, в натуральных
+// пиксельных координатах картинки) + подписи (HTML-блоки, фиксированный шрифт).
+// strokeScale — множитель толщины линий/стрелок и размера наконечников относительно
+// базовых значений (1.5px линия, наконечник 9×6.5px); нужен, потому что разные чертежи
+// сидят на картинках очень разного натурального размера (напр. Дно — 2008×1212, у
+// остальных пока ~300px) и один и тот же абсолютный пиксельный размер линии на них
+// выглядит по-разному. По умолчанию 1 (старые маленькие чертежи), для Дна передаём 10.
+// Единая нормировка толщины линий/стрелок для чертежей-фотографий: толщина линии в
+// SVG задаётся в пикселях самого фото, а разные фото имеют разное натуральное
+// разрешение, поэтому одинаковый strokeScale даёт разную видимую на экране толщину.
+// Эталон — чертёж Дна (натуральная ширина 2008px, scale=10, подобран визуально).
+// Для любого другого фото пересчитываем scale пропорционально его ширине, чтобы
+// видимая толщина линий совпадала с эталоном независимо от разрешения снимка.
+const PHOTO_STROKE_REF_WIDTH = 2008, PHOTO_STROKE_REF_SCALE = 10;
+function photoStrokeScale(imgNaturalWidth){
+  return PHOTO_STROKE_REF_SCALE * imgNaturalWidth / PHOTO_STROKE_REF_WIDTH;
+}
+
+function renderDiagram(imgB64, altText, IW, IH, records, widthPx, strokeScale){
+  const scale = strokeScale || 1;
+  const lineWidth = (1.5*scale).toFixed(2);
+  let shapes = '';
+  let labels = '';
+  records.forEach(r=>{
+    const hasLine = ('x1' in r);
+    const hasLabel = ('lx' in r);
+    if(hasLine){
+      if(r.type==='line'){
+        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" stroke="#fa5d00" stroke-width="${lineWidth}"/>`;
+      } else if(r.type==='double'){
+        const headStart = headTriangle(r.x2,r.y2,r.x1,r.y1,scale);
+        const headEnd   = headTriangle(r.x1,r.y1,r.x2,r.y2,scale);
+        shapes += `<line x1="${headStart.bx.toFixed(1)}" y1="${headStart.by.toFixed(1)}" x2="${headEnd.bx.toFixed(1)}" y2="${headEnd.by.toFixed(1)}" stroke="#fa5d00" stroke-width="${lineWidth}"/>`;
+        shapes += `<polygon points="${headStart.poly}" fill="#fa5d00"/>`;
+        shapes += `<polygon points="${headEnd.poly}" fill="#fa5d00"/>`;
+      } else if(r.type==='single'){
+        const head = headTriangle(r.x1,r.y1,r.x2,r.y2,scale);
+        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${head.bx.toFixed(1)}" y2="${head.by.toFixed(1)}" stroke="#fa5d00" stroke-width="${lineWidth}"/>`;
+        shapes += `<polygon points="${head.poly}" fill="#fa5d00"/>`;
+      }
+    }
+    if(hasLabel){
+      const lx = (r.lx/IW*100).toFixed(2), ly = (r.ly/IH*100).toFixed(2);
+      const labelClass = r.vertical ? 'diagram-label diagram-label-vertical' : 'diagram-label';
+      labels += `<div class="${labelClass}" style="left:${lx}%;top:${ly}%">${r.text}</div>`;
+    }
+  });
+  const sizeStyle = widthPx ? ` style="width:${widthPx}px;flex-basis:${widthPx}px"` : '';
+  return `<div class="diagram-wrap"${sizeStyle}>
+    <img src="${imgB64}" alt="${altText}">
+    <svg class="diagram-arrows" viewBox="0 0 ${IW} ${IH}" preserveAspectRatio="none">
+      ${shapes}
+    </svg>
+    <div class="diagram-labels">${labels}</div>
+  </div>`;
+}
+
+function diagramDno(skidLenMm, tBokDoska, outerWidthMm, tBokPlanka, tTorcaPlusPlanka){
+  const skidLen   = Math.round(skidLenMm);
+  const valBok    = Math.round(tBokDoska);
+  const valWidth  = Math.round(outerWidthMm - tBokPlanka*2);
+  const valTorca  = Math.round(tTorcaPlusPlanka);
+
+  const records = [
+    {type:'line', x1:1903, y1:434, x2:2067, y2:523},
+    {type:'line', x1:664, y1:1079, x2:850, y2:1176},
+    {type:'double', x1:2064, y1:531, x2:854, y2:1174, lx:1596, ly:956, text: skidLen+' мм'},
+    {type:'line', x1:1843, y1:491, x2:2022, y2:397},
+    {type:'line', x1:1881, y1:517, x2:2057, y2:423},
+    {type:'single', x1:1794, y1:-78, x2:1947, y2:456, lx:1738, ly:-97, text: valBok+' мм'},
+    {type:'line', x1:853, y1:1073, x2:593, y2:1208},
+    {type:'line', x1:103, y1:676, x2:-125, y2:808},
+    {type:'double', x1:-119, y1:814, x2:583, y2:1203, lx:104, ly:1056, text: valWidth+' мм'},
+    {type:'line', x1:156, y1:750, x2:-12, y2:656},
+    {type:'line', x1:119, y1:769, x2:-46, y2:679},
+    {type:'single', x1:222, y1:48, x2:37, y2:699, lx:181, ly:22, text: valTorca+' мм'}
+  ];
+
+  return renderDiagram(DNO_IMG_B64, 'Дно - схема расположения деталей', 2008, 1212, records, null, photoStrokeScale(2008));
+}
+
+function diagramPlaceholder(label){
+  // Временная заглушка вместо чертежа, для которого фото ещё не прислано.
+  return `<div class="diagram-wrap diagram-placeholder" style="display:flex;align-items:center;justify-content:center;min-height:160px;border:1px dashed var(--border-input);border-radius:12px;color:var(--ink-soft);font-size:13px;text-align:center;padding:12px;">Чертёж «${label}» ещё не готов</div>`;
+}
+
+function diagramEndPanel1Raskosina(k30val, w31val, innerWidthVal){
+  // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1352×1158).
+  // Подпись — ширина горизонтальной планки торца×2 + длина вертикальной торцевой планки
+  // (w31 - ширина горизонтальной планки, k30 - длина вертикальной планки торца).
+  const val = Math.round(w31val*2 + k30val);
+  const innerWidth = Math.round(innerWidthVal);
+
+  const records = [
+    {type:'line', x1:1111, y1:36, x2:1541, y2:32},
+    {type:'line', x1:1117, y1:1136, x2:1549, y2:1138},
+    {type:'double', x1:1501, y1:33, x2:1499, y2:1140, lx:1483, ly:597, text: val+' мм', vertical:true},
+    {type:'line', x1:1330, y1:922, x2:1328, y2:1318},
+    {type:'line', x1:27, y1:922, x2:29, y2:1327},
+    {type:'double', x1:30, y1:1275, x2:1330, y2:1277, lx:650, ly:1275, text: innerWidth+' мм'}
+  ];
+
+  return renderDiagram(TOREC_1_IMG_B64, 'Щит торцевой (1 раскосина) - схема расположения деталей', 1352, 1158, records, null, photoStrokeScale(1352));
+}
+
+function diagramEndPanel2Raskosina(k30val, w31val, planLenVal){
+  // Фото-чертёж для варианта с 2 раскосинами (натуральный размер 1811×842).
+  const val = Math.round(w31val*2 + k30val);         // длина вертикальной планки торца + ширина горизонтальной планки торца*2
+  const planLen = Math.round(planLenVal);             // длина горизонтальной планки = ширина груза
+
+  const records = [
+    {type:'line', x1:24, y1:177, x2:23, y2:-122},
+    {type:'line', x1:1787, y1:176, x2:1786, y2:-111},
+    {type:'double', x1:23, y1:-97, x2:1786, y2:-97, lx:910, ly:-139, text: planLen+' мм'},
+    {type:'line', x1:1625, y1:20, x2:1970, y2:19},
+    {type:'line', x1:1635, y1:829, x2:1971, y2:830},
+    {type:'double', x1:1931, y1:21, x2:1934, y2:832, lx:1923, ly:427, text: val+' мм', vertical:true}
+  ];
+
+  return renderDiagram(TOREC_2_IMG_B64, 'Щит торцевой (2 раскосины) - схема расположения деталей', 1811, 842, records, null, photoStrokeScale(1811));
+}
+
+function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
+  // Фото-чертёж для варианта без раскосины (H≤600мм либо W≤600мм — п.1.6.5/п.102 docx,
+  // независимо друг от друга отключают раскосину на торце). Просто рамка из планок и
+  // досок торца без диагоналей. Натуральный размер фото 1354×1134.
+  // Высота = высота груза + толщина доски дна (то же значение, которым заполняется
+  // доска торца, см. fbTorec); ширина = ширина груза (совпадает с k32).
+  const val = Math.round(heightPlusT12Val);
+  const width = Math.round(widthVal);
+
+  const records = [
+    {type:'line', x1:1122, y1:21, x2:1562, y2:19},
+    {type:'line', x1:1122, y1:1118, x2:1565, y2:1118},
+    {type:'double', x1:1514, y1:20, x2:1515, y2:1123, lx:1499, ly:562, text: val+' мм', vertical:true},
+    {type:'line', x1:1337, y1:905, x2:1340, y2:1308},
+    {type:'line', x1:35, y1:906, x2:35, y2:1308},
+    {type:'double', x1:36, y1:1265, x2:1341, y2:1265, lx:696, ly:1271, text: width+' мм'}
+  ];
+
+  return renderDiagram(TOREC_0_IMG_B64, 'Щит торцевой (без раскосины) - схема расположения деталей', 1354, 1134, records, null, photoStrokeScale(1354));
+}
+
+function diagramEndPanel(k32val, k30val, w31val, sectionsVal, hasRaskosinaVal, innerWidthVal, heightPlusT12Val, useNoRaskosinaDiagram){
+  // Новый фото-чертёж (рамка) показываем только при H≤600 либо когда раскосина не
+  // требуется по углу (1 секция, угол >60°) — не при W≤600 (по указанию пользователя,
+  // при W≤600 и H>600 возвращена прежняя заглушка). Для 1 и 2 раскосин — свои фото.
+  // Для 3-4 раскосин фото ещё нет — заглушка.
+  if(useNoRaskosinaDiagram){
+    return diagramEndPanelNoRaskosina(heightPlusT12Val, k32val);
+  }
+  if(sectionsVal === 1 && hasRaskosinaVal){
+    return diagramEndPanel1Raskosina(k30val, w31val, innerWidthVal);
+  }
+  if(sectionsVal === 2 && hasRaskosinaVal){
+    return diagramEndPanel2Raskosina(k30val, w31val, innerWidthVal);
+  }
+
+  return diagramPlaceholder('Щит торцевой');
+}
+
+function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm){
+  // Длина крышки = длина груза + (толщина доски торца + толщина планки торца)*2 (см. k9Base).
+  const valLen        = Math.round(lengthMm + t30*2 + t32*2);
+  // Ширина груза + толщина основной доски боковой стенки*2.
+  const valWidth       = Math.round(widthMm + t41*2);
+  // Толщина основной доски бокового щита (t41) — постоянная величина, от «Оптимизировать размеры»
+  // не зависит (эта галочка меняет только длину внутреннего поперечного бруса, k21).
+  const valBokThick     = Math.round(t41);
+  // Толщина вертикальной боковой планки (t40, планка бокового щита).
+  const valPlankaThick  = Math.round(t40);
+  // Расстояние от крайней планки крышки до края крышки (edgeDistKryshka = min(L/6, 1000)).
+  const valEdgePlanka   = Math.round(edgeDistKryshkaMm);
+  // Расстояние от крайнего поперечного бруса до края крышки: из длины крышки вычитаем
+  // суммарную ширину, занятую самими брусьями (количество × ширина бруса), остаток делим
+  // поровну на «количество брусьев + 1» промежутков.
+  const valEdgeBeam     = crossBeamQty > 0
+    ? Math.round((valLen - crossBeamQty*crossBeamWidthMm) / (crossBeamQty + 1))
+    : Math.round(valLen);
+
+  const records = [
+    {type:'double', x1:1179, y1:173, x2:1379, y2:108},
+    {type:'line', x1:1523, y1:858, x2:1621, y2:1033},
+    {type:'line', x1:1697, y1:800, x2:1849, y2:1064},
+    {type:'double', x1:1607, y1:1011, x2:1778, y2:944},
+    {type:'single', x1:1722, y1:1388, x2:1701, y2:975, lx:1725, ly:1415, text: valEdgePlanka+' мм'},
+    {type:'single', x1:1733, y1:226, x2:1283, y2:140, lx:1810, ly:222, text: valEdgeBeam+' мм'},
+    {type:'line', x1:354, y1:1110, x2:515, y2:1430},
+    {type:'double', x1:1839, y1:1060, x2:517, y2:1437, lx:1212, ly:1295, text: valLen+' мм'},
+    {type:'line', x1:1100, y1:147, x2:1083, y2:116},
+    {type:'single', x1:1242, y1:6, x2:1091, y2:130, lx:1258, ly:-42, text: valBokThick+' мм'},
+    {type:'line', x1:322, y1:351, x2:-139, y2:496},
+    {type:'line', x1:273, y1:265, x2:-175, y2:404},
+    {type:'double', x1:-147, y1:396, x2:-107, y2:486},
+    {type:'single', x1:200, y1:75, x2:-126, y2:439, lx:311, ly:-10, text: valPlankaThick+' мм'},
+    {type:'line', x1:1228, y1:66, x2:1492, y2:-21},
+    {type:'line', x1:1597, y1:811, x2:1838, y2:729},
+    {type:'double', x1:1477, y1:-15, x2:1831, y2:735},
+    {type:'label', lx:1806, ly:382, text: valWidth+' мм'}
+  ];
+
+  return renderDiagram(KRYSHKA_IMG_B64, 'Крышка - схема расположения деталей', 1718, 1274, records, null, photoStrokeScale(1718));
+}
+
+function diagramBokovoy1Raskosina(heightPlusFloorVal, overhangVal, boardLenVal){
+  // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1752×1093).
+  const valHeight = Math.round(heightPlusFloorVal);   // высота груза + толщина доски дна
+  const valOverhang = Math.round(overhangVal);        // на сколько вертикальная планка перекрывает полоз (2/3 толщины полоза, не более 70мм)
+  const valBoardLen = Math.round(boardLenVal);        // длина доски бока
+
+  const records = [
+    {type:'line', x1:1641, y1:36, x2:1835, y2:36},
+    {type:'line', x1:1656, y1:870, x2:1910, y2:873},
+    {type:'double', x1:1819, y1:39, x2:1820, y2:873, lx:1847, ly:488, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:1238, y1:1054, x2:1909, y2:1064},
+    {type:'double', x1:1912, y1:873, x2:1910, y2:1068},
+    {type:'single', x1:1613, y1:1216, x2:1910, y2:953, lx:1583, ly:1231, text: valOverhang+' мм'},
+    {type:'line', x1:1710, y1:125, x2:1710, y2:-114},
+    {type:'line', x1:33, y1:126, x2:32, y2:-115},
+    {type:'double', x1:32, y1:-114, x2:1706, y2:-114, lx:878, ly:-108, text: valBoardLen+' мм'}
+  ];
+
+  return renderDiagram(BOKOVOY_1_IMG_B64, 'Щит боковой (1 раскосина) - схема расположения деталей', 1752, 1093, records, null, photoStrokeScale(1752));
+}
+
+function diagramBokovoy2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+  // Фото-чертёж для варианта с 2 и более раскосинами (натуральный размер 1811×1077).
+  const valBoardLen = Math.round(boardLenVal);         // длина боковой доски
+  const valOverhang = Math.round(overhangVal);         // на сколько планка перекрывает полоз
+  const valEdgeDist = Math.round(edgeDistVal);         // расстояние от крайней планки до края бокового щита
+  const valHeight = Math.round(heightPlusFloorVal);    // высота груза + толщина досок дна
+
+  const records = [
+    {type:'line', x1:1739, y1:104, x2:1736, y2:-153},
+    {type:'line', x1:61, y1:124, x2:60, y2:-155},
+    {type:'double', x1:63, y1:-125, x2:1737, y2:-123, lx:904, ly:-120, text: valBoardLen+' мм'},
+    {type:'line', x1:1452, y1:1035, x2:1943, y2:1038},
+    {type:'line', x1:1605, y1:898, x2:1942, y2:901},
+    {type:'double', x1:1905, y1:901, x2:1905, y2:1040},
+    {type:'single', x1:1519, y1:1207, x2:1902, y2:970, lx:1510, ly:1224, text: valOverhang+' мм'},
+    {type:'line', x1:61, y1:777, x2:62, y2:1167},
+    {type:'line', x1:203, y1:783, x2:203, y2:1161},
+    {type:'double', x1:62, y1:1076, x2:204, y2:1077},
+    {type:'single', x1:392, y1:1161, x2:131, y2:1078, lx:489, ly:1162, text: valEdgeDist+' мм'},
+    {type:'line', x1:1607, y1:41, x2:1917, y2:39},
+    {type:'double', x1:1889, y1:39, x2:1886, y2:902, lx:1934, ly:498, text: valHeight+' мм', vertical:true}
+  ];
+
+  return renderDiagram(BOKOVOY_2_IMG_B64, 'Щит боковой (2 и более раскосин) - схема расположения деталей', 1811, 1077, records, null, photoStrokeScale(1811));
+}
+
+function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal){
+  // Для 1 раскосины и 2+ раскосин уже есть фото-чертежи. Для варианта без раскосины
+  // (H≤600) фото ещё нет — показываем заглушку вместо старого схематичного чертежа.
+  if(raskosinCountVal === 1){
+    return diagramBokovoy1Raskosina(Hmm + t12val, overhangVal, k41val);
+  }
+  if(raskosinCountVal >= 2){
+    return diagramBokovoy2Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
+  }
+
+  return diagramPlaceholder('Щит боковой');
+}
+
+
+// fillBoards: заполняет пространство `space` (мм) досками шириной 100мм по максимуму,
+// а остаток (если есть) — 1-2 дополнительными досками шириной 75-99мм (могут быть разной
+// ширины — выбираются сами, для полного заполнения пространства). Если остаток < 75мм,
+// "занимаем" одну доску 100мм и делим (остаток+100) на 2 доски; если из-за этого ширина
+// всё равно выходит за 75-99мм — используем как есть и сообщаем через .warn (практика
+// Сильвана, согласовано с конструктором, вне текста ГОСТа).
+// fillBoards: максимум досок шириной 100мм, остаток — дополнительными досками
+// 75-99мм (при необходимости — 2, 3 доски), максимально равными по ширине (отличаются
+// не больше чем на 1мм). Если остаток меньше 75мм — "занимаем" сколько нужно досок
+// 100мм и делим весь набранный кусок на 1-4 доски 75-99мм; занимаем минимально
+// необходимое количество (в первую очередь стараемся сохранить максимум досок 100мм).
+// Если разложить строго в 75-99мм не получается (совсем небольшое пространство) —
+// используем как есть и сообщаем через .warn.
+function fillBoards(space){
+  space = Math.round(space);
+  let mainQty = Math.floor(space/100);
+  const remainder = space - mainQty*100;
+  const extra = [];
+  let warn = false;
+  if(remainder > 0){
+    // Число дополнительных досок не ограничиваем — сколько нужно, столько и
+    // добавляем в таблицу (сгруппированных по ширине, обычно 1-2 разные ширины).
+    let placed = false;
+    for(let borrow=0; borrow<=mainQty && !placed; borrow++){
+      const total = remainder + 100*borrow;
+      for(let n=1; n<=50 && !placed; n++){
+        if(total < 75*n || total > 99*n) continue;
+        mainQty -= borrow;
+        const base = Math.floor(total/n);
+        const rem2 = total - base*n;
+        const groups = {};
+        for(let i=0;i<n;i++){
+          const w = base + (i<rem2?1:0);
+          groups[w] = (groups[w]||0) + 1;
+        }
+        Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(w=>{
+          extra.push({width:w, qty:groups[w]});
+        });
+        placed = true;
+      }
+    }
+    if(!placed && mainQty === 0){
+      // занимать нечего (нет ни одной доски 100мм в пространстве) — единственная
+      // доска как есть, даже если она уже 75мм (см. singleNarrow ниже).
+      extra.push({width:remainder, qty:1});
+    } else if(!placed){
+      // пространство слишком маленькое, чтобы разложить строго в 75-99мм — берём
+      // как есть, предупреждаем.
+      const borrow = Math.min(mainQty, 1);
+      mainQty -= borrow;
+      const total = remainder + 100*borrow;
+      const w1 = Math.min(99, Math.max(1, total-75));
+      const w2 = total - w1;
+      extra.push({width:w1, qty:1});
+      if(w2>0) extra.push({width:w2, qty:1});
+      warn = true;
+    }
+  }
+  const totalExtraQty = extra.reduce((s,e)=>s+e.qty,0);
+  const totalBoards = mainQty + totalExtraQty;
+  const singleNarrow = totalBoards===1 && mainQty===0;
+  return {mainQty, extra, warn, singleNarrow};
+}
+
+function calculate(){
+  const errEl = document.getElementById('err');
+  errEl.textContent = '';
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+  thicknessLimitExceeded = false;
+  const L = parseFloat(document.getElementById('L').value);
+  const W = parseFloat(document.getElementById('W').value);
+  const H = parseFloat(document.getElementById('H').value);
+  const MASS = parseFloat(document.getElementById('M').value);
+  const optimizeSizes = document.getElementById('optimizeSizes').checked;
+  const seaTransport = document.getElementById('seaTransport').checked;
+  const removeFloorBoards = document.getElementById('removeFloorBoards').checked;
+  const removeSkidBoards = document.getElementById('removeSkidBoards').checked;
+  const forkliftLoading = document.getElementById('forkliftLoading').checked;
+
+  if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
+    errEl.textContent = 'Необходимо заполнить все четыре поля положительными числовыми значениями.';
+    return;
+  }
+  if(L <= 1200 || W <= 800){
+    errEl.textContent = `Габариты груза не превышают 1200×800 мм (текущие значения: ${L}×${W} мм). Для данного типа и вида крепления расчёт по указанным габаритам не выполняется — применяется ГОСТ 21140.`;
+    return;
+  }
+  if(MASS > 3000){
+    errEl.textContent = 'Масса груза превышает 3000 кг. Согласно ГОСТ 10198-91, Таблица 1, тип I-3 ("плотные, на полозьях, нештабелируемые" — тип, рассчитываемый данным калькулятором), рассчитан на массу груза до 3000 кг включительно. Толщина стенок (п.1.6.15) для данного типа выше 3000 кг ГОСТом не регламентирована, в связи с чем расчёт для указанной массы не выполняется. Для грузов большей массы применяется иной тип тары (II–IV) с иной конструкцией стенок — требуется отдельный расчёт.';
+    return;
+  }
+  if(fasteningType === 'beyond_base' && !strapDistance){
+    errEl.textContent = 'Для типа крепления «Штабелируемые / за пределами груза» (п.1.6.6) необходимо выбрать расстояние до точки захвата стропами в раскрывающемся списке.';
+    return;
+  }
+
+  const wallRaw = wallThickness(MASS); // п.1.6.15 — толщина досок/планок/раскосов стенок и крышки
+  const wall = {value: roundUpToAvailable(wallRaw.value), exceeded: wallRaw.exceeded};
+  let warnings = [];
+  if(wall.exceeded){
+    warnings.push('Масса груза превышает 3000 кг. Пункт 1.6.15 ГОСТ 10198-91 для типов I-3/I-4 регламентирует толщину стенок только до указанной массы. Для грузов большей массы, предположительно, требуется иной тип тары (II–IV). В качестве временного значения толщина стенок принята по верхней границе диапазона (22 мм, после округления — 25 мм).');
+  }
+
+  // --- ДНО ---
+  // Формулы согласованы с конструктором Сильвана (файл «ГОСТ_1019891_уточнённая
+  // логика.docx») — длина полоза считается через толщину деталей щита торцевого
+  // (см. ниже), а не через старую константу L+100.
+  const dno = [];
+  const l9_default = (W>1100) ? 3 : 2; // логика исходной таблицы подтверждена как верная, менять не нужно
+  const widthMinSkids162 = minSkidsByWidth162(W); // п.1.6.2 — общий предел 1200 мм между осями полозьев, для любого типа крепления
+  let poloz, l9 = l9_default;
+  if(fasteningType === 'frame'){
+    poloz = polozSection167(MASS); // п.1.6.7 — крепление на раме без опорных площадок
+    if(poloz.exceeded){
+      warnings.push('Выбран тип крепления «На раме без опорных площадок» (п.1.6.7 ГОСТ 10198-91). Указанный пункт применим только для грузов массой до 1000 кг. Сечение полоза принято равным 40×100 мм согласно п.1.6.7. Требуется дополнительная проверка либо выбор иного типа крепления.');
+    }
+    if(l9_default < widthMinSkids162){
+      l9 = widthMinSkids162;
+    }
+  } else if(fasteningType === 'beyond_base'){
+    const distance = parseInt(strapDistance, 10);
+    const desiredSkids162 = Math.max(l9_default, widthMinSkids162); // берём в расчёт и массу (внутри polozSection166), и ширину (п.1.6.2)
+    const res = polozSection166(MASS, distance, desiredSkids162); // п.1.6.6, Приложение 9 (табл. 21)
+    poloz = {h:res.h, w:res.w};
+    l9 = res.skids;
+    if(res.skidsChanged){
+      warnings.push(`Для типа крепления «Штабелируемые / за пределами груза» (п.1.6.6, Приложение 9) при массе груза ${MASS} кг и ширине груза ${W} мм требуется не менее ${res.skids} полоз(ьев) вместо стандартных ${l9_default}. Количество полозьев увеличено до ${res.skids}.`);
+    }
+    if(l9 < widthMinSkids162){
+      warnings.push(`Согласно п.1.6.2 ГОСТ 10198-91, при ширине груза ${W} мм расстояние между осями смежных полозьев не должно превышать 1200 мм, что требует не менее ${widthMinSkids162} полоз(ьев). Приложение 9 (Таблица 21) для массы груза ${MASS} кг предусматривает не более ${l9} полозьев. Данный случай выходит за пределы применимости таблицы — требуется ручная проверка компоновки полозьев.`);
+    }
+    if(res.massExceeded){
+      warnings.push('Масса груза выходит за пределы диапазона, установленного Приложением 9 (500–20000 кг). Сечение полоза принято по крайнему значению Таблицы 21. Требуется дополнительная проверка.');
+    }
+  } else {
+    poloz = polozSection165(MASS); // п.1.6.5 — крепление за полозья в пределах основания груза / за изделие
+    if(poloz.exceeded){
+      warnings.push('Масса груза выходит за пределы диапазона, установленного п.1.6.5 (500–20000 кг). Сечение полоза принято по крайнему значению таблицы. Требуется дополнительная проверка.');
+    }
+    if(l9_default < widthMinSkids162){
+      l9 = widthMinSkids162;
+    }
+  }
+  const t9=roundUpToAvailable(poloz.h), w9=poloz.w;
+
+  // Длина полоза (п.1.6.2 — равна наружной длине ящика): планка_торца + доска_торца +
+  // планка_торца + доска_торца + длина_груза (формула из docx конструктора). Толщина
+  // досок/планок торца общая для всех стенок и крышки (п.1.6.15) = wall.value.
+  // Морские перевозки (+25мм с каждой стороны) — отдельный следующий шаг, пока не делаем.
+  const t_doska_torca = wall.value, t_planka_torca = wall.value;
+  const k9Base = L + (t_planka_torca + t_doska_torca) * 2;
+  const k9 = k9Base + (seaTransport ? 50 : 0);
+  dno.push({name:'Полоз', t:t9, w:w9, l:k9, qty:l9});
+
+  // Подполозная доска: толщина по массе груза (п.1.6.11, Апдейт по подполозным доскам),
+  // при включённой «Погрузка авто/электропогрузчиком» - не менее 50мм (если по массе не
+  // требуется больше). Ширина равна ширине полоза, но не более 150мм. Отступ 200мм от
+  // каждого конца полоза - длина = длина полоза - 400мм. Минимум по факту 300мм; если
+  // формула даёт меньше - не блокируем, только предупреждаем (практика Сильвана, не
+  // пункт ГОСТа). При включённой «Погрузка авто/электропогрузчиком» и невыполнении
+  // требования по длине (300мм) - дополнительно текстовое предупреждение и вместо
+  // размеров в таблице выводится ⚠ (по указанию пользователя - оба предупреждения
+  // сосуществуют, не заменяют друг друга).
+  const t10Raw = forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
+  const t10=roundUpToAvailable(t10Raw), w10=Math.min(w9, 150), k10=k9-400, l10=l9;
+  if(k10 < 300){
+    warnings.push(`Длина подполозной доски составляет менее 300 мм (${Math.round(k10)} мм) при длине полоза ${Math.round(k9)} мм. Указанное значение является минимальным по внутренней практике организации. Требуется ручная проверка компоновки полоза.`);
+  }
+  const subfloorForkliftFail = forkliftLoading && k10 < 300;
+  if(subfloorForkliftFail){
+    warnings.push(`Требование по длине подполозной доски (не менее 300 мм) при погрузке авто/электропогрузчиком не выполняется (расчётная длина ${Math.round(k10)} мм). В таблице размеры подполозной доски заменены на ⚠ - требуется ручная проверка компоновки полоза.`);
+  }
+  if(!removeSkidBoards){
+    dno.push({
+      name:'Подполозная доска',
+      t: subfloorForkliftFail ? '⚠' : t10,
+      w: subfloorForkliftFail ? '⚠' : w10,
+      l: subfloorForkliftFail ? '⚠' : k10,
+      qty: subfloorForkliftFail ? '⚠' : l10
+    });
+  }
+
+  const endBeam = endBeamSection(MASS); // п.1.6.8
+  const t11=roundUpToAvailable(endBeam.h), w11=endBeam.w, k11=W, l11=2;
+  dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
+
+  const floorSkidDistance = Math.min(W, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
+  const floor = floorBoardThickness(MASS, L, W, floorSkidDistance); // Таблица 4
+  if(floor.exceeded){
+    const loadExceeded = floor.udel > T4_LOADS[T4_LOADS.length-1];
+    const distExceeded = floorSkidDistance > T4_DISTANCES[T4_DISTANCES.length-1];
+    if(loadExceeded){
+      warnings.push(`Удельная нагрузка на дно составляет ${floor.udel.toFixed(2)} кг/см², что превышает максимальное значение Таблицы 4 ГОСТ 10198-91 (${T4_LOADS[T4_LOADS.length-1]} кг/см²). Для данного соотношения массы груза и площади дна толщина доски стандартом не определена. Толщина принята по крайнему значению таблицы (${floor.value} мм) в качестве ориентировочного и не гарантирует достаточную прочность. Требуется отдельный расчёт либо иная конструкция тары.`);
+    }
+    if(distExceeded){
+      warnings.push(`Расстояние между полозьями ${floorSkidDistance} мм превышает максимальное значение Таблицы 4 (${T4_DISTANCES[T4_DISTANCES.length-1]} мм). Толщина доски дна принята по крайнему значению таблицы. Требуется дополнительная проверка.`);
+    }
+  }
+  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floor.value), k12=W;
+  // Доска дна: максимум досок 100мм + при необходимости 1-2 доски 75-99мм на остаток
+  // (fillBoards), заполняем пространство (длина груза - 2×ширина торцового бруса дна).
+  const fbDno = fillBoards(L - w11*2);
+  const w12 = 100, l12 = fbDno.mainQty;
+  if(!removeFloorBoards){
+    if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12});
+    fbDno.extra.forEach((e,i)=>{
+      dno.push({name:'Доска дна (дополнительная) '+(i+1), t:t12, w:e.width, l:k12, qty:e.qty});
+    });
+    if(fbDno.warn){
+      warnings.push('Доска дна: остаток пространства потребовал применения досок нестандартной ширины (вне диапазона 75–99 мм). Расчёт выполнен, требуется дополнительная проверка.');
+    }
+    if(fbDno.singleNarrow){
+      warnings.push('Доска дна: применяется только одна доска шириной менее 100 мм. Расчёт выполнен, рекомендуется учитывать данное обстоятельство при раскрое.');
+    }
+  }
+
+  const volDno = vol(t9,w9,k9,l9)+(removeSkidBoards ? 0 : vol(t10,w10,k10,l10))+vol(t11,w11,k11,l11)
+    + (removeFloorBoards ? 0 : (vol(t12,w12,k12,l12)
+      + fbDno.extra.reduce((s,e)=>s+vol(t12,e.width,k12,e.qty),0)));
+
+  // --- Наружные размеры ---
+  const outerL = L+150;
+  const outerW = W+100;
+  const outerH = H + t9 + t10 + t12 + wall.value + wall.value; // H + полоз + подполозная + доска дна + 2×толщина крышки
+
+  // --- КРЫШКА ---
+  const kryshka = [];
+
+  // Планка крышки: толщина общая (п.1.6.15) = wall.value, длина = внутренняя ширина +
+  // 2×толщина горизонтальной планки бокового щита (тоже wall.value — толщина у всех
+  // планок общая). Количество — правило 1/6 длины, капается на 1000мм (docx конструктора).
+  const t19=wall.value, w19=100, k19=W+wall.value*2;
+  // Крайние 2 планки — на расстоянии min(1/6 длины ящика, 1000мм) от торцов; между
+  // планками (и между крайней планкой и соседней) — не более 1000мм. Если по расчёту
+  // расстояние между крайними планками отрицательное — не считаем, предупреждаем.
+  const edgeDistKryshka = Math.min(k9Base/6, 1000);
+  const middleKryshka = k9Base - edgeDistKryshka*2;
+  let l19;
+  if(middleKryshka < 0){
+    warnings.push(`Планка крышки: расстояние между крайними планками получилось отрицательным (длина ящика ${Math.round(k9Base)} мм недостаточна для отступа ${Math.round(edgeDistKryshka)} мм с каждой стороны). Расчёт количества планок невозможен, принято минимальное значение — 2 (только крайние планки). Требуется ручная проверка.`);
+    l19 = 2;
+  } else {
+    l19 = ceilInt(middleKryshka/1000) + 2;
+  }
+  kryshka.push({name:'Планка', t:t19, w:w19, l:k19, qty:l19});
+
+  // Доска крышки: заполняем (ширина груза + 2×толщина доски бок. щита) досками 100мм +
+  // при необходимости 1-2 доски 75-99мм на остаток (fillBoards). Длина каждой доски —
+  // та же наружная длина, что и у полоза (k9Base — без учёта морской надбавки, см.
+  // «Что не должно меняться от морских перевозок» ниже по коду).
+  const t20 = wall.value, k20 = k9Base;
+  const fbKryshka = fillBoards(W + wall.value*2);
+  const w20 = 100, l20 = fbKryshka.mainQty;
+  if(l20>0) kryshka.push({name:'Доска крышки', t:t20, w:w20, l:k20, qty:l20});
+  fbKryshka.extra.forEach((e,i)=>{
+    kryshka.push({name:'Доска крышки (дополнительная) '+(i+1), t:t20, w:e.width, l:k20, qty:e.qty});
+  });
+  if(fbKryshka.warn){
+    warnings.push('Доска крышки: остаток пространства потребовал применения досок нестандартной ширины (вне диапазона 75–99 мм). Расчёт выполнен, требуется дополнительная проверка.');
+  }
+  if(fbKryshka.singleNarrow){
+    warnings.push('Доска крышки: применяется только одна доска шириной менее 100 мм. Расчёт выполнен, рекомендуется учитывать данное обстоятельство при раскрое.');
+  }
+
+  // Внутренний поперечный брус: толщина и ширина по Таблице 14 (масса + наружная ширина
+  // ящика; ширина по таблице всегда 100мм). Количество — временная формула Сильвана
+  // (длина груза : 800, округление вверх), позже уточнят.
+  const crossBeam = crossBeamThickness(MASS, outerW); // Табл. 14
+  if(crossBeam.exceeded){
+    warnings.push('Масса груза либо наружная ширина ящика выходит за пределы Таблицы 14. Толщина поперечного бруса крышки принята по крайнему значению таблицы. Требуется дополнительная проверка.');
+  }
+  const t21=roundUpToAvailable(crossBeam.value), w21=100, k21=W - (optimizeSizes ? 2 : 0), l21=ceilInt(L/800);
+  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21});
+
+  const volKryshka = vol(t19,w19,k19,l19)+vol(t20,w20,k20,l20)+vol(t21,w21,k21,l21)
+    + fbKryshka.extra.reduce((s,e)=>s+vol(t20,e.width,k20,e.qty),0);
+
+  // --- ЩИТ ТОРЦЕВОЙ (расчёт на 1 щит, далее удвоение) ---
+  // Реализована высота груза до 2000мм включительно (без раскосин до 600мм включительно,
+  // секции с раскосинами при 600-2000мм по правилу угла 20-60°). Недосекции и секции
+  // типа А (высота 2000-4000мм) — следующий шаг по договорённости, пока не реализованы.
+  if(H > 2000){
+    warnings.push(`Высота груза ${H} мм превышает 2000 мм. Расчёт щита торцевого для указанной высоты (недосекции, секции типа А в диапазоне 2000–4000 мм) в данной версии калькулятора не реализован, приведённые ниже значения по щиту торцевому являются некорректными. Требуется ручная проверка либо доработка калькулятора.`);
+  }
+
+  // Горизонтальная планка: длина = ширина груза, количество = 2 (верх/низ) — для высоты
+  // до 2000мм включительно, другие варианты пока не считаем. Толщина общая (п.1.6.15).
+  const t31 = wall.value, w31 = 100, k31_ = W, l31 = 2;
+
+  // Вертикальная планка: длина = (высота груза + толщина доски дна) - 2×толщина гор. планки.
+  const t30 = wall.value, w30 = 100;
+  const k30 = (H + t12) - t31*2;
+
+  // Число секций по ширине: растим от 1, пока угол раскосины к горизонтальной планке
+  // (20-60°) не встанет в диапазон; если при 1 секции угол > 60° — раскосины нет вообще.
+  // Ограничение — максимум 4 секции (шире пока не считаем).
+  function torecSectionWidth(sections){
+    return (W - w30*(sections+1)) / sections;
+  }
+  function torecAngleDeg(sections){
+    return Math.atan2(k30, torecSectionWidth(sections)) * 180 / Math.PI;
+  }
+  let torecSections = 1;
+  if(H > 600 && W > 600){
+    while(torecAngleDeg(torecSections) < 20 && torecSections < 4){
+      torecSections++;
+    }
+    if(torecAngleDeg(torecSections) < 20){
+      warnings.push('Щит торцевой: даже при 4 секциях по ширине угол раскосины к горизонтальной планке составляет менее 20°. Расчёт более чем на 4 секции в данной версии калькулятора не реализован — требуется консультация с конструктором.');
+    }
+  }
+  // п.102 docx: при ширине груза 600мм или менее раскосины на торце тоже не нужны
+  // (независимо от высоты).
+  const torecHasRaskosina = H > 600 && W > 600 && !(torecSections === 1 && torecAngleDeg(1) > 60);
+
+  const l30 = torecSections + 1; // вертикальная планка: секций+1
+
+  // Раскосина: гипотенуза прямоугольного треугольника, катеты — ширина секции (FK) и
+  // длина вертикальной планки (KD, высота между гор. планками). 1 раскосина на секцию.
+  const t33 = wall.value, w33 = 100;
+  const torecSectionW = torecSectionWidth(torecSections);
+  const k33 = Math.sqrt(Math.pow(torecSectionW,2) + Math.pow(k30,2));
+  const l33 = torecHasRaskosina ? torecSections : 0;
+
+  // Доска торца: заполняем (высота груза + толщина доски дна) досками 100мм + при
+  // необходимости 1-2 доски 75-99мм на остаток (fillBoards). Длина каждой доски = ширина груза.
+  const t32 = wall.value, k32 = W;
+  const fbTorec = fillBoards(H + t12);
+  const w32 = 100, l32 = fbTorec.mainQty;
+  if(fbTorec.warn){
+    warnings.push('Доска торца: остаток пространства потребовал применения досок нестандартной ширины (вне диапазона 75–99 мм). Расчёт выполнен, требуется дополнительная проверка.');
+  }
+  if(fbTorec.singleNarrow){
+    warnings.push('Доска торца: применяется только одна доска шириной менее 100 мм. Расчёт выполнен, рекомендуется учитывать данное обстоятельство при раскрое.');
+  }
+
+  const volTorPanel = vol(t30,w30,k30,l30) + vol(t31,w31,k31_,l31)
+    + vol(t32,w32,k32,l32) + fbTorec.extra.reduce((s,e)=>s+vol(t32,e.width,k32,e.qty),0)
+    + vol(t33,w33,k33,l33);
+
+  const endPanel = [
+    {name:'Вертикальная планка', t:t30, w:w30, l:k30, qty:l30},
+    {name:'Горизонтальная планка', t:t31, w:w31, l:k31_, qty:l31},
+  ];
+  if(torecHasRaskosina) endPanel.push({name:'Раскосина', t:t33, w:w33, l:k33, qty:l33});
+  if(l32>0) endPanel.push({name:'Доска торца', t:t32, w:w32, l:k32, qty:l32});
+  fbTorec.extra.forEach((e,i)=>{
+    endPanel.push({name:'Доска торца (дополнительная) '+(i+1), t:t32, w:e.width, l:k32, qty:e.qty});
+  });
+
+  // --- ЩИТ БОКОВОЙ (расчёт на 1 щит, далее удвоение) ---
+  // Реализовано для высоты груза до 2000мм включительно (см. п.110 docx — «по высоте
+  // ограничения и логика абсолютно идентичны торцу»). Горизонтальной планки в этом
+  // диапазоне высот у бокового щита нет вообще (появляется только выше 2000мм — не
+  // реализовано, отдельный шаг). Раскосина отключена по тем же общим условиям высоты,
+  // что и у торца (H>600мм) — ширина груза на боковой щит не влияет (в отличие от
+  // торца, п.102 docx касается только торца).
+
+  // Планка (вертикальная): длина = высота груза + 2/3 толщины полоза (не более 70мм).
+  // Количество — равно количеству планок крышки (l19), планки бокового щита стоят по
+  // тем же местам, что и планки крышки.
+  const t40 = wall.value, w40 = 100;
+  const k40 = H + Math.min(t9*2/3, 70);
+  const l40 = l19;
+
+  // Основная доска бока: заполняем (высота груза + толщина доски дна) досками 100мм +
+  // при необходимости доп. доски 75-99мм (fillBoards). Длина каждой доски = длина груза +
+  // 2×(толщина доски торца + толщина вертикальной планки торца) — та же величина, что и
+  // наружная длина полоза (k9Base — без учёта морской надбавки).
+  const t41 = wall.value, k41 = k9Base;
+  const fbBok = fillBoards(H + t12);
+  const w41 = 100, l41 = fbBok.mainQty;
+  if(fbBok.warn){
+    warnings.push('Доска бока: остаток пространства потребовал применения досок нестандартной ширины (вне диапазона 75–99 мм). Расчёт выполнен, требуется дополнительная проверка.');
+  }
+  if(fbBok.singleNarrow){
+    warnings.push('Доска бока: применяется только одна доска шириной менее 100 мм. Расчёт выполнен, рекомендуется учитывать данное обстоятельство при раскрое.');
+  }
+
+  // Раскосина: 1 на секцию, где секция — промежуток между соседними планками бокового
+  // щита (расстояние между ними ≤1000мм). Катеты — высота бокового щита (высота груза +
+  // толщина доски дна, целиком — горизонтальных планок нет) и ширина одной такой секции.
+  // Секции считаем равными (точных отдельных позиций планок в файле не задано) —
+  // (длина ящика - 2×отступ крайних планок крышки) / (планок - 1).
+  const t42 = wall.value, w42 = 100;
+  const bokSectionW = l19 > 1 ? middleKryshka / (l19 - 1) : 0;
+  const bokVertSpan = H + t12;
+  const k42 = Math.sqrt(Math.pow(bokSectionW,2) + Math.pow(bokVertSpan,2));
+  const bokHasRaskosina = H > 600 && l19 > 1;
+  const l42 = bokHasRaskosina ? (l19 - 1) : 0;
+
+  const volBokPanel = vol(t40,w40,k40,l40) + vol(t41,w41,k41,l41)
+    + fbBok.extra.reduce((s,e)=>s+vol(t41,e.width,k41,e.qty),0)
+    + vol(t42,w42,k42,l42);
+
+  const bokovoy = [
+    {name:'Планка', t:t40, w:w40, l:k40, qty:l40},
+  ];
+  if(l41>0) bokovoy.push({name:'Доска бока', t:t41, w:w41, l:k41, qty:l41});
+  fbBok.extra.forEach((e,i)=>{
+    bokovoy.push({name:'Доска бока (дополнительная) '+(i+1), t:t41, w:e.width, l:k41, qty:e.qty});
+  });
+  if(bokHasRaskosina) bokovoy.push({name:'Раскосина', t:t42, w:w42, l:k42, qty:l42});
+
+  // --- Итоговый расход пиломатериала ---
+  const totalVolume = volDno + volKryshka + 2*volTorPanel + 2*volBokPanel;
+  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+
+  // --- Рендер ---
+  document.getElementById('outDims').innerHTML = `${outerL} × ${outerW} × ${outerH} <span>мм</span>`;
+  document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
+
+  function renderSection(title, rows){
+    let html = title ? `<div class="part-title">${title}</div>` : '';
+    html += `<div class="spec-table"><table>
+      <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      html += `<tr>
+        <td>${r.name}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t">${r.t}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="w">${r.w}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="l">${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="qty">${r.qty}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    return html;
+  }
+
+  const torecNoRaskosinaDiagram = !torecHasRaskosina && (H <= 600 || W > 600);
+  let tablesHtml = '';
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, k30, w31, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram) + `</div>` + renderSection('', endPanel) + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, k40 - H, edgeDistKryshka, l42) + `</div>` + renderSection('', bokovoy) + `</div>`;
+  document.getElementById('boardTables').innerHTML = tablesHtml;
+
+  if(thicknessLimitExceeded){
+    warnings.push(`Расчётная толщина отдельных деталей превышает максимальную из выбранных толщин «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм). Использовано максимальное доступное значение — фактическая прочность может оказаться недостаточной. Рекомендуется добавить пиломатериал большей толщины в список доступных значений либо выполнить проверку расчёта вручную.`);
+  }
+
+  let warningsHtml = '';
+  if(warnings.length){
+    warningsHtml += '<div style="color:#a13d2b;margin-bottom:10px;font-weight:700;">Внимание:</div>' +
+      warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
+  }
+  const warningsEl = document.getElementById('warningsTop');
+  warningsEl.innerHTML = warningsHtml;
+  warningsEl.style.display = warnings.length ? 'block' : 'none';
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('calcCheck').style.visibility = 'visible';
+}
+
+calculate();
+
+// Галочка "расчёт выполнен" сбрасывается, если пользователь меняет входные
+// данные после расчёта — чтобы не вводить в заблуждение устаревшим результатом.
+['L','W','H','M'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
+    document.getElementById('calcCheck').style.visibility = 'hidden';
+  });
+});
+
+// Пересчёт "Расход пиломатериала" и "Норма времени" при ручном редактировании
+// значений в таблицах спецификации. Наружные размеры не пересчитываются -
+// они завязаны на исходные геометрические формулы, а не на список досок.
+function recalcFromTable(){
+  const rows = document.querySelectorAll('#boardTables table tbody tr');
+  let totalVolume = 0;
+  rows.forEach(tr=>{
+    const t = parseFloat(tr.querySelector('[data-role="t"]').textContent.replace(',','.')) || 0;
+    const w = parseFloat(tr.querySelector('[data-role="w"]').textContent.replace(',','.')) || 0;
+    const l = parseFloat(tr.querySelector('[data-role="l"]').textContent.replace(',','.')) || 0;
+    const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
+    totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
+  });
+  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
+}
+
+document.getElementById('boardTables').addEventListener('input', e=>{
+  if(e.target.classList.contains('editable-cell')) recalcFromTable();
+});
+
+/* ===================== МЕХАНИКА ПЕЧАТИ =====================
+
+   Печатаем в этом же окне (без всплывающих окон — они подвешивали вкладку).
+   Содержимое собирается в #printArea, который всегда отрисован реальными
+   размерами (просто сдвинут за экран), поэтому его высоту можно честно
+   измерить ДО печати.
+
+   Почему лист раньше заполнялся наполовину и почему просто «увеличить шрифт»
+   не помогало:
+     • ширина листа — жёсткий лимит (733 px), а чертёж и таблица стоят в ряд;
+       если раздуть шрифт/чертёж, таблице перестаёт хватать ширины и её
+       содержимое начинает переноситься и наезжать;
+     • по высоте же оставалось ~половина листа пустой, и это никак не
+       использовалось.
+   Поэтому:
+     1) размеры подобраны под бюджет ширины (см. CSS выше) — это максимум,
+        который влезает без переносов;
+     2) чертежи увеличиваются на PRINT_DIAGRAM_FACTOR (насколько позволяет
+        та же ширина);
+     3) остаток высоты листа измеряется и равномерно распределяется между
+        секциями — за счёт этого лист заполняется целиком;
+     4) если содержимое всё же переросло лист (крупный расчёт, длинные
+        названия) — включается пропорциональное уменьшение, чтобы второй,
+        пустой лист не появился никогда.
+*/
+// Общий вид ящика и водяной знак — используются только в печатной версии.
+const BOX_IMG_B64  = "data:image/png;base64,__IMG:box.png__";
+const LOGO_F_B64   = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAAEdCAYAAADq0RlZAAADo0lEQVR42u3Z242DMBRF0XuRK0kdqSX9d0F+iISIMFFeGLxWB2NGe449ebteAho2OoK/yeKXCHgYHAFw5iBYByAIYgCCIAYgCIAgWAcgCGIAgiAGIAhiAIIgBiAIgCBYByAIYgCCIAYgCGIAggAIgnUAgiAGIAhiAIIgBiAIYgCCAAiCdQCCIAYgCGIAtBIEMQBBAATBOgBBEAMQBDEAQRADEARAEKwDEAQxAEEQAxAEMQBBAATBOgBBEAMQBDEAfhQEMQBBEAMQBEAQrAMQBDEAQRADEARAEKwDEAQxAEEQA+D9IIgBCIIYgCAAgmAdgCCIAQiCGADbQRADEAQxAEEABME6ANaCIAYgCGIAggAwDYLBOgAmOYgBMF8IYgBERGSJiDxr7Xzf+sd3BCx5VAQEARAEQBAAQQAEARAEQBAAQQAEARAEQBAAQQAEARAEQBAAQQAEARAEQBAAQQAEARAEQBAAQQAEARAEQBAAQQAQBEAQAEEABAEQBEAQAEEABAEQBEAQAEEABAEQBEAQAEEABAEQBEAQAEEABAE4qOIIujU6guakhQA0EQNBADEQBEAQAEEA1wVBADEQBEAQwDoQBEAQAEEA1wVBADEQBEAQwDoQBEAQAEEA1wVBADEQBEAQgAOtA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EABAGsA0EALASgn3UgCIAggHUgCIAggHUgCIAggHUgCCAGggAIAiAI4LogCIAggHUgCCAGggAIAiAI4LogCCAGggAIAlgHggAcVXEE/iqChQAIAiAIgCAAggAIAiAIgCAAggAIAiAIgCAAggAIAiAIgCAAggAIAiAIgCAAggAIAiAIgCAAggAIAiAIgCAACAIgCIAgAIIACAIgCIAgAIIACAIgCIAgAIIACAIgCIAgAIIACAIgCIAgAIIACAIgCIAgAIIACAIgCIAgAIIACAKAIACCAAgCIAiAIACCAAgCIAiAIACCAAgCIAiAIACCAAgCIAiAIACCAAjC7tLnBUFYRkEY4EWlk59zHoXRZ4e+g1C7SggEdBwE6wFW+C/Dcxy8OWAhYDWAIIgDCMIX4iAQnI43hM8D4c0BCwHXCgQB1wpcGXCtwELAtQJBQBwQBPaPg0AgCFgPtMGjYvtx8CCJhYDVgCAgDggC4oAgIA4IAuKAILB/HASCqjtf4lAbEqmnKgAAAABJRU5ErkJggg==";
+
+const PRINT_PAGE = { wMM:210, hMM:297, marginMM:8, pxPerMM:96/25.4 };
+// Масштаб чертежей при печати относительно экранного. Меньше 1, потому что
+// вокруг чертежа резервируется место под вылетающие подписи (см.
+// reserveDiagramOverflow) — за счёт этого освобождается ширина под таблицы,
+// и их шрифт удаётся поднять до 20px.
+const PRINT_DIAGRAM_FACTOR = 0.885;
+
+function printBox(){
+  if(document.getElementById('results').style.display !== 'block'){
+    alert('Сначала выполните расчёт — нажмите «Рассчитать».');
+    return;
+  }
+
+  const printArea = document.getElementById('printArea');
+  const scaleBox  = document.getElementById('printScale');
+  scaleBox.innerHTML = buildPrintHtml();
+
+  // Чертежи имеют разный собственный масштаб (у бокового щита он меньше,
+  // чтобы подписи не залезали на таблицу). Запоминаем экранную ширину —
+  // от неё считается печатная при подборе размера.
+  scaleBox.querySelectorAll('.diagram-wrap').forEach(wrap=>{
+    wrap.dataset.baseWidth = parseFloat(wrap.style.width) || 260;
+  });
+
+  // Важно: сразу после innerHTML браузер мог ещё не декодировать вставленные
+  // <img> (чертежи, общий вид ящика, водяной знак) — их scrollHeight в этот
+  // момент может быть занижен. Раньше это скрывалось запасом по высоте;
+  // как только запас исчез (например, из-за добавленного комментария),
+  // страница начала не помещаться на печати, хотя при замере «влезала».
+  // Поэтому ждём decode() всех картинок и только потом меряем и подгоняем.
+  const images = Array.from(scaleBox.querySelectorAll('img'));
+  const ready = images.map(img => img.decode ? img.decode().catch(()=>{}) : Promise.resolve());
+
+  Promise.all(ready).then(()=>{
+    fitPrintAreaToOnePage(printArea);
+    window.print();
+  });
+}
+
+// Подписи размеров и стрелки нарисованы ЗА пределами прямоугольника картинки
+// (по замерам — до ~70px ниже и ~28px выше). Вёрстка про этот вылет не знает,
+// поэтому соседние секции наезжали друг на друга. Здесь измеряются настоящие
+// границы каждого чертежа и вылет резервируется отступами.
+function reserveDiagramOverflow(printArea){
+  printArea.querySelectorAll('.diagram-slot').forEach(slot=>{
+    const wrap = slot.querySelector('.diagram-wrap');
+    if(!wrap) return;
+
+    slot.style.paddingTop = '0px';
+    slot.style.paddingBottom = '0px';
+
+    const box = wrap.getBoundingClientRect();
+    let top = box.top, bottom = box.bottom;
+
+    // подписи в рамках
+    wrap.querySelectorAll('.diagram-label').forEach(lbl=>{
+      const r = lbl.getBoundingClientRect();
+      if(r.height){ top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom); }
+    });
+
+    // стрелки/линии SVG (координаты могут быть отрицательными)
+    const svg = wrap.querySelector('svg');
+    if(svg && svg.viewBox && svg.viewBox.baseVal){
+      try{
+        const bb = svg.getBBox();
+        const sr = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        if(vb.height && sr.height){
+          const sy = sr.height / vb.height;
+          top = Math.min(top, sr.top + bb.y * sy);
+          bottom = Math.max(bottom, sr.top + (bb.y + bb.height) * sy);
+        }
+      }catch(e){ /* getBBox недоступен — останутся отступы по подписям */ }
+    }
+
+    slot.style.paddingTop = Math.max(0, Math.ceil(box.top - top)) + 'px';
+    slot.style.paddingBottom = Math.max(0, Math.ceil(bottom - box.bottom)) + 'px';
+  });
+}
+
+// Разметка печатной страницы: шапка, «Внутренние размеры груза» и «Итог»
+// рядом на одном уровне, затем по каждому узлу — чертёж слева, таблица справа.
+function buildPrintHtml(){
+  const L = document.getElementById('L').value;
+  const W = document.getElementById('W').value;
+  const H = document.getElementById('H').value;
+  const M = document.getElementById('M').value;
+
+  const outDimsText = document.getElementById('outDims').textContent.trim();
+  const volumeText  = document.getElementById('outVolume').textContent.trim();
+  const timeText    = document.getElementById('outTime').textContent.trim();
+
+  // Клонируем блок со схемами и таблицами (там уже нужный порядок:
+  // чертёж слева, таблица справа) и снимаем редактируемость ячеек.
+  const clone = document.getElementById('boardTables').cloneNode(true);
+  clone.querySelectorAll('.editable-cell').forEach(cell=>{
+    cell.removeAttribute('contenteditable');
+    cell.classList.remove('editable-cell');
+  });
+
+  // Экранная разметка содержит точечные inline-отступы (например
+  // margin-top/bottom у «Крышки» и «Щита бокового»). Inline-стиль перебивает
+  // любые правила печати, поэтому эти отступы утекали в печать и добавляли
+  // ~100px высоты — из-за чего страница не помещалась и сжималась.
+  clone.querySelectorAll('.part-title, .spec-row-diagram').forEach(el=>{
+    el.style.marginTop = '';
+    el.style.marginBottom = '';
+  });
+
+  // Каждую пару «заголовок узла + чертёж/таблица» кладём в общий блочный
+  // контейнер: на обычном блоке (в отличие от flex) браузер надёжно
+  // соблюдает запрет разрыва между листами.
+  let sections = '';
+  const children = Array.from(clone.children);
+  for(let i=0; i<children.length; i+=2){
+    const title = children[i];
+    const row   = children[i+1];
+    sections += `<div class="print-section">${title.outerHTML}${row ? row.outerHTML : ''}</div>`;
+  }
+
+  // Комментарий пользователя — необязателен, попадает в печать только если
+  // заполнен. Экранируем текст и сохраняем переносы строк, которые ввёл
+  // пользователь. Обёрнут в свой print-section, чтобы участвовать в общей
+  // подгонке под лист (масштаб --pk, распределение остатка высоты).
+  const commentRaw = (document.getElementById('userComment').value || '').trim();
+  let commentHtml = '';
+  if(commentRaw){
+    const esc = commentRaw
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    commentHtml = `<div class="print-section">
+      <div class="part-title">Комментарий</div>
+      <div class="print-comment">${esc}</div>
+    </div>`;
+  }
+
+  return `
+    <img class="print-watermark" src="${LOGO_F_B64}" alt="">
+
+    <h1>ГОСТ 10198-91 · тип 1, комплектация 3</h1>
+    <div class="print-subtitle">Плотный дощатый ящик с полозьями</div>
+
+    <div class="print-summary-row">
+      <div class="print-summary-block">
+        <h2>Внутренние размеры груза, мм</h2>
+        <table class="print-plain-table">
+          <tr><td class="k">Длина</td><td>${L}</td></tr>
+          <tr><td class="k">Ширина</td><td>${W}</td></tr>
+          <tr><td class="k">Высота</td><td>${H}</td></tr>
+          <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
+        </table>
+      </div>
+      <div class="print-summary-block">
+        <h2>Итог</h2>
+        <table class="print-plain-table">
+          <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
+          <tr><td class="k">Расход пиломатериала</td><td>${volumeText}</td></tr>
+          <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
+        </table>
+      </div>
+      <img class="print-box-view" src="${BOX_IMG_B64}" alt="">
+    </div>
+
+    ${sections}
+    ${commentHtml}
+  `;
+}
+
+// Подгонка под ровно один лист А4: сначала заполняем свободную высоту
+// отступами, при переполнении — пропорционально уменьшаем.
+function fitPrintAreaToOnePage(printArea){
+  const contentW = (PRINT_PAGE.wMM - 2*PRINT_PAGE.marginMM) * PRINT_PAGE.pxPerMM; // ~733px
+  const contentH = (PRINT_PAGE.hMM - 2*PRINT_PAGE.marginMM) * PRINT_PAGE.pxPerMM; // ~1062px
+
+  const scaleBox = document.getElementById('printScale');
+
+  // Ширина фиксируется ДО замеров: раньше вылеты подписей измерялись, пока
+  // блок ещё не был ограничен по ширине, и отступы получались от балды.
+  printArea.style.width  = contentW + 'px';
+  printArea.style.height = '';
+  scaleBox.style.transform = 'none';
+  scaleBox.style.width = contentW + 'px';
+
+  // Подбираем единый множитель размеров --pk: он меняет шрифты, отступы,
+  // чертежи и подписи ОДНОВРЕМЕННО, поэтому вёрстка остаётся пропорциональной.
+  // Это надёжнее, чем transform: при уменьшении контент по-прежнему занимает
+  // всю ширину листа (таблица забирает освободившееся место), а не жмётся
+  // в левый верхний угол, оставляя пустыми правый и нижний край.
+  // Годится ли данный множитель: и по высоте листа, и по ширине —
+  // ни одна ячейка таблицы не должна обрезаться (перенос запрещён,
+  // поэтому переполнение видно по scrollWidth).
+  const fits = pk => {
+    scaleBox.style.setProperty('--pk', pk);
+    applyDiagramWidths(scaleBox, pk);
+    reserveDiagramOverflow(scaleBox);
+    if(scaleBox.scrollHeight > contentH * 0.97) return false; // запас на расхождения между замером и реальной печатью
+    if(scaleBox.scrollWidth  > contentW + 1) return false;
+    const cells = scaleBox.querySelectorAll('.spec-table th, .spec-table td');
+    for(const cell of cells){
+      if(cell.scrollWidth > cell.clientWidth + 1) return false;
+    }
+    return true;
+  };
+
+  let lo = 0.5, hi = 1.6, best = lo;
+  if(fits(hi)){
+    best = hi;                       // помещается даже по максимуму
+  } else {
+    for(let i = 0; i < 10; i++){     // двоичный поиск наибольшего влезающего
+      const mid = (lo + hi) / 2;
+      if(fits(mid)){ best = mid; lo = mid; } else { hi = mid; }
+    }
+  }
+  fits(best);
+
+  // Остаток высоты раздаём как отступы между секциями, чтобы лист был
+  // заполнен, а не обрывался на середине.
+  const sections = Array.from(scaleBox.querySelectorAll('.print-section'));
+  sections.forEach(s=>{ s.style.marginTop = '0px'; });
+  const slack = contentH - scaleBox.scrollHeight;
+  if(sections.length && slack > 0){
+    const per = Math.floor((slack / sections.length) * 0.97);
+    sections.forEach(s=>{ s.style.marginTop = per + 'px'; });
+    if(scaleBox.scrollHeight > contentH){
+      const fix = Math.max(0, per - Math.ceil((scaleBox.scrollHeight - contentH) / sections.length) - 1);
+      sections.forEach(s=>{ s.style.marginTop = fix + 'px'; });
+    }
+  }
+}
+
+// Ширина каждого чертежа = его экранная ширина × базовый коэффициент × --pk.
+function applyDiagramWidths(scaleBox, pk){
+  scaleBox.querySelectorAll('.diagram-wrap').forEach(wrap=>{
+    const base = parseFloat(wrap.dataset.baseWidth) || 260;
+    wrap.style.width = (base * PRINT_DIAGRAM_FACTOR * pk) + 'px';
+    wrap.style.flexBasis = 'auto';
+  });
+}
+
+// Общий вид ящика показываем и на самом сайте, не только в печати.
+document.getElementById('boxView').src = BOX_IMG_B64;
+</script>
+</body>
+</html>
