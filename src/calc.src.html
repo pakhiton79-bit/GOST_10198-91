@@ -1046,6 +1046,7 @@ const TOREC_2_IMG_B64 = "data:image/png;base64,__IMG:torec_2.png__"; // нату
 const TOREC_3_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_3.jpg__"; // натуральный размер 2476x802 (вариант с 3 раскосинами)
 const TOREC_2FLOORS_1_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_2floors_1raskosina.jpg__"; // натуральный размер 695x1051 (2 этажа, по 1 раскосине на этаж)
 const TOREC_2FLOORS_2_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_2floors_2raskosina.jpg__"; // натуральный размер 1222x1044 (2 этажа, по 2 раскосины на этаж)
+const TOREC_2FLOORS_3_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_2floors_3raskosina.jpg__"; // натуральный размер 1757x1030 (2 этажа, по 3 раскосины на этаж)
 const TOREC_0_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_0.jpg__"; // натуральный размер 1354x1134 (вариант без раскосины, H<=600мм либо W<=600мм)
 
 const KRYSHKA_IMG_B64 = "data:image/png;base64,__IMG:kryshka.png__"; // натуральный размер 1718x1274
@@ -1250,6 +1251,29 @@ function diagramEndPanel2Floors2Raskosina(heightPlusT12Val, floorSpanVal, planLe
   return renderDiagram(TOREC_2FLOORS_2_IMG_B64, 'Щит торцевой (2 этажа, 2 раскосины на этаж) - схема расположения деталей', 1222, 1044, records, null, photoStrokeScale(1222));
 }
 
+function diagramEndPanel2Floors3Raskosina(heightPlusT12Val, floorSpanVal, planLenVal){
+  // Фото-чертёж для варианта на 2 этажа, по 3 раскосины на этаж (натуральный размер
+  // 1757×1030). floorSpanVal — длина вертикальной планки одного этажа + ширина одной
+  // горизонтальной планки (та же величина, что и на остальных чертежах 2 этажей).
+  const val = Math.round(heightPlusT12Val);       // полная высота рамы щита = высота груза + толщина доски дна
+  const floorSpan = Math.round(floorSpanVal);
+  const planLen = Math.round(planLenVal);          // длина горизонтальной планки = ширина груза
+
+  const records = [
+    {type:'line', x1:120, y1:568, x2:-163, y2:566},
+    {type:'line', x1:127, y1:1010, x2:-167, y2:1011},
+    {type:'double', x1:-106, y1:567, x2:-106, y2:1010, lx:-110, ly:784, text: floorSpan+' мм', vertical:true},
+    {type:'line', x1:1645, y1:1010, x2:1938, y2:1010},
+    {type:'line', x1:1928, y1:19, x2:1635, y2:16},
+    {type:'double', x1:1877, y1:19, x2:1879, y2:1012, lx:1880, ly:518, text: val+' мм', vertical:true},
+    {type:'line', x1:1742, y1:127, x2:1743, y2:-128},
+    {type:'line', x1:15, y1:-128, x2:15, y2:126},
+    {type:'double', x1:13, y1:-100, x2:1741, y2:-101, lx:1154, ly:-102, text: planLen+' мм'}
+  ];
+
+  return renderDiagram(TOREC_2FLOORS_3_IMG_B64, 'Щит торцевой (2 этажа, 3 раскосины на этаж) - схема расположения деталей', 1757, 1030, records, null, photoStrokeScale(1757));
+}
+
 function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
   // Фото-чертёж для варианта без раскосины (H≤600мм либо W≤600мм — п.1.6.5/п.102 docx,
   // независимо друг от друга отключают раскосину на торце). Просто рамка из планок и
@@ -1278,14 +1302,18 @@ function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, he
   // Для секций больше 3 (пока максимум 4) фото ещё нет — показываем чертёж с
   // максимальным доступным числом раскосин (3) вместо заглушки: расположение планок
   // то же самое, просто не хватает одной секции на фото.
-  // Для щита на 2 этажа (наружная высота >2000мм) фото есть для 1 и 2 раскосин на
-  // этаж (1 или 2 секции по ширине); для 3-4 секций пока заглушка.
+  // Для щита на 2 этажа (наружная высота >2000мм) фото есть для 1, 2 и 3 раскосин на
+  // этаж (1, 2 или 3 секции по ширине). Для 4 секций - тот же приём, что и на 1 этаже:
+  // показываем фото с максимальным доступным числом раскосин (3) вместо заглушки.
   if(floorsVal === 2){
     if(hasRaskosinaVal && sectionsVal <= 1){
       return diagramEndPanel2Floors1Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
     }
     if(hasRaskosinaVal && sectionsVal === 2){
       return diagramEndPanel2Floors2Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
+    }
+    if(hasRaskosinaVal && sectionsVal >= 3){
+      return diagramEndPanel2Floors3Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
     }
     return diagramPlaceholder('Щит торцевой (2 этажа)');
   }
