@@ -1461,7 +1461,10 @@ function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, he
     if(hasRaskosinaVal && sectionsVal >= 3){
       return diagramEndPanel2Floors3Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
     }
-    return diagramPlaceholder('Щит торцевой (2 этажа)');
+    // Раскосина не нужна (угол >60° даже при 1 секции - узкий и высокий этаж) - для
+    // такого случая на 2 этажа фото нет, переиспользуем одноэтажный чертёж без
+    // раскосины на высоту одного этажа (предупреждение - на вызывающей стороне).
+    return diagramEndPanelNoRaskosina(floorSpanVal, innerWidthVal);
   }
   if(useNoRaskosinaDiagram){
     return diagramEndPanelNoRaskosina(heightPlusT12Val, k32val);
@@ -2136,6 +2139,9 @@ function calculate(){
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9Base, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
+  if(torecFloors === 2 && !torecHasRaskosina){
+    warnings.push('Чертёж щита торцевого на 2 этажа (наружная высота ящика >2000мм) без раскосины (угол раскосины к горизонтальной планке превысил 60° даже при 1 секции по ширине) ещё не готов — показан чертёж одного этажа без раскосины на высоту одного этажа вместо заглушки. Реальный щит состоит из двух таких этажей со средней планкой между ними — чертёж приблизительный, числовые значения в таблице ниже верны.');
+  }
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram, torecFloors, k30 + w31) + `</div>` + renderSection('', endPanel) + `</div>`;
   if(bokFloors === 2){
     warnings.push('Чертёж щита бокового на 2 этажа (наружная высота ящика >2000мм) ещё не готов — показан чертёж одного этажа (с его собственной высотой и числом раскосин) вместо заглушки. Реальный щит состоит из двух таких этажей со средней планкой между ними — чертёж приблизительный, числовые значения в таблице ниже верны.');
