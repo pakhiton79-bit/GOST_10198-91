@@ -1361,17 +1361,19 @@ function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, he
   // Новый фото-чертёж (рамка) показываем только при H≤600 либо когда раскосина не
   // требуется по углу (1 секция, угол >60°) — не при W≤600 (по указанию пользователя,
   // при W≤600 и H>600 возвращена прежняя заглушка). Для 1, 2 и 3 раскосин — свои фото.
-  // Для 4 раскосин фото ещё нет — заглушка.
+  // Для секций больше 3 (пока максимум 4) фото ещё нет — показываем чертёж с
+  // максимальным доступным числом раскосин (3) вместо заглушки: расположение планок
+  // то же самое, просто не хватает одной секции на фото.
   if(useNoRaskosinaDiagram){
     return diagramEndPanelNoRaskosina(heightPlusT12Val, k32val);
   }
-  if(sectionsVal === 1 && hasRaskosinaVal){
+  if(hasRaskosinaVal && sectionsVal <= 1){
     return diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal);
   }
-  if(sectionsVal === 2 && hasRaskosinaVal){
+  if(hasRaskosinaVal && sectionsVal === 2){
     return diagramEndPanel2Raskosina(heightPlusT12Val, innerWidthVal);
   }
-  if(sectionsVal === 3 && hasRaskosinaVal){
+  if(hasRaskosinaVal && sectionsVal >= 3){
     return diagramEndPanel3Raskosina(heightPlusT12Val, innerWidthVal);
   }
 
@@ -1563,8 +1565,10 @@ function diagramBokovoyNoRaskosina(boardLenVal, overhangVal, edgeDistVal, height
 }
 
 function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal){
-  // Для варианта без раскосины (H≤600) и для 1, 2, 3 раскосин уже есть
-  // фото-чертежи. Для 4+ раскосин фото ещё нет — показываем заглушку.
+  // Для варианта без раскосины (H≤600) и для 1, 2, 3 раскосин уже есть фото-чертежи.
+  // Для 4+ раскосин фото ещё нет — показываем чертёж с максимальным доступным числом
+  // раскосин (3) вместо заглушки: расположение планок то же самое, просто на фото
+  // меньше секций, чем в реальном ящике.
   if(raskosinCountVal === 0){
     return diagramBokovoyNoRaskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
   }
@@ -1574,7 +1578,7 @@ function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, r
   if(raskosinCountVal === 2){
     return diagramBokovoy2Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
   }
-  if(raskosinCountVal === 3){
+  if(raskosinCountVal >= 3){
     return diagramBokovoy3Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
   }
 
