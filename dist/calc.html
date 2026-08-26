@@ -504,30 +504,6 @@
     color:var(--ink-soft);
     margin-top:3px;
   }
-  .strap-distance-wrap{
-    margin-left:26px;
-    padding:12px 14px;
-    background:var(--bg);
-    border:1px solid var(--rule);
-    border-radius:12px;
-  }
-  .strap-distance-label{
-    display:block;
-    font-family:inherit;
-    font-size:12px;
-    color:var(--ink-soft);
-    margin-bottom:6px;
-  }
-  .strap-distance-wrap select{
-    width:100%;
-    padding:9px 12px;
-    font-family:inherit;
-    font-size:14px;
-    border:1px solid var(--border-input);
-    border-radius:10px;
-    background:var(--panel);
-    color:var(--ink);
-  }
 </style>
 
 <style>
@@ -715,30 +691,23 @@
         <div class="fastening-option-list">
           <label>
             <input type="radio" name="fasteningType" value="skid" checked onchange="onFasteningTypeChange(this)">
-            <span>Стропление за полозья / за изделие (п.1.6.5)<span class="option-hint">Сечение полоза по массе груза (таблица п.1.6.5) - текущий расчёт по умолчанию</span></span>
+            <span>Крепление за полозья</span>
+          </label>
+          <label class="fastening-option-disabled">
+            <input type="radio" name="fasteningType" value="floor_boards" disabled onchange="onFasteningTypeChange(this)">
+            <span>Крепление к доскам дна</span>
+          </label>
+          <label class="fastening-option-disabled">
+            <input type="radio" name="fasteningType" value="mounting_beams" disabled onchange="onFasteningTypeChange(this)">
+            <span>Крепление к крепёжным брусьям</span>
           </label>
           <label class="fastening-option-disabled">
             <input type="radio" name="fasteningType" value="frame" disabled onchange="onFasteningTypeChange(this)">
-            <span>На раме без опорных площадок, груз до 1000 кг (п.1.6.7)<span class="option-hint">Пока не рассчитываем - будет отдельный файл</span></span>
+            <span>Крепление на металлической или деревянной раме</span>
           </label>
-          <label class="fastening-option-disabled">
-            <input type="radio" name="fasteningType" value="beyond_base" disabled onchange="onFasteningTypeChange(this)">
-            <span>Штабелируемые / стропление за полозья за пределами груза (п.1.6.6, Прил.9)<span class="option-hint">Пока не рассчитываем - будет отдельный файл</span></span>
-          </label>
-          <div class="strap-distance-wrap" id="strapDistanceWrap" style="display:none;">
-            <label for="strapDistance" class="strap-distance-label">Расстояние от края жёсткого основания груза до точки захвата полоза стропами</label>
-            <select id="strapDistance" onchange="onStrapDistanceChange()">
-              <option value="">— выберите значение —</option>
-              <option value="200">200 мм</option>
-              <option value="300">300 мм</option>
-              <option value="400">400 мм</option>
-              <option value="500">500 мм</option>
-            </select>
-          </div>
         </div>
       </div>
     </div>
-    <div class="note" style="margin-top:14px;">Не добавлены: крепление к доскам дна по Приложению 7 (п.1.6.9) и крепление на крепёжных брусьях по Приложению 8 (п.1.6.10) - обе таблицы используют параметр «рабочая длина полоза», который нигде в тексте ГОСТ 10198-91 явно не определён; добавим после уточнения у инженера. Крепление на крепёжных брусьях также требует отдельной детали (крепёжный брус), которой сейчас нет в спецификации.</div>
   </div>
 
   <div class="card">
@@ -749,20 +718,16 @@
         <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм</span></span>
       </label>
       <label>
-        <input type="checkbox" id="seaTransport">
-        <span>Морские перевозки<span class="option-hint">Длина полоза и подполозной доски увеличивается на 50 мм (на остальные детали — доску крышки, доску бока, количество планок — не влияет)</span></span>
-      </label>
-      <label>
         <input type="checkbox" id="removeFloorBoards">
-        <span>Убрать доски дна<span class="option-hint">Доска дна не включается в спецификацию, её объём не учитывается в норме времени. Толщина доски дна обнуляется полностью — это уменьшает наружную высоту ящика и высоту щита торцевого и щита бокового на эту толщину (они физически опираются на доску дна)</span></span>
+        <span>Убрать доски дна</span>
       </label>
       <label>
         <input type="checkbox" id="removeSkidBoards">
-        <span>Убрать подполозные доски<span class="option-hint">Подполозная доска не включается в спецификацию, её объём не учитывается в норме времени, из чертежа дна убирается</span></span>
+        <span>Убрать подполозные доски</span>
       </label>
       <label>
         <input type="checkbox" id="forkliftLoading">
-        <span>Погрузка авто/электропогрузчиком<span class="option-hint">Толщина подполозной доски не менее 50 мм (если по массе груза не требуется больше), длина не менее 300 мм. Если требование по длине не выполняется - в таблице подполозной доски вместо размеров выводится ⚠, дополнительно выводится текстовое предупреждение</span></span>
+        <span>Погрузка авто/электропогрузчиком</span>
       </label>
     </div>
   </div>
@@ -932,42 +897,27 @@ updateThicknessSummary();
 
 // ============ Тип крепления груза (сечение полоза) ============
 // Выбор хранится в localStorage отдельно для этой комплектации ящика, как и
-// фильтр толщин. Добавлены варианты из ГОСТ 10198-91, не требующие новой детали
-// в спецификации; вариант «за пределами груза» (п.1.6.6, Прил.9) дополнительно
-// требует расстояния до точки захвата стропами - это отдельный выбор пользователя,
-// у которого по умолчанию ничего не выбрано (см. пояснение под списком).
+// фильтр толщин. Реализовано пока только «за полозья» - остальные варианты
+// показаны в списке, но отключены.
 const FASTENING_STORAGE_KEY = 'silvan-gost10198-t1-k3-fastening-type';
-const STRAP_DISTANCE_STORAGE_KEY = 'silvan-gost10198-t1-k3-strap-distance';
 const FASTENING_LABELS = {
-  skid:        'За полозья / за изделие (п.1.6.5)',
-  frame:       'На раме без опорных площадок, до 1000 кг (п.1.6.7)',
-  beyond_base: 'Штабелируемые / за пределами груза (п.1.6.6)'
+  skid:           'Крепление за полозья',
+  floor_boards:   'Крепление к доскам дна',
+  mounting_beams: 'Крепление к крепёжным брусьям',
+  frame:          'Крепление на металлической или деревянной раме'
 };
 
 function loadFasteningType(){
-  // Временно считаем только «за полозья / за изделие» (п.1.6.5) - остальные типы
-  // отключены в интерфейсе, поэтому даже если в localStorage с прошлых сессий
-  // сохранён другой тип, он игнорируется.
+  // Временно считаем только «за полозья» - остальные типы отключены в интерфейсе,
+  // поэтому даже если в localStorage с прошлых сессий сохранён другой тип, он
+  // игнорируется.
   return 'skid';
 }
 function saveFasteningType(){
   try{ localStorage.setItem(FASTENING_STORAGE_KEY, fasteningType); }catch(e){}
 }
 
-// Расстояние до точки захвата стропами (Прил.9). Пустая строка = «не выбрано»,
-// сознательно без значения по умолчанию - пользователь обязан выбрать сам.
-function loadStrapDistance(){
-  try{
-    const v = localStorage.getItem(STRAP_DISTANCE_STORAGE_KEY);
-    return (v === '200' || v === '300' || v === '400' || v === '500') ? v : '';
-  }catch(e){ return ''; }
-}
-function saveStrapDistance(){
-  try{ localStorage.setItem(STRAP_DISTANCE_STORAGE_KEY, strapDistance); }catch(e){}
-}
-
 let fasteningType = loadFasteningType();
-let strapDistance = loadStrapDistance();
 
 function onFasteningTypeChange(el){
   fasteningType = el.value;
@@ -976,26 +926,9 @@ function onFasteningTypeChange(el){
   document.getElementById('calcCheck').style.visibility = 'hidden'; // результаты устарели после смены типа крепления
 }
 
-function onStrapDistanceChange(){
-  strapDistance = document.getElementById('strapDistance').value;
-  saveStrapDistance();
-  updateFasteningSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden';
-}
-
 function updateFasteningSummary(){
-  const wrap = document.getElementById('strapDistanceWrap');
-  const isBeyondBase = (fasteningType === 'beyond_base');
-  wrap.style.display = isBeyondBase ? 'block' : 'none';
-
-  let label = FASTENING_LABELS[fasteningType];
-  if(isBeyondBase){
-    label += strapDistance ? `, ${strapDistance} мм` : ' - расстояние не выбрано';
-  }
-  document.getElementById('fasteningDropdownLabel').textContent = label;
+  document.getElementById('fasteningDropdownLabel').textContent = FASTENING_LABELS[fasteningType];
   document.querySelectorAll('input[name="fasteningType"]').forEach(r=>{ r.checked = (r.value === fasteningType); });
-  const distSelect = document.getElementById('strapDistance');
-  if(distSelect.value !== strapDistance) distSelect.value = strapDistance;
 }
 
 function toggleFasteningDropdown(){
@@ -1039,48 +972,6 @@ function polozSection165(mass){
   return {h:row.h, w:row.w, exceeded};
 }
 
-// ГОСТ 10198-91, п.1.6.7: для грузов массой до 1000 кг, не имеющих опорных площадок
-// и закреплённых на металлических или деревянных рамах, продольные элементы которых
-// опираются на полозья по всей их длине — сечение полоза фиксировано и от массы не зависит.
-function polozSection167(mass){
-  return {h:40, w:100, exceeded: mass>1000};
-}
-
-// ГОСТ 10198-91, Приложение 9 (табл. 21), п.1.6.6: высота и ширина полозьев для
-// грузов, конструкция которых рассчитана на восприятие нагрузки штабеля, а также
-// для грузов со сплошным жёстким основанием при строплении за полозья ЗА ПРЕДЕЛАМИ
-// основания груза. Столбцы таблицы - расстояние от края жёсткого основания груза
-// до точки захвата полоза стропами (см. примечание 1 к табл. 21), мм: 200/300/400/500.
-// Данные сверены по двум независимым источникам (присланный PDF ГОСТа и
-// независимая копия текста стандарта), построчно, без расхождений.
-const TABLE21_DISTANCES = [200,300,400,500];
-const TABLE21 = [
-  {mass:500, rows:[{skids:2, s:[[40,100], [50,100], [60,100], [75,100]]}, {skids:3, s:[[32,100], [40,100], [50,100], [60,100]]}]},
-  {mass:800, rows:[{skids:2, s:[[50,100], [60,100], [75,100], [75,100]]}, {skids:3, s:[[40,100], [50,100], [60,100], [60,100]]}]},
-  {mass:1000, rows:[{skids:2, s:[[60,100], [75,100], [75,100], [75,100]]}, {skids:3, s:[[60,100], [60,100], [60,100], [60,100]]}]},
-  {mass:1500, rows:[{skids:2, s:[[75,100], [75,100], [100,100], [100,100]]}, {skids:3, s:[[60,100], [75,100], [100,75], [100,75]]}]},
-  {mass:2000, rows:[{skids:2, s:[[75,100], [75,125], [100,100], [100,125]]}, {skids:3, s:[[60,100], [75,100], [75,125], [100,100]]}]},
-  {mass:2500, rows:[{skids:2, s:[[75,100], [100,100], [125,100], [100,125]]}, {skids:3, s:[[75,100], [75,100], [100,100], [100,100]]}]},
-  {mass:3000, rows:[{skids:2, s:[[75,125], [100,100], [125,100], [125,125]]}, {skids:3, s:[[75,100], [75,125], [100,125], [125,100]]}]},
-  {mass:4000, rows:[{skids:2, s:[[100,100], [100,125], [125,125], [125,150]]}, {skids:3, s:[[75,125], [100,100], [125,100], [125,125]]}, {skids:4, s:[[75,100], [75,125], [100,100], [100,125]]}]},
-  {mass:5000, rows:[{skids:2, s:[[100,125], [125,100], [125,150], [150,125]]}, {skids:3, s:[[100,100], [100,125], [125,125], [125,150]]}, {skids:4, s:[[75,100], [100,100], [125,100], [125,100]]}]},
-  {mass:6000, rows:[{skids:2, s:[[125,100], [125,125], [150,150], [150,150]]}, {skids:3, s:[[100,100], [125,100], [125,150], [150,125]]}, {skids:4, s:[[75,100], [100,100], [125,100], [125,125]]}]},
-  {mass:7000, rows:[{skids:2, s:[[125,100], [125,150], [150,150], [150,175]]}, {skids:3, s:[[100,125], [125,125], [150,125], [150,150]]}, {skids:4, s:[[100,100], [100,125], [125,125], [125,125]]}]},
-  {mass:8000, rows:[{skids:2, s:[[125,125], [125,150], [150,175], [175,150]]}, {skids:3, s:[[125,100], [125,125], [150,150], [150,175]]}, {skids:4, s:[[100,100], [125,100], [125,125], [150,125]]}]},
-  {mass:9000, rows:[{skids:2, s:[[125,150], [150,150], [150,175], [175,175]]}, {skids:3, s:[[125,125], [150,125], [150,150], [175,150]]}, {skids:4, s:[[100,125], [125,100], [125,150], [150,150]]}]},
-  {mass:10000, rows:[{skids:3, s:[[125,150], [150,150], [150,150], [175,175]]}, {skids:4, s:[[100,125], [125,125], [150,125], [150,175]]}, {skids:5, s:[[100,100], [125,100], [125,125], [125,150]]}]},
-  {mass:11000, rows:[{skids:3, s:[[125,150], [150,175], [175,150], [175,175]]}, {skids:4, s:[[100,125], [125,150], [150,150], [175,175]]}, {skids:5, s:[[100,100], [125,125], [125,150], [150,150]]}]},
-  {mass:12000, rows:[{skids:3, s:[[125,150], [150,175], [175,150], [175,200]]}, {skids:4, s:[[125,100], [125,150], [150,150], [150,175]]}, {skids:5, s:[[100,125], [125,125], [125,150], [150,150]]}]},
-  {mass:13000, rows:[{skids:3, s:[[150,125], [175,150], [175,175], [200,175]]}, {skids:4, s:[[125,125], [150,125], [150,175], [175,150]]}, {skids:5, s:[[125,100], [125,125], [150,125], [150,175]]}]},
-  {mass:14000, rows:[{skids:3, s:[[150,125], [175,150], [175,175], [200,175]]}, {skids:4, s:[[125,125], [150,125], [150,175], [175,150]]}, {skids:5, s:[[125,100], [125,125], [150,125], [150,175]]}]},
-  {mass:15000, rows:[{skids:3, s:[[150,150], [175,150], [175,200], [200,200]]}, {skids:4, s:[[125,125], [150,150], [175,150], [175,175]]}, {skids:5, s:[[125,100], [125,150], [150,150], [150,175]]}]},
-  {mass:16000, rows:[{skids:3, s:[[150,150], [175,150], [175,200], [200,200]]}, {skids:4, s:[[125,125], [150,150], [175,150], [175,175]]}, {skids:5, s:[[125,100], [125,150], [150,150], [150,175]]}]},
-  {mass:17000, rows:[{skids:3, s:[[150,150], [175,175], [200,175], [200,225]]}, {skids:4, s:[[125,150], [150,175], [175,150], [175,200]]}, {skids:5, s:[[125,125], [150,125], [150,175], [175,175]]}]},
-  {mass:18000, rows:[{skids:3, s:[[150,150], [175,175], [200,175], [200,225]]}, {skids:4, s:[[125,150], [150,175], [175,150], [175,200]]}, {skids:5, s:[[125,125], [150,125], [150,175], [175,175]]}]},
-  {mass:19000, rows:[{skids:3, s:[[150,175], [175,175], [200,200], [225,200]]}, {skids:4, s:[[150,125], [150,175], [175,175], [200,175]]}, {skids:5, s:[[125,125], [150,125], [150,175], [175,175]]}]},
-  {mass:20000, rows:[{skids:3, s:[[150,175], [175,175], [200,200], [225,200]]}, {skids:4, s:[[150,125], [150,175], [175,175], [200,175]]}, {skids:5, s:[[125,125], [150,150], [150,175], [175,175]]}]},
-];
-
 // ГОСТ 10198-91, п.1.6.2: "Расстояние между осями смежных полозьев не должно
 // превышать 1200 мм". Это общее требование для любого типа крепления, не привязанное
 // к конкретной таблице сечений - отсюда минимально необходимое количество полозьев
@@ -1089,37 +980,6 @@ const TABLE21 = [
 // полозьев нужно, чтобы уложиться в шаг 1200 мм.
 function minSkidsByWidth162(widthMm){
   return Math.max(2, Math.ceil(widthMm / 1200) + 1);
-}
-
-// preferredSkids — количество полозьев, которое даёт стандартная логика файла
-// (по ширине груза). Если в таблице для этой массы нет строки с таким количеством
-// (минимум для данной массы больше preferredSkids), количество увеличивается до
-// минимально необходимого по таблице — это фиксируется в skidsChanged.
-function polozSection166(mass, distance, preferredSkids){
-  let m = mass;
-  if(m < 500) m = 500; // п.1.6.6: для грузов св.200 до 500 кг сечение берут как для 500 кг
-  let massExceeded = false;
-  let row = TABLE21.find(r => m <= r.mass);
-  if(!row){ row = TABLE21[TABLE21.length-1]; massExceeded = true; }
-
-  const distIdx = TABLE21_DISTANCES.indexOf(distance);
-  const availableSkids = row.rows.map(r=>r.skids);
-  const minAvailable = Math.min(...availableSkids);
-  let effectiveSkids = Math.max(preferredSkids, minAvailable);
-  let skidRow = row.rows.find(r=>r.skids===effectiveSkids);
-  if(!skidRow){
-    const bigger = availableSkids.filter(s=>s>=effectiveSkids).sort((a,b)=>a-b);
-    effectiveSkids = bigger.length ? bigger[0] : Math.max(...availableSkids);
-    skidRow = row.rows.find(r=>r.skids===effectiveSkids);
-  }
-  const [h,w] = skidRow.s[distIdx];
-  return {
-    h, w,
-    skids: effectiveSkids,
-    skidsChanged: effectiveSkids !== preferredSkids,
-    massExceeded,
-    massRowUsed: row.mass
-  };
 }
 
 // ГОСТ 10198-91, п.1.6.8: толщина и ширина торцовых брусьев дна по массе груза.
@@ -1703,7 +1563,6 @@ function calculate(){
   const H = parseFloat(document.getElementById('H').value);
   const MASS = parseFloat(document.getElementById('M').value);
   const optimizeSizes = document.getElementById('optimizeSizes').checked;
-  const seaTransport = document.getElementById('seaTransport').checked;
   const removeFloorBoards = document.getElementById('removeFloorBoards').checked;
   const removeSkidBoards = document.getElementById('removeSkidBoards').checked;
   const forkliftLoading = document.getElementById('forkliftLoading').checked;
@@ -1720,11 +1579,6 @@ function calculate(){
     errEl.textContent = 'Масса груза превышает 3000 кг. Согласно ГОСТ 10198-91, Таблица 1, тип I-3 ("плотные, на полозьях, нештабелируемые" — тип, рассчитываемый данным калькулятором), рассчитан на массу груза до 3000 кг включительно. Толщина стенок (п.1.6.15) для данного типа выше 3000 кг ГОСТом не регламентирована, в связи с чем расчёт для указанной массы не выполняется. Для грузов большей массы применяется иной тип тары (II–IV) с иной конструкцией стенок — требуется отдельный расчёт.';
     return;
   }
-  if(fasteningType === 'beyond_base' && !strapDistance){
-    errEl.textContent = 'Для типа крепления «Штабелируемые / за пределами груза» (п.1.6.6) необходимо выбрать расстояние до точки захвата стропами в раскрывающемся списке.';
-    return;
-  }
-
   const wallRaw = wallThickness(MASS); // п.1.6.15 — толщина досок/планок/раскосов стенок и крышки
   const wall = {value: roundUpToAvailable(wallRaw.value), exceeded: wallRaw.exceeded};
   let warnings = [];
@@ -1739,49 +1593,22 @@ function calculate(){
   const dno = [];
   const l9_default = (W>1100) ? 3 : 2; // логика исходной таблицы подтверждена как верная, менять не нужно
   const widthMinSkids162 = minSkidsByWidth162(W); // п.1.6.2 — общий предел 1200 мм между осями полозьев, для любого типа крепления
-  let poloz, l9 = l9_default;
-  if(fasteningType === 'frame'){
-    poloz = polozSection167(MASS); // п.1.6.7 — крепление на раме без опорных площадок
-    if(poloz.exceeded){
-      warnings.push('Выбран тип крепления «На раме без опорных площадок» (п.1.6.7 ГОСТ 10198-91). Указанный пункт применим только для грузов массой до 1000 кг. Сечение полоза принято равным 40×100 мм согласно п.1.6.7. Требуется дополнительная проверка либо выбор иного типа крепления.');
-    }
-    if(l9_default < widthMinSkids162){
-      l9 = widthMinSkids162;
-    }
-  } else if(fasteningType === 'beyond_base'){
-    const distance = parseInt(strapDistance, 10);
-    const desiredSkids162 = Math.max(l9_default, widthMinSkids162); // берём в расчёт и массу (внутри polozSection166), и ширину (п.1.6.2)
-    const res = polozSection166(MASS, distance, desiredSkids162); // п.1.6.6, Приложение 9 (табл. 21)
-    poloz = {h:res.h, w:res.w};
-    l9 = res.skids;
-    if(res.skidsChanged){
-      warnings.push(`Для типа крепления «Штабелируемые / за пределами груза» (п.1.6.6, Приложение 9) при массе груза ${MASS} кг и ширине груза ${W} мм требуется не менее ${res.skids} полоз(ьев) вместо стандартных ${l9_default}. Количество полозьев увеличено до ${res.skids}.`);
-    }
-    if(l9 < widthMinSkids162){
-      warnings.push(`Согласно п.1.6.2 ГОСТ 10198-91, при ширине груза ${W} мм расстояние между осями смежных полозьев не должно превышать 1200 мм, что требует не менее ${widthMinSkids162} полоз(ьев). Приложение 9 (Таблица 21) для массы груза ${MASS} кг предусматривает не более ${l9} полозьев. Данный случай выходит за пределы применимости таблицы — требуется ручная проверка компоновки полозьев.`);
-    }
-    if(res.massExceeded){
-      warnings.push('Масса груза выходит за пределы диапазона, установленного Приложением 9 (500–20000 кг). Сечение полоза принято по крайнему значению Таблицы 21. Требуется дополнительная проверка.');
-    }
-  } else {
-    poloz = polozSection165(MASS); // п.1.6.5 — крепление за полозья в пределах основания груза / за изделие
-    if(poloz.exceeded){
-      warnings.push('Масса груза выходит за пределы диапазона, установленного п.1.6.5 (500–20000 кг). Сечение полоза принято по крайнему значению таблицы. Требуется дополнительная проверка.');
-    }
-    if(l9_default < widthMinSkids162){
-      l9 = widthMinSkids162;
-    }
+  let l9 = l9_default;
+  const poloz = polozSection165(MASS); // п.1.6.5 — крепление за полозья в пределах основания груза / за изделие
+  if(poloz.exceeded){
+    warnings.push('Масса груза выходит за пределы диапазона, установленного п.1.6.5 (500–20000 кг). Сечение полоза принято по крайнему значению таблицы. Требуется дополнительная проверка.');
+  }
+  if(l9_default < widthMinSkids162){
+    l9 = widthMinSkids162;
   }
   const t9=roundUpToAvailable(poloz.h), w9=poloz.w;
 
   // Длина полоза (п.1.6.2 — равна наружной длине ящика): планка_торца + доска_торца +
   // планка_торца + доска_торца + длина_груза (формула из docx конструктора). Толщина
   // досок/планок торца общая для всех стенок и крышки (п.1.6.15) = wall.value.
-  // Морские перевозки (+25мм с каждой стороны) — отдельный следующий шаг, пока не делаем.
   const t_doska_torca = wall.value, t_planka_torca = wall.value;
   const k9Base = L + (t_planka_torca + t_doska_torca) * 2;
-  const k9 = k9Base + (seaTransport ? 50 : 0);
-  dno.push({name:'Полоз', t:t9, w:w9, l:k9, qty:l9});
+  dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9});
 
   // Подполозная доска: толщина по массе груза (п.1.6.11, Апдейт по подполозным доскам),
   // при включённой «Погрузка авто/электропогрузчиком» - не менее 50мм (если по массе не
@@ -1793,9 +1620,9 @@ function calculate(){
   // размеров в таблице выводится ⚠ (по указанию пользователя - оба предупреждения
   // сосуществуют, не заменяют друг друга).
   const t10Raw = forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
-  const t10=roundUpToAvailable(t10Raw), w10=Math.min(w9, 150), k10=k9-400, l10=l9;
+  const t10=roundUpToAvailable(t10Raw), w10=Math.min(w9, 150), k10=k9Base-400, l10=l9;
   if(k10 < 300){
-    warnings.push(`Длина подполозной доски составляет менее 300 мм (${Math.round(k10)} мм) при длине полоза ${Math.round(k9)} мм. Указанное значение является минимальным по внутренней практике организации. Требуется ручная проверка компоновки полоза.`);
+    warnings.push(`Длина подполозной доски составляет менее 300 мм (${Math.round(k10)} мм) при длине полоза ${Math.round(k9Base)} мм. Указанное значение является минимальным по внутренней практике организации. Требуется ручная проверка компоновки полоза.`);
   }
   const subfloorForkliftFail = forkliftLoading && k10 < 300;
   if(subfloorForkliftFail){
@@ -1845,7 +1672,7 @@ function calculate(){
     }
   }
 
-  const volDno = vol(t9,w9,k9,l9)+(removeSkidBoards ? 0 : vol(t10,w10,k10,l10))+vol(t11,w11,k11,l11)
+  const volDno = vol(t9,w9,k9Base,l9)+(removeSkidBoards ? 0 : vol(t10,w10,k10,l10))+vol(t11,w11,k11,l11)
     + (removeFloorBoards ? 0 : (vol(t12,w12,k12,l12)
       + fbDno.extra.reduce((s,e)=>s+vol(t12,e.width,k12,e.qty),0)));
 
@@ -1877,8 +1704,7 @@ function calculate(){
 
   // Доска крышки: заполняем (ширина груза + 2×толщина доски бок. щита) досками 100мм +
   // при необходимости 1-2 доски 75-99мм на остаток (fillBoards). Длина каждой доски —
-  // та же наружная длина, что и у полоза (k9Base — без учёта морской надбавки, см.
-  // «Что не должно меняться от морских перевозок» ниже по коду).
+  // та же наружная длина, что и у полоза (k9Base).
   const t20 = wall.value, k20 = k9Base;
   const fbKryshka = fillBoards(W + wall.value*2);
   const w20 = 100, l20 = fbKryshka.mainQty;
@@ -2012,7 +1838,7 @@ function calculate(){
   // Основная доска бока: заполняем (высота груза + толщина доски дна) досками 100мм +
   // при необходимости доп. доски 75-99мм (fillBoards). Длина каждой доски = длина груза +
   // 2×(толщина доски торца + толщина вертикальной планки торца) — та же величина, что и
-  // наружная длина полоза (k9Base — без учёта морской надбавки).
+  // наружная длина полоза (k9Base).
   const t41 = wall.value, k41 = k9Base;
   const fbBok = fillBoards(H + t12);
   const w41 = 100, l41 = fbBok.mainQty;
@@ -2082,7 +1908,7 @@ function calculate(){
 
   const torecNoRaskosinaDiagram = !torecHasRaskosina && (H <= 600 || W > 600);
   let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9Base, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram, torecFloors, k30 + w31) + `</div>` + renderSection('', endPanel) + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, k40 - H, edgeDistKryshka, l42, bokFloors) + `</div>` + renderSection('', bokovoy) + `</div>`;
