@@ -1185,6 +1185,7 @@ const KRYSHKA_IMG_B64 = "data:image/png;base64,__IMG:kryshka.png__"; // нату
 const BOKOVOY_1_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_1.png__"; // натуральный размер 1752x1093 (вариант с 1 раскосиной)
 const BOKOVOY_2_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_2.png__"; // натуральный размер 1811x1077 (вариант с 2 раскосинами)
 const BOKOVOY_3_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_3.jpg__"; // натуральный размер 2290x1069 (вариант с 3 раскосинами)
+const BOKOVOY_0_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_0.jpg__"; // натуральный размер 1146x693 (вариант без раскосины)
 
 function headTriangle(fromX,fromY,toX,toY,scale){
   const angle = Math.atan2(toY-fromY, toX-fromX);
@@ -1473,9 +1474,38 @@ function diagramBokovoy3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightP
   return renderDiagram(BOKOVOY_3_IMG_B64, 'Щит боковой (3 раскосины) - схема расположения деталей', 2290, 1069, records, null, photoStrokeScale(2290));
 }
 
+function diagramBokovoyNoRaskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+  // Фото-чертёж для варианта без раскосины (натуральный размер 1146×693).
+  const valBoardLen = Math.round(boardLenVal);         // длина доски бока (основной или дополнительной — совпадает)
+  const valOverhang = Math.round(overhangVal);         // на сколько планка перекрывает полоз
+  const valEdgeDist = Math.round(edgeDistVal);         // расстояние от края бокового щита до первой планки
+  const valHeight = Math.round(heightPlusFloorVal);    // высота груза + толщина досок дна
+
+  const records = [
+    {type:'line', x1:275, y1:547, x2:275, y2:780},
+    {type:'line', x1:79, y1:474, x2:77, y2:783},
+    {type:'line', x1:79, y1:682, x2:275, y2:681},
+    {type:'single', x1:443, y1:834, x2:182, y2:681, lx:497, ly:874, text: valEdgeDist+' мм'},
+    {type:'line', x1:886, y1:48, x2:1329, y2:46},
+    {type:'line', x1:889, y1:550, x2:1322, y2:549},
+    {type:'double', x1:1293, y1:46, x2:1295, y2:549, lx:1304, ly:276, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:792, y1:647, x2:1326, y2:648},
+    {type:'line', x1:1233, y1:551, x2:1234, y2:649},
+    {type:'single', x1:935, y1:727, x2:1233, y2:600, lx:904, ly:743, text: valOverhang+' мм'},
+    {type:'line', x1:1085, y1:123, x2:1082, y2:-95},
+    {type:'line', x1:80, y1:129, x2:80, y2:-93},
+    {type:'double', x1:80, y1:-71, x2:1082, y2:-73, lx:567, ly:-81, text: valBoardLen+' мм'}
+  ];
+
+  return renderDiagram(BOKOVOY_0_IMG_B64, 'Щит боковой (без раскосины) - схема расположения деталей', 1146, 693, records, null, photoStrokeScale(1146));
+}
+
 function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal){
-  // Для 1, 2 и 3 раскосин уже есть фото-чертежи. Для варианта без раскосины (H≤600)
-  // и для 4+ раскосин фото ещё нет — показываем заглушку.
+  // Для варианта без раскосины (H≤600) и для 1, 2, 3 раскосин уже есть
+  // фото-чертежи. Для 4+ раскосин фото ещё нет — показываем заглушку.
+  if(raskosinCountVal === 0){
+    return diagramBokovoyNoRaskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
+  }
   if(raskosinCountVal === 1){
     return diagramBokovoy1Raskosina(Hmm + t12val, overhangVal, k41val);
   }
