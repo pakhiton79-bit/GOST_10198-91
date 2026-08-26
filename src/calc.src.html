@@ -1045,6 +1045,7 @@ const TOREC_1_IMG_B64 = "data:image/png;base64,__IMG:torec_1.png__"; // нату
 const TOREC_2_IMG_B64 = "data:image/png;base64,__IMG:torec_2.png__"; // натуральный размер 1811x842 (вариант с 2 раскосинами)
 const TOREC_3_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_3.jpg__"; // натуральный размер 2476x802 (вариант с 3 раскосинами)
 const TOREC_2FLOORS_1_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_2floors_1raskosina.jpg__"; // натуральный размер 695x1051 (2 этажа, по 1 раскосине на этаж)
+const TOREC_2FLOORS_2_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_2floors_2raskosina.jpg__"; // натуральный размер 1222x1044 (2 этажа, по 2 раскосины на этаж)
 const TOREC_0_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_0.jpg__"; // натуральный размер 1354x1134 (вариант без раскосины, H<=600мм либо W<=600мм)
 
 const KRYSHKA_IMG_B64 = "data:image/png;base64,__IMG:kryshka.png__"; // натуральный размер 1718x1274
@@ -1226,6 +1227,29 @@ function diagramEndPanel2Floors1Raskosina(heightPlusT12Val, floorSpanVal, planLe
   return renderDiagram(TOREC_2FLOORS_1_IMG_B64, 'Щит торцевой (2 этажа, 1 раскосина на этаж) - схема расположения деталей', 695, 1051, records, null, photoStrokeScale(695));
 }
 
+function diagramEndPanel2Floors2Raskosina(heightPlusT12Val, floorSpanVal, planLenVal){
+  // Фото-чертёж для варианта на 2 этажа, по 2 раскосины на этаж (натуральный размер
+  // 1222×1044). floorSpanVal — длина вертикальной планки одного этажа + ширина одной
+  // горизонтальной планки (та же величина, что и на чертеже с 1 раскосиной на этаж).
+  const val = Math.round(heightPlusT12Val);       // полная высота рамы щита = высота груза + толщина доски дна
+  const floorSpan = Math.round(floorSpanVal);
+  const planLen = Math.round(planLenVal);          // длина горизонтальной планки = ширина груза
+
+  const records = [
+    {type:'line', x1:1101, y1:26, x2:1425, y2:26},
+    {type:'line', x1:1104, y1:1018, x2:1424, y2:1020},
+    {type:'double', x1:1339, y1:26, x2:1339, y2:1020, lx:1340, ly:528, text: val+' мм', vertical:true},
+    {type:'line', x1:126, y1:575, x2:-177, y2:576},
+    {type:'line', x1:131, y1:1016, x2:-179, y2:1020},
+    {type:'double', x1:-115, y1:576, x2:-114, y2:1020, lx:-115, ly:795, text: floorSpan+' мм', vertical:true},
+    {type:'line', x1:20, y1:132, x2:18, y2:-131},
+    {type:'line', x1:1205, y1:133, x2:1207, y2:-128},
+    {type:'double', x1:19, y1:-109, x2:1207, y2:-112, lx:604, ly:-124, text: planLen+' мм'}
+  ];
+
+  return renderDiagram(TOREC_2FLOORS_2_IMG_B64, 'Щит торцевой (2 этажа, 2 раскосины на этаж) - схема расположения деталей', 1222, 1044, records, null, photoStrokeScale(1222));
+}
+
 function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
   // Фото-чертёж для варианта без раскосины (H≤600мм либо W≤600мм — п.1.6.5/п.102 docx,
   // независимо друг от друга отключают раскосину на торце). Просто рамка из планок и
@@ -1254,11 +1278,14 @@ function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, he
   // Для секций больше 3 (пока максимум 4) фото ещё нет — показываем чертёж с
   // максимальным доступным числом раскосин (3) вместо заглушки: расположение планок
   // то же самое, просто не хватает одной секции на фото.
-  // Для щита на 2 этажа (наружная высота >2000мм) фото есть только для 1 раскосины на
-  // этаж (1 секция по ширине); для остальных пока заглушка.
+  // Для щита на 2 этажа (наружная высота >2000мм) фото есть для 1 и 2 раскосин на
+  // этаж (1 или 2 секции по ширине); для 3-4 секций пока заглушка.
   if(floorsVal === 2){
     if(hasRaskosinaVal && sectionsVal <= 1){
       return diagramEndPanel2Floors1Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
+    }
+    if(hasRaskosinaVal && sectionsVal === 2){
+      return diagramEndPanel2Floors2Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
     }
     return diagramPlaceholder('Щит торцевой (2 этажа)');
   }
