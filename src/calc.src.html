@@ -1967,7 +1967,14 @@ function calculate(){
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram, torecFloors, k30 + w31) + `</div>` + renderSection('', endPanel) + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, k40 - H, edgeDistKryshka, l42, bokFloors) + `</div>` + renderSection('', bokovoy) + `</div>`;
-  document.getElementById('boardTables').innerHTML = tablesHtml;
+  const boardTablesEl = document.getElementById('boardTables');
+  boardTablesEl.innerHTML = tablesHtml;
+  // Подписи/стрелки чертежей могут выходить за пределы картинки (см.
+  // reserveDiagramOverflowScreen) - без этого измерения браузер может ещё не
+  // декодировать вставленные <img>, поэтому ждём decode() перед замером.
+  const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
+  Promise.all(boardImages.map(img => img.decode ? img.decode().catch(()=>{}) : Promise.resolve()))
+    .then(()=> reserveDiagramOverflowScreen(boardTablesEl));
 
   if(thicknessLimitExceeded){
     warnings.push(`Расчётная толщина отдельных деталей превышает максимальную из выбранных толщин «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм). Использовано максимальное доступное значение — фактическая прочность может оказаться недостаточной. Рекомендуется добавить пиломатериал большей толщины в список доступных значений либо выполнить проверку расчёта вручную.`);
@@ -2127,6 +2134,75 @@ function reserveDiagramOverflow(printArea){
   });
 }
 
+// Экранный аналог reserveDiagramOverflow() выше. На экране .spec-row-diagram
+// выровнен по верху (align-items:flex-start), а не по центру, как в печати -
+// там паддинг сверху/снизу у .diagram-slot реально сдвигает его границы,
+// здесь же для этого нужно двигать сам .diagram-wrap отступами: margin-top/
+// margin-bottom сдвигают вниз всё содержимое (картинку+подписи+стрелки) внутри
+// слота, освобождая место над ним (для заголовка узла) и под ним (для
+// следующего узла), не трогая позицию самого слота в строке. Слева -
+// аналогично margin-left. Справа же сосед - таблица деталей, поэтому вместо
+// отступа увеличивается сама ширина слота (и флекс-базис), чтобы таблица
+// сдвинулась дальше вправо.
+function reserveDiagramOverflowScreen(container){
+  container.querySelectorAll('.diagram-slot').forEach(slot=>{
+    const wrap = slot.querySelector('.diagram-wrap');
+    if(!wrap) return;
+
+    wrap.style.marginTop = '0px';
+    wrap.style.marginBottom = '0px';
+    wrap.style.marginLeft = '0px';
+    slot.style.width = '';
+    slot.style.flexBasis = '';
+
+    const box = wrap.getBoundingClientRect();
+    let top = box.top, bottom = box.bottom, left = box.left, right = box.right;
+
+    slot.querySelectorAll('.diagram-label').forEach(lbl=>{
+      const r = lbl.getBoundingClientRect();
+      if(r.height){
+        top = Math.min(top, r.top);
+        bottom = Math.max(bottom, r.bottom);
+        left = Math.min(left, r.left);
+        right = Math.max(right, r.right);
+      }
+    });
+
+    const svg = wrap.querySelector('svg');
+    if(svg && svg.viewBox && svg.viewBox.baseVal){
+      try{
+        const bb = svg.getBBox();
+        const sr = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        if(vb.width && vb.height && sr.width && sr.height){
+          const sx = sr.width / vb.width, sy = sr.height / vb.height;
+          top = Math.min(top, sr.top + bb.y * sy);
+          bottom = Math.max(bottom, sr.top + (bb.y + bb.height) * sy);
+          left = Math.min(left, sr.left + bb.x * sx);
+          right = Math.max(right, sr.left + (bb.x + bb.width) * sx);
+        }
+      }catch(e){ /* getBBox недоступен — останутся отступы по подписям */ }
+    }
+
+    const topGap = Math.max(0, Math.ceil(box.top - top));
+    const bottomGap = Math.max(0, Math.ceil(bottom - box.bottom));
+    const leftGap = Math.max(0, Math.ceil(box.left - left));
+    const rightGap = Math.max(0, Math.ceil(right - box.right));
+
+    wrap.style.marginTop = topGap + 'px';
+    wrap.style.marginBottom = bottomGap + 'px';
+    wrap.style.marginLeft = leftGap + 'px';
+
+    if(rightGap > 0){
+      const neededWidth = Math.ceil(box.width + leftGap + rightGap) + 4;
+      if(neededWidth > slot.clientWidth){
+        slot.style.width = neededWidth + 'px';
+        slot.style.flexBasis = neededWidth + 'px';
+      }
+    }
+  });
+}
+
 // Разметка печатной страницы: шапка, «Внутренние размеры груза» и «Итог»
 // рядом на одном уровне, затем по каждому узлу — чертёж слева, таблица справа.
 function buildPrintHtml(){
@@ -2154,6 +2230,19 @@ function buildPrintHtml(){
   clone.querySelectorAll('.part-title, .spec-row-diagram').forEach(el=>{
     el.style.marginTop = '';
     el.style.marginBottom = '';
+  });
+
+  // Экранные отступы/ширины от reserveDiagramOverflowScreen() (см. выше) тоже
+  // не нужны в печати — там свой независимый расчёт вылета через
+  // reserveDiagramOverflow() и applyDiagramWidths() под печатный масштаб --pk.
+  clone.querySelectorAll('.diagram-wrap').forEach(wrap=>{
+    wrap.style.marginTop = '';
+    wrap.style.marginBottom = '';
+    wrap.style.marginLeft = '';
+  });
+  clone.querySelectorAll('.diagram-slot').forEach(slot=>{
+    slot.style.width = '';
+    slot.style.flexBasis = '';
   });
 
   // Каждую пару «заголовок узла + чертёж/таблица» кладём в общий блочный
