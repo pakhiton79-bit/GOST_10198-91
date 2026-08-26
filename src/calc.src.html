@@ -445,13 +445,10 @@
   }
   .thickness-checkbox-list{
     display:grid;
-    /* Заполнение по столбцам: значения идут подряд сверху вниз в пределах
-       столбца, затем продолжаются в следующем. Число строк подобрано под
-       THICKNESS_MAX=300 так, чтобы делиться без остатка на число столбцов
-       (300/50=6, 300/75=4, 300/100=3) - если THICKNESS_MAX в JS изменится,
-       эти числа тоже нужно будет пересчитать. */
+    /* Список стандартных толщин короткий (14 значений) - просто в 2 столбца,
+       заполнение по столбцам сверху вниз. */
     grid-auto-flow:column;
-    grid-template-rows:repeat(50,auto);
+    grid-template-rows:repeat(7,auto);
     grid-auto-columns:1fr;
     gap:5px 12px;
   }
@@ -831,13 +828,15 @@ function vol(t,w,l,qty){ // m3, dims in mm
 // Если ничего не выбрано - округление до складских номиналов не применяется,
 // расчёт идёт строго по значениям, которые даёт сам ГОСТ 10198-91.
 const THICKNESS_STORAGE_KEY = 'silvan-gost10198-t1-k3-available-thickness';
-const THICKNESS_MIN = 1, THICKNESS_MAX = 300;
+// Стандартный ряд толщин пиломатериала (сортаментный ряд) - округление "в наличии"
+// возможно только до одного из этих значений, не до произвольного мм.
+const AVAILABLE_THICKNESS_OPTIONS = [16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 125, 150, 175, 200];
 
 function loadAvailableThicknesses(){
   try{
     const raw = localStorage.getItem(THICKNESS_STORAGE_KEY);
     if(!raw) return [];
-    const arr = JSON.parse(raw).filter(v => Number.isInteger(v) && v>=THICKNESS_MIN && v<=THICKNESS_MAX);
+    const arr = JSON.parse(raw).filter(v => AVAILABLE_THICKNESS_OPTIONS.includes(v));
     return arr.sort((a,b)=>a-b);
   }catch(e){ return []; }
 }
@@ -860,10 +859,10 @@ function roundUpToAvailable(t){
 function buildThicknessCheckboxList(){
   const list = document.getElementById('thicknessCheckboxList');
   let html = '';
-  for(let t=THICKNESS_MIN; t<=THICKNESS_MAX; t++){
+  AVAILABLE_THICKNESS_OPTIONS.forEach(t=>{
     const checked = availableThicknesses.includes(t) ? ' checked' : '';
     html += `<label><input type="checkbox" value="${t}"${checked} onchange="onThicknessCheckboxChange(this)"> ${t} мм</label>`;
-  }
+  });
   list.innerHTML = html;
 }
 
@@ -881,7 +880,7 @@ function onThicknessCheckboxChange(el){
 }
 
 function setAllThickness(state){
-  availableThicknesses = state ? Array.from({length:THICKNESS_MAX-THICKNESS_MIN+1}, (_,i)=>i+THICKNESS_MIN) : [];
+  availableThicknesses = state ? AVAILABLE_THICKNESS_OPTIONS.slice() : [];
   buildThicknessCheckboxList();
   saveAvailableThicknesses();
   updateThicknessSummary();
@@ -891,13 +890,13 @@ function setAllThickness(state){
 function updateThicknessSummary(){
   const label = document.getElementById('thicknessDropdownLabel');
   const note  = document.getElementById('thicknessNote');
-  const total = THICKNESS_MAX - THICKNESS_MIN + 1;
+  const total = AVAILABLE_THICKNESS_OPTIONS.length;
   if(availableThicknesses.length === 0){
     label.textContent = 'Толщины не выбраны - расчёт строго по ГОСТ';
     note.innerHTML = '⚠ Толщины пиломатериала "в наличии" не выбраны - округление до складских номиналов не применяется, расчёт ведётся строго по значениям ГОСТ 10198-91.';
     note.style.display = 'block';
   } else if(availableThicknesses.length === total){
-    label.textContent = 'Выбраны все толщины (1-300 мм)';
+    label.textContent = `Выбраны все толщины (${AVAILABLE_THICKNESS_OPTIONS[0]}-${AVAILABLE_THICKNESS_OPTIONS[total-1]} мм)`;
     note.style.display = 'none';
   } else {
     const shown = availableThicknesses.slice(0,8).join(', ');
@@ -1864,11 +1863,15 @@ function calculate(){
     + fbKryshka.extra.reduce((s,e)=>s+vol(t20,e.width,k20,e.qty),0);
 
   // --- ЩИТ ТОРЦЕВОЙ (расчёт на 1 щит, далее удвоение) ---
-  // Реализована высота груза до 2000мм включительно (без раскосин до 600мм включительно,
-  // секции с раскосинами при 600-2000мм по правилу угла 20-60°). Недосекции и секции
-  // типа А (высота 2000-4000мм) — следующий шаг по договорённости, пока не реализованы.
-  if(H > 2000){
-    warnings.push(`Высота груза ${H} мм превышает 2000 мм. Расчёт щита торцевого для указанной высоты (недосекции, секции типа А в диапазоне 2000–4000 мм) в данной версии калькулятора не реализован, приведённые ниже значения по щиту торцевому являются некорректными. Требуется ручная проверка либо доработка калькулятора.`);
+  // Реализована наружная высота ящика до 2000мм включительно (без раскосин до 600мм
+  // включительно по высоте груза, секции с раскосинами при 600-2000мм по правилу угла
+  // 20-60°). Недосекции и секции типа А (наружная высота 2000-4000мм) — следующий шаг
+  // по договорённости, пока не реализованы. Лимит — по наружной высоте ящика (высота
+  // груза + толщина доски дна + толщина доски крышки + толщина планки крышки), а не
+  // по высоте груза напрямую.
+  const outerHeight = H + t12 + t19 + t20;
+  if(outerHeight > 2000){
+    warnings.push(`Наружная высота ящика ${Math.round(outerHeight)} мм (высота груза + толщина доски дна + толщина доски и планки крышки) превышает 2000 мм. Расчёт щита торцевого для указанной высоты (недосекции, секции типа А в диапазоне 2000–4000 мм) в данной версии калькулятора не реализован, приведённые ниже значения по щиту торцевому являются некорректными. Требуется ручная проверка либо доработка калькулятора.`);
   }
 
   // Горизонтальная планка: длина = ширина груза, количество = 2 (верх/низ) — для высоты
