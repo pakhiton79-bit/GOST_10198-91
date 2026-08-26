@@ -694,8 +694,8 @@
             <input type="radio" name="fasteningType" value="skid" checked onchange="onFasteningTypeChange(this)">
             <span>Крепление за полозья</span>
           </label>
-          <label class="fastening-option-disabled">
-            <input type="radio" name="fasteningType" value="floor_boards" disabled onchange="onFasteningTypeChange(this)">
+          <label onclick="window.location.href='GOST10198_91DOSKI_DNA.html'; return false;">
+            <input type="radio" name="fasteningType" value="floor_boards" onclick="window.location.href='GOST10198_91DOSKI_DNA.html'; return false;">
             <span>Крепление к доскам дна</span>
           </label>
           <label class="fastening-option-disabled">
@@ -1217,6 +1217,13 @@ function photoStrokeScale(imgNaturalWidth){
   return PHOTO_STROKE_REF_SCALE * imgNaturalWidth / PHOTO_STROKE_REF_WIDTH;
 }
 
+// Ширина чертежа по умолчанию (см. .diagram-wrap в CSS) и максимальная высота,
+// до которой он может «вырасти» при портретной ориентации фото (высота больше
+// ширины, напр. 2-этажный торец на 1 раскосину). Без этого ограничения такие
+// чертежи получались значительно выше обычных и налезали на соседнюю таблицу.
+const DIAGRAM_DEFAULT_WIDTH = 260;
+const DIAGRAM_MAX_HEIGHT = 240;
+
 function renderDiagram(imgB64, altText, IW, IH, records, widthPx, strokeScale){
   const scale = strokeScale || 1;
   const lineWidth = (1.5*scale).toFixed(2);
@@ -1246,7 +1253,14 @@ function renderDiagram(imgB64, altText, IW, IH, records, widthPx, strokeScale){
       labels += `<div class="${labelClass}" style="left:${lx}%;top:${ly}%">${r.text}</div>`;
     }
   });
-  const sizeStyle = widthPx ? ` style="width:${widthPx}px;flex-basis:${widthPx}px"` : '';
+  let w = widthPx;
+  if(!w){
+    w = DIAGRAM_DEFAULT_WIDTH;
+    if(w * IH / IW > DIAGRAM_MAX_HEIGHT){
+      w = Math.round(DIAGRAM_MAX_HEIGHT * IW / IH);
+    }
+  }
+  const sizeStyle = ` style="width:${w}px;flex-basis:${w}px"`;
   return `<div class="diagram-wrap"${sizeStyle}>
     <img src="${imgB64}" alt="${altText}">
     <svg class="diagram-arrows" viewBox="0 0 ${IW} ${IH}" preserveAspectRatio="none">
