@@ -1177,6 +1177,7 @@ const DNO_IMG_B64 = "data:image/png;base64,__IMG:dno.png__"; // натураль
 // координатах картинки (не масштабируется вместе с текстом), подписи - обычные
 const TOREC_1_IMG_B64 = "data:image/png;base64,__IMG:torec_1.png__"; // натуральный размер 1352x1158 (вариант с 1 раскосиной)
 const TOREC_2_IMG_B64 = "data:image/png;base64,__IMG:torec_2.png__"; // натуральный размер 1811x842 (вариант с 2 раскосинами)
+const TOREC_3_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_3.jpg__"; // натуральный размер 2476x802 (вариант с 3 раскосинами)
 const TOREC_0_IMG_B64 = "data:image/jpeg;base64,__IMG:torec_0.jpg__"; // натуральный размер 1354x1134 (вариант без раскосины, H<=600мм либо W<=600мм)
 
 const KRYSHKA_IMG_B64 = "data:image/png;base64,__IMG:kryshka.png__"; // натуральный размер 1718x1274
@@ -1319,6 +1320,23 @@ function diagramEndPanel2Raskosina(k30val, w31val, planLenVal){
   return renderDiagram(TOREC_2_IMG_B64, 'Щит торцевой (2 раскосины) - схема расположения деталей', 1811, 842, records, null, photoStrokeScale(1811));
 }
 
+function diagramEndPanel3Raskosina(k30val, w31val, planLenVal){
+  // Фото-чертёж для варианта с 3 раскосинами (натуральный размер 2476×802).
+  const val = Math.round(w31val*2 + k30val);         // длина вертикальной планки торца + ширина горизонтальной планки торца*2
+  const planLen = Math.round(planLenVal);             // длина горизонтальной планки = ширина груза
+
+  const records = [
+    {type:'line', x1:13, y1:636, x2:4, y2:964},
+    {type:'line', x1:2453, y1:637, x2:2453, y2:973},
+    {type:'double', x1:9, y1:908, x2:2451, y2:910, lx:1231, ly:913, text: planLen+' мм'},
+    {type:'line', x1:2302, y1:15, x2:2651, y2:13},
+    {type:'line', x1:2316, y1:790, x2:2653, y2:790},
+    {type:'double', x1:2593, y1:13, x2:2598, y2:793, lx:2598, ly:424, text: val+' мм', vertical:true}
+  ];
+
+  return renderDiagram(TOREC_3_IMG_B64, 'Щит торцевой (3 раскосины) - схема расположения деталей', 2476, 802, records, null, photoStrokeScale(2476));
+}
+
 function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
   // Фото-чертёж для варианта без раскосины (H≤600мм либо W≤600мм — п.1.6.5/п.102 docx,
   // независимо друг от друга отключают раскосину на торце). Просто рамка из планок и
@@ -1343,8 +1361,8 @@ function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
 function diagramEndPanel(k32val, k30val, w31val, sectionsVal, hasRaskosinaVal, innerWidthVal, heightPlusT12Val, useNoRaskosinaDiagram){
   // Новый фото-чертёж (рамка) показываем только при H≤600 либо когда раскосина не
   // требуется по углу (1 секция, угол >60°) — не при W≤600 (по указанию пользователя,
-  // при W≤600 и H>600 возвращена прежняя заглушка). Для 1 и 2 раскосин — свои фото.
-  // Для 3-4 раскосин фото ещё нет — заглушка.
+  // при W≤600 и H>600 возвращена прежняя заглушка). Для 1, 2 и 3 раскосин — свои фото.
+  // Для 4 раскосин фото ещё нет — заглушка.
   if(useNoRaskosinaDiagram){
     return diagramEndPanelNoRaskosina(heightPlusT12Val, k32val);
   }
@@ -1353,6 +1371,9 @@ function diagramEndPanel(k32val, k30val, w31val, sectionsVal, hasRaskosinaVal, i
   }
   if(sectionsVal === 2 && hasRaskosinaVal){
     return diagramEndPanel2Raskosina(k30val, w31val, innerWidthVal);
+  }
+  if(sectionsVal === 3 && hasRaskosinaVal){
+    return diagramEndPanel3Raskosina(k30val, w31val, innerWidthVal);
   }
 
   return diagramPlaceholder('Щит торцевой');
