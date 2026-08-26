@@ -1284,11 +1284,10 @@ function diagramPlaceholder(label){
   return `<div class="diagram-wrap diagram-placeholder" style="display:flex;align-items:center;justify-content:center;min-height:160px;border:1px dashed var(--border-input);border-radius:12px;color:var(--ink-soft);font-size:13px;text-align:center;padding:12px;">Чертёж «${label}» ещё не готов</div>`;
 }
 
-function diagramEndPanel1Raskosina(k30val, w31val, innerWidthVal){
+function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal){
   // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1352×1158).
-  // Подпись — ширина горизонтальной планки торца×2 + длина вертикальной торцевой планки
-  // (w31 - ширина горизонтальной планки, k30 - длина вертикальной планки торца).
-  const val = Math.round(w31val*2 + k30val);
+  // Подпись высоты — полная высота рамы щита = высота груза + толщина доски дна.
+  const val = Math.round(heightPlusT12Val);
   const innerWidth = Math.round(innerWidthVal);
 
   const records = [
@@ -1303,9 +1302,9 @@ function diagramEndPanel1Raskosina(k30val, w31val, innerWidthVal){
   return renderDiagram(TOREC_1_IMG_B64, 'Щит торцевой (1 раскосина) - схема расположения деталей', 1352, 1158, records, null, photoStrokeScale(1352));
 }
 
-function diagramEndPanel2Raskosina(k30val, w31val, planLenVal){
+function diagramEndPanel2Raskosina(heightPlusT12Val, planLenVal){
   // Фото-чертёж для варианта с 2 раскосинами (натуральный размер 1811×842).
-  const val = Math.round(w31val*2 + k30val);         // длина вертикальной планки торца + ширина горизонтальной планки торца*2
+  const val = Math.round(heightPlusT12Val);           // полная высота рамы щита = высота груза + толщина доски дна
   const planLen = Math.round(planLenVal);             // длина горизонтальной планки = ширина груза
 
   const records = [
@@ -1320,9 +1319,9 @@ function diagramEndPanel2Raskosina(k30val, w31val, planLenVal){
   return renderDiagram(TOREC_2_IMG_B64, 'Щит торцевой (2 раскосины) - схема расположения деталей', 1811, 842, records, null, photoStrokeScale(1811));
 }
 
-function diagramEndPanel3Raskosina(k30val, w31val, planLenVal){
+function diagramEndPanel3Raskosina(heightPlusT12Val, planLenVal){
   // Фото-чертёж для варианта с 3 раскосинами (натуральный размер 2476×802).
-  const val = Math.round(w31val*2 + k30val);         // длина вертикальной планки торца + ширина горизонтальной планки торца*2
+  const val = Math.round(heightPlusT12Val);           // полная высота рамы щита = высота груза + толщина доски дна
   const planLen = Math.round(planLenVal);             // длина горизонтальной планки = ширина груза
 
   const records = [
@@ -1358,7 +1357,7 @@ function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
   return renderDiagram(TOREC_0_IMG_B64, 'Щит торцевой (без раскосины) - схема расположения деталей', 1354, 1134, records, null, photoStrokeScale(1354));
 }
 
-function diagramEndPanel(k32val, k30val, w31val, sectionsVal, hasRaskosinaVal, innerWidthVal, heightPlusT12Val, useNoRaskosinaDiagram){
+function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, heightPlusT12Val, useNoRaskosinaDiagram){
   // Новый фото-чертёж (рамка) показываем только при H≤600 либо когда раскосина не
   // требуется по углу (1 секция, угол >60°) — не при W≤600 (по указанию пользователя,
   // при W≤600 и H>600 возвращена прежняя заглушка). Для 1, 2 и 3 раскосин — свои фото.
@@ -1367,13 +1366,13 @@ function diagramEndPanel(k32val, k30val, w31val, sectionsVal, hasRaskosinaVal, i
     return diagramEndPanelNoRaskosina(heightPlusT12Val, k32val);
   }
   if(sectionsVal === 1 && hasRaskosinaVal){
-    return diagramEndPanel1Raskosina(k30val, w31val, innerWidthVal);
+    return diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal);
   }
   if(sectionsVal === 2 && hasRaskosinaVal){
-    return diagramEndPanel2Raskosina(k30val, w31val, innerWidthVal);
+    return diagramEndPanel2Raskosina(heightPlusT12Val, innerWidthVal);
   }
   if(sectionsVal === 3 && hasRaskosinaVal){
-    return diagramEndPanel3Raskosina(k30val, w31val, innerWidthVal);
+    return diagramEndPanel3Raskosina(heightPlusT12Val, innerWidthVal);
   }
 
   return diagramPlaceholder('Щит торцевой');
@@ -1872,9 +1871,11 @@ function calculate(){
   // до 2000мм включительно, другие варианты пока не считаем. Толщина общая (п.1.6.15).
   const t31 = wall.value, w31 = 100, k31_ = W, l31 = 2;
 
-  // Вертикальная планка: длина = (высота груза + толщина доски дна) - 2×толщина гор. планки.
+  // Вертикальная планка: длина = (высота груза + толщина доски дна) - 2×ширина гор. планки
+  // (горизонтальная планка занимает по высоте свою ширину, а не толщину — вертикальная
+  // планка заходит под неё только на толщину стыка, не на всю её ширину).
   const t30 = wall.value, w30 = 100;
-  const k30 = (H + t12) - t31*2;
+  const k30 = (H + t12) - w31*2;
 
   // Число секций по ширине: растим от 1, пока угол раскосины к горизонтальной планке
   // (20-60°) не встанет в диапазон; если при 1 секции угол > 60° — раскосины нет вообще.
@@ -2017,7 +2018,7 @@ function calculate(){
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, k30, w31, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram) + `</div>` + renderSection('', endPanel) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram) + `</div>` + renderSection('', endPanel) + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, k40 - H, edgeDistKryshka, l42) + `</div>` + renderSection('', bokovoy) + `</div>`;
   document.getElementById('boardTables').innerHTML = tablesHtml;
 
