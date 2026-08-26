@@ -730,6 +730,10 @@
         <input type="checkbox" id="forkliftLoading">
         <span>Погрузка авто/электропогрузчиком</span>
       </label>
+      <label>
+        <input type="checkbox" id="solidRigidBase">
+        <span>Сплошное жёсткое основание груза<span class="option-hint">Сечение полозьев — по п.1.6.5 (по массе груза), а не по Табл. 19</span></span>
+      </label>
     </div>
   </div>
 
@@ -973,6 +977,153 @@ function polozSection165(mass){
   return {h:row.h, w:row.w, exceeded};
 }
 
+// Новый стандарт полозьев («Таблица 19», источник — файл заказчика
+// «Новые стандарты полозьев.docx»): высота и ширина полозьев при креплении
+// груза к полозьям или доскам дна, по массе груза, рабочей длине полоза
+// (= наружная длина ящика, k9Base) и количеству полозьев. На каждую массу —
+// 2 варианта количества полозьев (напр. 2 или 3, у тяжёлых грузов 3/4, 4/5);
+// null = сочетание масса×длина для этого количества полозьев не предусмотрено.
+// Примечание к таблице: масса/длина, не совпадающие с таблицей, округляются
+// до ближайшего (не обязательно вверх) значения.
+// В строке массы 5000/3 полоза/длина 2500 в исходном файле указано «50´175» -
+// явная опечатка source-документа (соседние по прогрессии значения - 150´150
+// и 175´150), исправлено на 150´175.
+const T19_LENGTHS = [1000,1500,2000,2500,3000,3500,4000,4500,5000];
+const TABLE19 = [
+  {mass:500,  rows:[
+    {count:2, dims:['50x100','60x100','60x100','75x100','75x100','100x100','100x100',null,null]},
+    {count:3, dims:['40x100','50x100','50x100','60x100','100x60','100x75','100x75',null,null]},
+  ]},
+  {mass:800, rows:[
+    {count:2, dims:['60x100','75x100','75x100','100x100','100x100','100x125','125x100',null,null]},
+    {count:3, dims:['50x100','60x100','60x100','75x100','100x75','100x100','100x100',null,null]},
+  ]},
+  {mass:1000, rows:[
+    {count:2, dims:['75x100','100x100','100x100','100x125','100x125','125x100','125x125',null,null]},
+    {count:3, dims:['60x100','75x100','75x100','75x125','100x100','100x100','100x125',null,null]},
+  ]},
+  {mass:1500, rows:[
+    {count:2, dims:['100x75','100x100','100x125','125x125','125x150','150x125','150x150',null,null]},
+    {count:3, dims:['60x100','75x100','100x100','100x125','100x125','125x100','125x125',null,null]},
+  ]},
+  {mass:2000, rows:[
+    {count:2, dims:['100x100','100x125','125x125','125x150','150x125','150x125','150x150',null,null]},
+    {count:3, dims:['75x100','100x100','100x125','125x100','125x125','125x125','150x125',null,null]},
+  ]},
+  {mass:2500, rows:[
+    {count:2, dims:['100x125','125x100','125x150','150x150','150x150','175x150','175x150','175x200',null]},
+    {count:3, dims:['75x100','100x125','125x100','125x125','125x150','150x125','150x150','175x175',null]},
+  ]},
+  {mass:3000, rows:[
+    {count:2, dims:['125x100','125x125','150x150','150x175','175x150','175x175','175x175','200x175','200x200']},
+    {count:3, dims:['100x100','125x100','125x125','125x150','150x125','150x150','175x150','175x175','175x175']},
+  ]},
+  {mass:4000, rows:[
+    {count:2, dims:['125x125','150x100','150x175','175x175','175x200','200x175','200x200','225x200','225x225']},
+    {count:3, dims:['100x125','125x125','150x125','150x150','150x175','175x150','175x175','175x200','175x200']},
+  ]},
+  {mass:5000, rows:[
+    {count:3, dims:['125x100','125x150','150x150','150x175','175x150','175x200','175x200','200x200','200x200']},
+    {count:4, dims:['100x100','125x100','125x150','150x125','150x175','150x175','175x150','175x150','175x175']},
+  ]},
+  {mass:6000, rows:[
+    {count:3, dims:['125x125','150x125','150x175','175x150','175x175','200x175','200x200','200x225','225x225']},
+    {count:4, dims:['125x100','125x125','150x125','150x150','150x175','175x150','175x150','175x175','175x200']},
+  ]},
+  {mass:7000, rows:[
+    {count:3, dims:['125x150','150x150','175x150','175x175','175x200','200x200','200x200','225x200','225x225']},
+    {count:4, dims:['125x100','125x125','150x125','150x150','175x150','175x175','175x175','175x200','200x200']},
+  ]},
+  {mass:8000, rows:[
+    {count:3, dims:['150x125','150x175','175x175','175x200','200x200','200x225','225x225','225x225','225x250']},
+    {count:4, dims:['125x125','150x125','150x175','150x175','175x175','175x200','175x200','200x200','200x200']},
+  ]},
+  {mass:10000, rows:[
+    {count:3, dims:[null,'175x175','175x200','200x200','225x225','225x250','250x225','250x225','250x250']},
+    {count:4, dims:[null,'150x150','175x150','175x200','200x175','200x200','200x200','200x225','225x225']},
+  ]},
+  {mass:12000, rows:[
+    {count:4, dims:[null,'150x175','175x150','175x200','200x200','200x225','225x225','225x250','250x225']},
+    {count:5, dims:[null,'150x150','150x150','175x175','175x175','175x200','175x225','200x200','225x200']},
+  ]},
+  {mass:14000, rows:[
+    {count:4, dims:[null,'175x175','175x175','200x200','200x225','225x225','225x225','225x250','250x225']},
+    {count:5, dims:[null,'150x175','175x150','175x175','175x200','200x200','200x200','200x225','225x225']},
+  ]},
+  {mass:16000, rows:[
+    {count:4, dims:[null,'175x200','175x200','200x200','225x225','225x250','250x225','250x225','250x250']},
+    {count:5, dims:[null,'175x175','175x175','175x200','175x200','200x200','200x200','225x200','225x225']},
+  ]},
+  {mass:18000, rows:[
+    {count:4, dims:[null,null,'175x200','200x200','225x225','225x250','250x225','250x225','250x250']},
+    {count:5, dims:[null,null,'175x175','175x200','200x200','225x225','225x225','225x225','225x250']},
+  ]},
+  {mass:20000, rows:[
+    {count:4, dims:[null,null,'200x200','225x225','225x250','250x225','250x225','250x225','250x250']},
+    {count:5, dims:[null,null,'175x200','200x200','200x200','200x225','225x225','225x250','225x250']},
+  ]},
+];
+
+function nearestIndexBy(arr, keyFn, target){
+  let best = 0, bestDiff = Infinity;
+  arr.forEach((item,i)=>{
+    const diff = Math.abs(keyFn(item) - target);
+    // при равном расстоянии выбираем больший вариант (запас прочности)
+    if(diff < bestDiff || (diff === bestDiff && keyFn(item) > keyFn(arr[best]))){
+      bestDiff = diff; best = i;
+    }
+  });
+  return best;
+}
+
+// Подбор сечения и количества полозьев по новому стандарту (Табл. 19).
+// mass - масса груза, workingLengthMm - рабочая длина полоза (= k9Base,
+// наружная длина ящика), widthMm - внутренняя ширина груза (для проверки
+// шага между осями полозьев не более 1200мм, п.1.6.2).
+function selectSkid19(mass, workingLengthMm, widthMm){
+  const massIdx = nearestIndexBy(TABLE19, r=>r.mass, mass);
+  const massRow = TABLE19[massIdx];
+  const massSnapped = massRow.mass !== mass;
+
+  const lenIdx = nearestIndexBy(T19_LENGTHS.map(l=>({l})), r=>r.l, workingLengthMm);
+
+  // Для каждого варианта количества полозьев ищем ближайшую непустую колонку
+  // длины (своя для каждой строки - у тяжёлых грузов крайние левые колонки пустые).
+  const options = massRow.rows.map(row=>{
+    const availIdx = row.dims.map((d,i)=>d!==null ? i : null).filter(i=>i!==null);
+    if(availIdx.length===0) return null;
+    let bestI = availIdx[0], bestDiff = Infinity;
+    availIdx.forEach(i=>{
+      const diff = Math.abs(T19_LENGTHS[i]-workingLengthMm);
+      if(diff<bestDiff || (diff===bestDiff && T19_LENGTHS[i]>T19_LENGTHS[bestI])){ bestDiff=diff; bestI=i; }
+    });
+    const [h,w] = row.dims[bestI].split('x').map(Number);
+    return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: bestI!==lenIdx};
+  }).filter(o=>o!==null);
+
+  const minNeeded = minSkidsByWidth162(widthMm); // п.1.6.2 - минимум полозьев по шагу 1200мм
+  let valid = options.filter(o=>o.count>=minNeeded);
+  let spacingExceeded = false;
+  if(valid.length===0){
+    // ни один вариант из таблицы не даёт нужное количество полозьев -
+    // берём максимальное доступное в этой строке массы и предупреждаем
+    valid = [options.reduce((a,b)=> b.count>a.count ? b : a)];
+    spacingExceeded = true;
+  }
+
+  let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
+  if(!chosen){
+    chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
+  }
+
+  return {
+    h: chosen.h, w: chosen.w, count: chosen.count,
+    massUsed: massRow.mass, massSnapped,
+    lengthUsed: chosen.lengthUsed, lengthSnapped: chosen.lengthSnapped,
+    spacingExceeded
+  };
+}
+
 // ГОСТ 10198-91, п.1.6.2: "Расстояние между осями смежных полозьев не должно
 // превышать 1200 мм". Это общее требование для любого типа крепления, не привязанное
 // к конкретной таблице сечений - отсюда минимально необходимое количество полозьев
@@ -992,30 +1143,12 @@ function endBeamSection(mass){
   return {h:125,w:125};
 }
 
-// ГОСТ 10198-91, Таблица 4 (п.1.6.9): толщина досок дна при креплении груза
-// к доскам дна, по удельной нагрузке и расстоянию между осями смежных полозьев.
-const T4_LOADS = [0.10,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
-const T4_DISTANCES = [500,600,800,1000,1200];
-const TABLE4 = [
-  [19,19,19,22,25],
-  [19,19,22,32,32],
-  [19,22,25,32,40],
-  [19,22,32,40,40],
-  [19,22,32,40,50],
-  [22,25,32,40,50],
-  [22,25,40,50,50],
-  [22,32,40,50,50],
-];
-function floorBoardThickness(mass, Lmm, Wmm, distanceMm){
-  const S_cm2 = (Lmm/10)*(Wmm/10);
-  const udel = mass/S_cm2;
-  let exceeded = false;
-  if(udel<0.10) return {value:19, udel, exceeded:false}; // примечание 2 к табл.4
-  let rowIdx = T4_LOADS.findIndex(v=>udel<=v);
-  if(rowIdx===-1){ rowIdx = T4_LOADS.length-1; exceeded = true; }
-  let colIdx = T4_DISTANCES.findIndex(v=>distanceMm<=v);
-  if(colIdx===-1){ colIdx = T4_DISTANCES.length-1; exceeded = true; }
-  return {value:TABLE4[rowIdx][colIdx], udel, exceeded};
+// Толщина доски дна по массе груза (заменяет старую Таблицу 4 п.1.6.9 -
+// действует всегда, независимо от галочки «сплошное жёсткое основание груза»,
+// которая влияет только на подбор полозьев): масса ≤1000кг - не менее 16мм,
+// масса ≤20000кг - не менее 19мм.
+function floorBoardThicknessNew(mass){
+  return mass<=1000 ? 16 : 19;
 }
 
 // ГОСТ 10198-91, Таблица 14: толщина поперечных брусьев крышки для нештабелируемых
@@ -1634,6 +1767,7 @@ function calculate(){
   const optimizeSizes = document.getElementById('optimizeSizes').checked;
   const removeFloorBoards = document.getElementById('removeFloorBoards').checked;
   const removeSkidBoards = document.getElementById('removeSkidBoards').checked;
+  const solidRigidBase = document.getElementById('solidRigidBase').checked;
   const forkliftLoading = document.getElementById('forkliftLoading').checked;
 
   if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
@@ -1660,23 +1794,44 @@ function calculate(){
   // логика.docx») — длина полоза считается через толщину деталей щита торцевого
   // (см. ниже), а не через старую константу L+100.
   const dno = [];
-  const l9_default = (W>1100) ? 3 : 2; // логика исходной таблицы подтверждена как верная, менять не нужно
   const widthMinSkids162 = minSkidsByWidth162(W); // п.1.6.2 — общий предел 1200 мм между осями полозьев, для любого типа крепления
-  let l9 = l9_default;
-  const poloz = polozSection165(MASS); // п.1.6.5 — крепление за полозья в пределах основания груза / за изделие
-  if(poloz.exceeded){
-    warnings.push('Масса груза выходит за пределы диапазона, установленного п.1.6.5 (500–20000 кг). Сечение полоза принято по крайнему значению таблицы. Требуется дополнительная проверка.');
-  }
-  if(l9_default < widthMinSkids162){
-    l9 = widthMinSkids162;
-  }
-  const t9=roundUpToAvailable(poloz.h), w9=poloz.w;
 
   // Длина полоза (п.1.6.2 — равна наружной длине ящика): планка_торца + доска_торца +
   // планка_торца + доска_торца + длина_груза (формула из docx конструктора). Толщина
   // досок/планок торца общая для всех стенок и крышки (п.1.6.15) = wall.value.
   const t_doska_torca = wall.value, t_planka_torca = wall.value;
   const k9Base = L + (t_planka_torca + t_doska_torca) * 2;
+
+  let l9, t9, w9;
+  if(solidRigidBase){
+    // Галочка «сплошное жёсткое основание груза» - полозья по-старому: п.1.6.5
+    // (только по массе груза, без учёта рабочей длины полоза).
+    const l9_default = (W>1100) ? 3 : 2; // логика исходной таблицы подтверждена как верная, менять не нужно
+    l9 = l9_default;
+    const poloz = polozSection165(MASS); // п.1.6.5 — крепление за полозья в пределах основания груза / за изделие
+    if(poloz.exceeded){
+      warnings.push('Масса груза выходит за пределы диапазона, установленного п.1.6.5 (500–20000 кг). Сечение полоза принято по крайнему значению таблицы. Требуется дополнительная проверка.');
+    }
+    if(l9_default < widthMinSkids162){
+      l9 = widthMinSkids162;
+    }
+    t9 = roundUpToAvailable(poloz.h); w9 = poloz.w;
+  } else {
+    // По умолчанию - новый стандарт (Табл. 19): по массе, рабочей длине полоза
+    // (= k9Base) и количеству полозьев (приоритет - совпадение высоты полоза с
+    // одной из выбранных «в наличии» толщин, затем минимальное число полозьев).
+    const sel = selectSkid19(MASS, k9Base, W);
+    l9 = sel.count; t9 = roundUpToAvailable(sel.h); w9 = sel.w;
+    if(sel.massSnapped){
+      warnings.push(`Масса груза ${MASS} кг отсутствует в Табл. 19 (новый стандарт полозьев) - сечение полоза принято по ближайшей указанной массе (${sel.massUsed} кг).`);
+    }
+    if(sel.lengthSnapped){
+      warnings.push(`Рабочая длина полоза ${Math.round(k9Base)} мм отсутствует в Табл. 19 - сечение полоза принято по ближайшей указанной длине (${sel.lengthUsed} мм).`);
+    }
+    if(sel.spacingExceeded){
+      warnings.push(`При доступном по Табл. 19 количестве полозьев для массы ${sel.massUsed} кг не удаётся соблюсти шаг между осями полозьев не более 1200 мм (п.1.6.2) - принято максимальное количество полозьев из таблицы (${sel.count} шт.). Требуется дополнительная проверка.`);
+    }
+  }
   dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9});
 
   // Подполозная доска: толщина по массе груза (п.1.6.11, Апдейт по подполозным доскам),
@@ -1711,19 +1866,9 @@ function calculate(){
   const t11=roundUpToAvailable(endBeam.h), w11=endBeam.w, k11=W, l11=2;
   dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
 
-  const floorSkidDistance = Math.min(W, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
-  const floor = floorBoardThickness(MASS, L, W, floorSkidDistance); // Таблица 4
-  if(floor.exceeded){
-    const loadExceeded = floor.udel > T4_LOADS[T4_LOADS.length-1];
-    const distExceeded = floorSkidDistance > T4_DISTANCES[T4_DISTANCES.length-1];
-    if(loadExceeded){
-      warnings.push(`Удельная нагрузка на дно составляет ${floor.udel.toFixed(2)} кг/см², что превышает максимальное значение Таблицы 4 ГОСТ 10198-91 (${T4_LOADS[T4_LOADS.length-1]} кг/см²). Для данного соотношения массы груза и площади дна толщина доски стандартом не определена. Толщина принята по крайнему значению таблицы (${floor.value} мм) в качестве ориентировочного и не гарантирует достаточную прочность. Требуется отдельный расчёт либо иная конструкция тары.`);
-    }
-    if(distExceeded){
-      warnings.push(`Расстояние между полозьями ${floorSkidDistance} мм превышает максимальное значение Таблицы 4 (${T4_DISTANCES[T4_DISTANCES.length-1]} мм). Толщина доски дна принята по крайнему значению таблицы. Требуется дополнительная проверка.`);
-    }
-  }
-  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floor.value), k12=W;
+  // Толщина доски дна - по новому правилу (действует всегда, независимо от галочки
+  // «сплошное жёсткое основание груза»): масса ≤1000кг - не менее 16мм, иначе - не менее 19мм.
+  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floorBoardThicknessNew(MASS)), k12=W;
   // Доска дна: максимум досок 100мм + при необходимости 1-2 доски 75-99мм на остаток
   // (fillBoards), заполняем пространство (длина груза - 2×ширина торцового бруса дна).
   const fbDno = fillBoards(L - w11*2);
