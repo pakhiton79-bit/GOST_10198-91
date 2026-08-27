@@ -2,14 +2,18 @@
 """Собирает src/*.{html,css,js} + src/images/* в готовые файлы dist/*.html.
 
 Два независимых калькулятора (разная методика ГОСТ 10198-91), у каждого
-свой набор исходников, но общий src/style.css (единый визуальный стиль):
+свой набор исходников, но общий src/style.css (единый визуальный стиль)
+и общий src/common-print.js (механика печати - подгонка под 1 лист А4,
+резерв места под вылет подписей чертежей - в обоих типах одинаковая,
+кроме содержимого buildPrintHtml(), которое остаётся в каждом типе своё):
 
 == Тип I-3 (крепление за полозья / к доскам дна) ==
 src/calc.src.html - HTML-каркас с плейсхолдерами:
-  /*__STYLE_CSS__*/    -> src/style.css
-  /*__LOGIC_JS__*/     -> src/logic.js (расчётные формулы ГОСТ)
-  /*__DIAGRAMS_JS__*/  -> src/diagrams.js (чертежи деталей)
-  /*__APP_JS__*/       -> src/app.js (UI, calculate(), печать)
+  /*__STYLE_CSS__*/        -> src/style.css
+  /*__LOGIC_JS__*/         -> src/logic.js (расчётные формулы ГОСТ)
+  /*__DIAGRAMS_JS__*/      -> src/diagrams.js (чертежи деталей)
+  /*__COMMON_PRINT_JS__*/  -> src/common-print.js (общая механика печати)
+  /*__APP_JS__*/           -> src/app.js (UI, calculate(), buildPrintHtml())
 Плюс три плейсхолдера - единственные места, где расходятся два файла этого
 типа (иначе всё общее): /*__FLOOR_BOARD_CALC__*/ и /*__FASTENING_DEFAULT__*/
 (в src/app.js), <!--__FASTENING_OPTIONS__--> (в src/calc.src.html).
@@ -20,9 +24,11 @@ src/calc.src.html - HTML-каркас с плейсхолдерами:
     по Таблице 4 п.1.6.9, как было раньше
 
 == Тип I-1 ==
-src/i1/shell.html - свой HTML-каркас с теми же четырьмя плейсхолдерами,
-подставляются src/i1/logic.js, src/i1/diagrams.js (пока заглушки - фото
-чертежей ещё не пришли), src/i1/app.js. CSS - тот же src/style.css.
+src/i1/shell.html - свой HTML-каркас с плейсхолдерами STYLE_CSS/LOGIC_JS/
+DIAGRAMS_JS/COMMON_PRINT_JS (первые два - src/i1/logic.js, src/i1/diagrams.js,
+пока заглушки - фото чертежей ещё не пришли; CSS и печать - общие с типом
+I-3, файлы те же) плюс UI_JS/CALC_JS (src/i1/ui.js - фильтр толщин и галочка
+полоза, src/i1/calc.js - calculate() и buildPrintHtml()).
   - GOST10198_91_I1.html
 
 Плейсхолдеры вида __IMG:filename.ext__ (внутри diagrams.js/app.js) заменяются
@@ -43,11 +49,14 @@ DIST_DIR = ROOT / "dist"
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
+COMMON_PRINT_JS = SRC_DIR / "common-print.js"
+
 I3_SHELL = SRC_DIR / "calc.src.html"
 I3_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__LOGIC_JS__*/": SRC_DIR / "logic.js",
     "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__APP_JS__*/": SRC_DIR / "app.js",
 }
 I3_VARIANTS = [
@@ -71,7 +80,9 @@ I1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__LOGIC_JS__*/": I1_DIR / "logic.js",
     "/*__DIAGRAMS_JS__*/": I1_DIR / "diagrams.js",
-    "/*__APP_JS__*/": I1_DIR / "app.js",
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__UI_JS__*/": I1_DIR / "ui.js",
+    "/*__CALC_JS__*/": I1_DIR / "calc.js",
 }
 I1_VARIANTS = [
     {"out_name": "GOST10198_91_I1.html"},
