@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
 """Собирает src/*.{html,css,js} + src/images/* в готовые файлы dist/*.html.
 
-src/calc.src.html - HTML-каркас (разметка форм и таблиц) с плейсхолдерами:
-  /*__STYLE_CSS__*/    -> содержимое src/style.css
-  /*__LOGIC_JS__*/     -> содержимое src/logic.js (расчётные формулы ГОСТ)
-  /*__DIAGRAMS_JS__*/  -> содержимое src/diagrams.js (чертежи деталей)
-  /*__APP_JS__*/       -> содержимое src/app.js (UI, calculate(), печать)
-Файлы разделены так, чтобы типичная правка (один чертёж, одна формула)
-затрагивала небольшой файл, а не общий HTML на 2500+ строк.
+Два независимых калькулятора (разная методика ГОСТ 10198-91), у каждого
+свой набор исходников, но общий src/style.css (единый визуальный стиль):
 
-Остаются три плейсхолдера в общих файлах - единственные места, где расходятся
-два типа крепления груза (иначе всё содержимое app.js/logic.js/diagrams.js/
-style.css/calc.src.html общее для обоих файлов):
-  /*__FLOOR_BOARD_CALC__*/    (src/app.js)          - формула толщины доски дна
-  /*__FASTENING_DEFAULT__*/   (src/app.js)          - активный тип крепления
-  <!--__FASTENING_OPTIONS__--> (src/calc.src.html)  - выпадающий список крепления
-Значения подставляются из src/variants/ (см. VARIANTS ниже):
+== Тип I-3 (крепление за полозья / к доскам дна) ==
+src/calc.src.html - HTML-каркас с плейсхолдерами:
+  /*__STYLE_CSS__*/    -> src/style.css
+  /*__LOGIC_JS__*/     -> src/logic.js (расчётные формулы ГОСТ)
+  /*__DIAGRAMS_JS__*/  -> src/diagrams.js (чертежи деталей)
+  /*__APP_JS__*/       -> src/app.js (UI, calculate(), печать)
+Плюс три плейсхолдера - единственные места, где расходятся два файла этого
+типа (иначе всё общее): /*__FLOOR_BOARD_CALC__*/ и /*__FASTENING_DEFAULT__*/
+(в src/app.js), <!--__FASTENING_OPTIONS__--> (в src/calc.src.html).
+Значения - из src/variants/ (см. I3_VARIANTS ниже):
   - GOST10198_91POLOZIA.html   - крепление за полозья, толщина доски дна
     по новому правилу
   - GOST10198_91DOSKI_DNA.html - крепление к доскам дна, толщина доски дна
     по Таблице 4 п.1.6.9, как было раньше
+
+== Тип I-1 ==
+src/i1/shell.html - свой HTML-каркас с теми же четырьмя плейсхолдерами,
+подставляются src/i1/logic.js, src/i1/diagrams.js (пока заглушки - фото
+чертежей ещё не пришли), src/i1/app.js. CSS - тот же src/style.css.
+  - GOST10198_91_I1.html
 
 Плейсхолдеры вида __IMG:filename.ext__ (внутри diagrams.js/app.js) заменяются
 на base64-содержимое соответствующего файла из src/images/. Запуск:
@@ -33,21 +37,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SRC_DIR = ROOT / "src"
-SHELL = SRC_DIR / "calc.src.html"
 IMAGES_DIR = SRC_DIR / "images"
 VARIANTS_DIR = SRC_DIR / "variants"
 DIST_DIR = ROOT / "dist"
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
-PARTS = {
+I3_SHELL = SRC_DIR / "calc.src.html"
+I3_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__LOGIC_JS__*/": SRC_DIR / "logic.js",
     "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
     "/*__APP_JS__*/": SRC_DIR / "app.js",
 }
-
-VARIANTS = [
+I3_VARIANTS = [
     {
         "out_name": "GOST10198_91POLOZIA.html",
         "/*__FLOOR_BOARD_CALC__*/": VARIANTS_DIR / "floor_board_new.js",
@@ -62,13 +65,25 @@ VARIANTS = [
     },
 ]
 
+I1_DIR = SRC_DIR / "i1"
+I1_SHELL = I1_DIR / "shell.html"
+I1_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__LOGIC_JS__*/": I1_DIR / "logic.js",
+    "/*__DIAGRAMS_JS__*/": I1_DIR / "diagrams.js",
+    "/*__APP_JS__*/": I1_DIR / "app.js",
+}
+I1_VARIANTS = [
+    {"out_name": "GOST10198_91_I1.html"},
+]
 
-def build_one(variant):
-    text = SHELL.read_text(encoding="utf-8")
 
-    for placeholder, path in PARTS.items():
+def build_one(shell, parts, variant):
+    text = shell.read_text(encoding="utf-8")
+
+    for placeholder, path in parts.items():
         if placeholder not in text:
-            print(f"Плейсхолдер {placeholder} не найден в {SHELL}", file=sys.stderr)
+            print(f"Плейсхолдер {placeholder} не найден в {shell}", file=sys.stderr)
             sys.exit(1)
         text = text.replace(placeholder, path.read_text(encoding="utf-8"))
 
@@ -104,8 +119,10 @@ def build_one(variant):
 
 
 def main():
-    for variant in VARIANTS:
-        build_one(variant)
+    for variant in I3_VARIANTS:
+        build_one(I3_SHELL, I3_PARTS, variant)
+    for variant in I1_VARIANTS:
+        build_one(I1_SHELL, I1_PARTS, variant)
 
 
 if __name__ == "__main__":
