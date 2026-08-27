@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-"""Собирает src/calc.src.html + src/images/* в единый готовый файл dist/calc.html.
+"""Собирает src/*.{html,css,js} + src/images/* в единый готовый файл dist/calc.html.
 
-Плейсхолдеры вида __IMG:filename.ext__ в src/calc.src.html заменяются на
-base64 содержимое соответствующего файла из src/images/. Запуск:
+src/calc.src.html - HTML-каркас (разметка форм и таблиц) с плейсхолдерами:
+  /*__STYLE_CSS__*/    -> содержимое src/style.css
+  /*__LOGIC_JS__*/     -> содержимое src/logic.js (расчётные формулы ГОСТ)
+  /*__DIAGRAMS_JS__*/  -> содержимое src/diagrams.js (чертежи деталей)
+  /*__APP_JS__*/       -> содержимое src/app.js (UI, calculate(), печать)
+Файлы разделены так, чтобы типичная правка (один чертёж, одна формула)
+затрагивала небольшой файл, а не общий HTML на 2500+ строк.
+
+Плейсхолдеры вида __IMG:filename.ext__ (внутри diagrams.js/app.js) заменяются
+на base64-содержимое соответствующего файла из src/images/. Запуск:
 
     python3 build.py
 """
@@ -12,19 +20,33 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src" / "calc.src.html"
-IMAGES_DIR = ROOT / "src" / "images"
+SRC_DIR = ROOT / "src"
+SHELL = SRC_DIR / "calc.src.html"
+IMAGES_DIR = SRC_DIR / "images"
 OUT = ROOT / "dist" / "calc.html"
 
-PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
+IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
+
+PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__LOGIC_JS__*/": SRC_DIR / "logic.js",
+    "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
+    "/*__APP_JS__*/": SRC_DIR / "app.js",
+}
 
 
 def main():
-    text = SRC.read_text(encoding="utf-8")
+    text = SHELL.read_text(encoding="utf-8")
+
+    for placeholder, path in PARTS.items():
+        if placeholder not in text:
+            print(f"Плейсхолдер {placeholder} не найден в {SHELL}", file=sys.stderr)
+            sys.exit(1)
+        text = text.replace(placeholder, path.read_text(encoding="utf-8"))
 
     missing = []
 
-    def replace(match):
+    def replace_img(match):
         fname = match.group(1)
         path = IMAGES_DIR / fname
         if not path.exists():
@@ -33,7 +55,7 @@ def main():
         data = base64.b64encode(path.read_bytes()).decode("ascii")
         return data
 
-    result = PLACEHOLDER.sub(replace, text)
+    result = IMG_PLACEHOLDER.sub(replace_img, text)
 
     if missing:
         print("Не найдены файлы картинок:", ", ".join(missing), file=sys.stderr)
