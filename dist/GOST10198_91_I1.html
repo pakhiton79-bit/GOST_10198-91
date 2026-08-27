@@ -699,17 +699,23 @@
         <span>Полоз нужен<span class="option-hint">Если не нужен — в дне вместо полоза используется планка</span></span>
       </label>
     </div>
-    <div id="skidThicknessRow" style="margin-top:14px;max-width:220px;">
-      <label for="skidThickness">Толщина полоза, мм</label>
-      <select id="skidThickness">
-        <option value="25">25</option>
-        <option value="32">32</option>
-        <option value="40">40</option>
-        <option value="50" selected>50</option>
-        <option value="100">100</option>
-        <option value="150">150</option>
-        <option value="200">200</option>
-      </select>
+    <div id="skidThicknessRow" class="thickness-filter dropdown-wrap" style="margin-top:14px;max-width:260px;">
+      <label>Толщина полоза, мм</label>
+      <button type="button" class="thickness-dropdown-btn" id="skidThicknessDropdownBtn" onclick="toggleSkidThicknessDropdown()">
+        <span id="skidThicknessDropdownLabel">—</span>
+        <span class="thickness-dropdown-arrow">▾</span>
+      </button>
+      <div class="thickness-dropdown-panel" id="skidThicknessDropdownPanel">
+        <div class="fastening-option-list">
+          <label><input type="radio" name="skidThickness" value="25" onchange="onSkidThicknessChange(this)"><span>25 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="32" onchange="onSkidThicknessChange(this)"><span>32 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="40" onchange="onSkidThicknessChange(this)"><span>40 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="50" checked onchange="onSkidThicknessChange(this)"><span>50 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="100" onchange="onSkidThicknessChange(this)"><span>100 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="150" onchange="onSkidThicknessChange(this)"><span>150 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="200" onchange="onSkidThicknessChange(this)"><span>200 мм</span></label>
+        </div>
+      </div>
       <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Не менее 50 мм.</div>
     </div>
   </div>
@@ -1239,12 +1245,30 @@ document.addEventListener('click', e=>{
 buildThicknessCheckboxList();
 updateThicknessSummary();
 
-// ============ Полоз (галочка "нужен ли") ============
+// ============ Полоз (галочка "нужен ли" + толщина) ============
 function onSkidToggle(){
   const enabled = document.getElementById('skidEnabled').checked;
   document.getElementById('skidThicknessRow').style.display = enabled ? '' : 'none';
   document.getElementById('calcCheck').style.visibility = 'hidden';
 }
+
+let skidThicknessValue = 50;
+
+function onSkidThicknessChange(el){
+  skidThicknessValue = parseInt(el.value, 10);
+  updateSkidThicknessSummary();
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+}
+
+function updateSkidThicknessSummary(){
+  document.getElementById('skidThicknessDropdownLabel').textContent = skidThicknessValue + ' мм';
+}
+
+function toggleSkidThicknessDropdown(){
+  document.getElementById('skidThicknessDropdownPanel').classList.toggle('open');
+}
+
+updateSkidThicknessSummary();
 
 function calculate(){
   const errEl = document.getElementById('err');
@@ -1257,7 +1281,7 @@ function calculate(){
   const H = parseFloat(document.getElementById('H').value);
   const MASS = parseFloat(document.getElementById('M').value);
   const skidEnabled = document.getElementById('skidEnabled').checked;
-  const skidThicknessRaw = parseFloat(document.getElementById('skidThickness').value);
+  const skidThicknessRaw = skidThicknessValue;
 
   if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
     errEl.textContent = 'Заполните все поля положительными числами.';
@@ -1319,14 +1343,6 @@ function calculate(){
   }
   const wall = {value: roundUpToAvailable(wallRaw)};
 
-  function checkExtraBoardLimit(name, span, fb){
-    const max = span<=400 ? 1 : 2;
-    const extraQty = fb.extra.reduce((s,e)=>s+e.qty,0);
-    if(extraQty > max){
-      warnings.push(`${name}: досок нестандартной ширины (75-99мм) больше, чем допускает п.5 (не более ${max} при ширине щита ${span<=400?'≤400':'>400'}мм) — фактически ${extraQty}.`);
-    }
-  }
-
   // --- ДНО ---
   const dno = [];
   if(skidEnabled){
@@ -1348,7 +1364,6 @@ function calculate(){
   fbDno.extra.forEach((e,i)=>{
     dno.push({name:'Доска дна (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска дна', spanDno, fbDno);
 
   // --- КРЫШКА ---
   const kryshka = [];
@@ -1361,7 +1376,6 @@ function calculate(){
   fbKryshka.extra.forEach((e,i)=>{
     kryshka.push({name:'Доска крышки (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска крышки', spanKryshka, fbKryshka);
 
   // --- БОКОВОЙ ЩИТ (расчёт на 1 щит, далее удвоение) ---
   const bokovoy = [];
@@ -1373,7 +1387,6 @@ function calculate(){
   fbBok.extra.forEach((e,i)=>{
     bokovoy.push({name:'Доска бокового щита (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска бокового щита', H, fbBok);
 
   // --- ТОРЕЦ (расчёт на 1 щит, далее удвоение) ---
   const torec = [];
@@ -1385,7 +1398,6 @@ function calculate(){
   fbTorec.extra.forEach((e,i)=>{
     torec.push({name:'Доска торцевого щита (дополнительная) '+(i+1), t:wall.value, w:e.width, l:W, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска торцевого щита', H, fbTorec);
 
   // --- Раскосина (укосина) ---
   // Требуется при высоте груза ≥1000мм, длине >5000мм или плотности >3кг/дм³

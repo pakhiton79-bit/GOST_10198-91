@@ -9,7 +9,7 @@ function calculate(){
   const H = parseFloat(document.getElementById('H').value);
   const MASS = parseFloat(document.getElementById('M').value);
   const skidEnabled = document.getElementById('skidEnabled').checked;
-  const skidThicknessRaw = parseFloat(document.getElementById('skidThickness').value);
+  const skidThicknessRaw = skidThicknessValue;
 
   if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
     errEl.textContent = 'Заполните все поля положительными числами.';
@@ -71,14 +71,6 @@ function calculate(){
   }
   const wall = {value: roundUpToAvailable(wallRaw)};
 
-  function checkExtraBoardLimit(name, span, fb){
-    const max = span<=400 ? 1 : 2;
-    const extraQty = fb.extra.reduce((s,e)=>s+e.qty,0);
-    if(extraQty > max){
-      warnings.push(`${name}: досок нестандартной ширины (75-99мм) больше, чем допускает п.5 (не более ${max} при ширине щита ${span<=400?'≤400':'>400'}мм) — фактически ${extraQty}.`);
-    }
-  }
-
   // --- ДНО ---
   const dno = [];
   if(skidEnabled){
@@ -100,7 +92,6 @@ function calculate(){
   fbDno.extra.forEach((e,i)=>{
     dno.push({name:'Доска дна (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска дна', spanDno, fbDno);
 
   // --- КРЫШКА ---
   const kryshka = [];
@@ -113,7 +104,6 @@ function calculate(){
   fbKryshka.extra.forEach((e,i)=>{
     kryshka.push({name:'Доска крышки (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска крышки', spanKryshka, fbKryshka);
 
   // --- БОКОВОЙ ЩИТ (расчёт на 1 щит, далее удвоение) ---
   const bokovoy = [];
@@ -125,7 +115,6 @@ function calculate(){
   fbBok.extra.forEach((e,i)=>{
     bokovoy.push({name:'Доска бокового щита (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска бокового щита', H, fbBok);
 
   // --- ТОРЕЦ (расчёт на 1 щит, далее удвоение) ---
   const torec = [];
@@ -137,7 +126,6 @@ function calculate(){
   fbTorec.extra.forEach((e,i)=>{
     torec.push({name:'Доска торцевого щита (дополнительная) '+(i+1), t:wall.value, w:e.width, l:W, qty:e.qty});
   });
-  checkExtraBoardLimit('Доска торцевого щита', H, fbTorec);
 
   // --- Раскосина (укосина) ---
   // Требуется при высоте груза ≥1000мм, длине >5000мм или плотности >3кг/дм³

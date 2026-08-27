@@ -93,9 +93,27 @@ document.addEventListener('click', e=>{
 buildThicknessCheckboxList();
 updateThicknessSummary();
 
-// ============ Полоз (галочка "нужен ли") ============
+// ============ Полоз (галочка "нужен ли" + толщина) ============
 function onSkidToggle(){
   const enabled = document.getElementById('skidEnabled').checked;
   document.getElementById('skidThicknessRow').style.display = enabled ? '' : 'none';
   document.getElementById('calcCheck').style.visibility = 'hidden';
 }
+
+let skidThicknessValue = 50;
+
+function onSkidThicknessChange(el){
+  skidThicknessValue = parseInt(el.value, 10);
+  updateSkidThicknessSummary();
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+}
+
+function updateSkidThicknessSummary(){
+  document.getElementById('skidThicknessDropdownLabel').textContent = skidThicknessValue + ' мм';
+}
+
+function toggleSkidThicknessDropdown(){
+  document.getElementById('skidThicknessDropdownPanel').classList.toggle('open');
+}
+
+updateSkidThicknessSummary();

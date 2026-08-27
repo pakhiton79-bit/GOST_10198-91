@@ -76,17 +76,23 @@
         <span>Полоз нужен<span class="option-hint">Если не нужен — в дне вместо полоза используется планка</span></span>
       </label>
     </div>
-    <div id="skidThicknessRow" style="margin-top:14px;max-width:220px;">
-      <label for="skidThickness">Толщина полоза, мм</label>
-      <select id="skidThickness">
-        <option value="25">25</option>
-        <option value="32">32</option>
-        <option value="40">40</option>
-        <option value="50" selected>50</option>
-        <option value="100">100</option>
-        <option value="150">150</option>
-        <option value="200">200</option>
-      </select>
+    <div id="skidThicknessRow" class="thickness-filter dropdown-wrap" style="margin-top:14px;max-width:260px;">
+      <label>Толщина полоза, мм</label>
+      <button type="button" class="thickness-dropdown-btn" id="skidThicknessDropdownBtn" onclick="toggleSkidThicknessDropdown()">
+        <span id="skidThicknessDropdownLabel">—</span>
+        <span class="thickness-dropdown-arrow">▾</span>
+      </button>
+      <div class="thickness-dropdown-panel" id="skidThicknessDropdownPanel">
+        <div class="fastening-option-list">
+          <label><input type="radio" name="skidThickness" value="25" onchange="onSkidThicknessChange(this)"><span>25 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="32" onchange="onSkidThicknessChange(this)"><span>32 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="40" onchange="onSkidThicknessChange(this)"><span>40 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="50" checked onchange="onSkidThicknessChange(this)"><span>50 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="100" onchange="onSkidThicknessChange(this)"><span>100 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="150" onchange="onSkidThicknessChange(this)"><span>150 мм</span></label>
+          <label><input type="radio" name="skidThickness" value="200" onchange="onSkidThicknessChange(this)"><span>200 мм</span></label>
+        </div>
+      </div>
       <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Не менее 50 мм.</div>
     </div>
   </div>
