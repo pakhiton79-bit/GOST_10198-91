@@ -45,10 +45,16 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
   const heightFarX = stubR + extOffset;
   const dblArrowX = stubR + extOffset*0.55;
 
+  // Стрелка длины доски - над фото, от края до края щита.
+  const topLineY = -0.10*IH;
+
   // Стрелка толщины планки - указывает на выступающий верхний левый угол
-  // первой планки.
+  // первой планки; идёт сверху, в той же зоне, что и стрелка длины доски
+  // (а не слева от кадра, как раньше) - иначе под неё резервируется
+  // большой отступ слева, и весь чертёж визуально уезжает вправо от
+  // заголовка секции.
   const thickTargetY = topY*0.67;
-  const thickTailX = -0.0484*IW, thickTailY = 0.3767*IH;
+  const thickTailX = p1L - 0.03*IW, thickTailY = topLineY;
 
   // Скобка "отступ от края до крайней планки" - в поле под фото (снимки
   // содержат запас по высоте под рамкой щита специально под эту скобку).
@@ -57,9 +63,6 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
   const bracketMidX = (stubL+p1L)/2;
   const edgeTailX = 0.420*IW, edgeTailY = 1.17*IH;
   const edgeLabelX = 0.497*IW, edgeLabelY = 1.194*IH;
-
-  // Стрелка длины доски - над фото, от края до края щита.
-  const topLineY = -0.10*IH;
 
   const height = Math.round(heightVal);
   const plankT = Math.round(plankTVal);
@@ -71,7 +74,7 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
     {type:'line', x1:stubR, y1:botY, x2:heightFarX, y2:botY},
     {type:'double', x1:dblArrowX, y1:topY, x2:dblArrowX, y2:botY, lx:dblArrowX+7, ly:(topY+botY)/2, text: height+' мм', vertical:true},
 
-    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX+25, ly:thickTailY+45, text: plankT+' мм'},
+    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX, ly:thickTailY+20, text: plankT+' мм'},
 
     {type:'line', x1:stubL, y1:bracketYStart, x2:stubL, y2:bracketYEnd},
     {type:'line', x1:p1L, y1:bracketYStart, x2:p1L, y2:bracketYEnd},

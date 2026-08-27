@@ -115,6 +115,12 @@
     font-size:16px;
     background:#ffffff;
     color:var(--ink);
+    -moz-appearance:textfield;
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
   }
   input[type=number]:focus{
     outline:2px solid var(--accent);
@@ -656,19 +662,19 @@
     <div class="inputs">
       <div>
         <label for="L">Длина</label>
-        <input type="number" id="L" value="1500" min="1">
+        <input type="number" id="L" min="1">
       </div>
       <div>
         <label for="W">Ширина</label>
-        <input type="number" id="W" value="1000" min="1">
+        <input type="number" id="W" min="1">
       </div>
       <div>
         <label for="H">Высота</label>
-        <input type="number" id="H" value="700" min="1">
+        <input type="number" id="H" min="1">
       </div>
       <div>
         <label for="M">Масса груза, кг</label>
-        <input type="number" id="M" value="500" min="1">
+        <input type="number" id="M" min="1">
       </div>
     </div>
   </div>
@@ -719,8 +725,6 @@
       <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Не менее 50 мм.</div>
     </div>
   </div>
-
-  <div class="disclaimer" style="margin:4px 2px 16px;">Чертежи ещё не готовы — вместо них показаны заглушки. Таблицы деталей рассчитаны полностью, кроме раскосин (см. предупреждения).</div>
 
   <div class="card action-card">
     <button onclick="calculate()">Рассчитать</button>
@@ -1047,10 +1051,16 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
   const heightFarX = stubR + extOffset;
   const dblArrowX = stubR + extOffset*0.55;
 
+  // Стрелка длины доски - над фото, от края до края щита.
+  const topLineY = -0.10*IH;
+
   // Стрелка толщины планки - указывает на выступающий верхний левый угол
-  // первой планки.
+  // первой планки; идёт сверху, в той же зоне, что и стрелка длины доски
+  // (а не слева от кадра, как раньше) - иначе под неё резервируется
+  // большой отступ слева, и весь чертёж визуально уезжает вправо от
+  // заголовка секции.
   const thickTargetY = topY*0.67;
-  const thickTailX = -0.0484*IW, thickTailY = 0.3767*IH;
+  const thickTailX = p1L - 0.03*IW, thickTailY = topLineY;
 
   // Скобка "отступ от края до крайней планки" - в поле под фото (снимки
   // содержат запас по высоте под рамкой щита специально под эту скобку).
@@ -1059,9 +1069,6 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
   const bracketMidX = (stubL+p1L)/2;
   const edgeTailX = 0.420*IW, edgeTailY = 1.17*IH;
   const edgeLabelX = 0.497*IW, edgeLabelY = 1.194*IH;
-
-  // Стрелка длины доски - над фото, от края до края щита.
-  const topLineY = -0.10*IH;
 
   const height = Math.round(heightVal);
   const plankT = Math.round(plankTVal);
@@ -1073,7 +1080,7 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
     {type:'line', x1:stubR, y1:botY, x2:heightFarX, y2:botY},
     {type:'double', x1:dblArrowX, y1:topY, x2:dblArrowX, y2:botY, lx:dblArrowX+7, ly:(topY+botY)/2, text: height+' мм', vertical:true},
 
-    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX+25, ly:thickTailY+45, text: plankT+' мм'},
+    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX, ly:thickTailY+20, text: plankT+' мм'},
 
     {type:'line', x1:stubL, y1:bracketYStart, x2:stubL, y2:bracketYEnd},
     {type:'line', x1:p1L, y1:bracketYStart, x2:p1L, y2:bracketYEnd},
@@ -1716,7 +1723,7 @@ function calculate(){
   // (см. raskosinaNeeded выше). Геометрия - по уточнению пользователя, без
   // проверки по чертежам (их пока нет): раскосина - прямоугольный треугольник.
   if(raskosinaNeeded){
-    warnings.push(`Раскосина требуется (высота груза ≥1000мм и/или длина >5000мм и/или плотность упаковывания ${density.toFixed(2)} кг/дм³ >3) — геометрия предварительная, чертежей пока нет.`);
+    warnings.push(`Раскосина требуется (высота груза ≥1000мм и/или длина >5000мм и/или плотность упаковывания ${density.toFixed(2)} кг/дм³ >3).`);
 
     // Торец: всегда 1 раскосина. Катеты - расстояния внутри рамки из 2
     // вертикальных + 2 горизонтальных планок (за вычетом их ширины).
@@ -1818,7 +1825,8 @@ function calculate(){
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
 
-calculate();
+// Поля размеров пустые при открытии - автоматический расчёт при загрузке
+// не выполняется (иначе сразу показывалась бы ошибка "заполните поля").
 
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
