@@ -254,9 +254,7 @@ function calculate(){
   const t11=roundUpToAvailable(endBeam.h), w11=endBeam.w, k11=W, l11=2;
   dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
 
-  // Толщина доски дна - по новому правилу (действует всегда, независимо от галочки
-  // «сплошное жёсткое основание груза»): масса ≤1000кг - не менее 16мм, иначе - не менее 19мм.
-  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floorBoardThicknessNew(MASS)), k12=W;
+  /*__FLOOR_BOARD_CALC__*/
   // Доска дна: максимум досок 100мм + при необходимости 1-2 доски 75-99мм на остаток
   // (fillBoards), заполняем пространство (длина груза - 2×ширина торцового бруса дна).
   const fbDno = fillBoards(L - w11*2);

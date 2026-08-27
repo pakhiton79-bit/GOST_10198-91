@@ -208,12 +208,37 @@ function endBeamSection(mass){
   return {h:125,w:125};
 }
 
-// Толщина доски дна по массе груза (заменяет старую Таблицу 4 п.1.6.9 -
-// действует всегда, независимо от галочки «сплошное жёсткое основание груза»,
-// которая влияет только на подбор полозьев): масса ≤1000кг - не менее 16мм,
-// масса ≤20000кг - не менее 19мм.
+// Толщина доски дна по массе груза (GOST10198_91POLOZIA.html - крепление за
+// полозья): масса ≤1000кг - не менее 16мм, масса ≤20000кг - не менее 19мм.
 function floorBoardThicknessNew(mass){
   return mass<=1000 ? 16 : 19;
+}
+
+// ГОСТ 10198-91, Таблица 4 (п.1.6.9): толщина досок дна при креплении груза
+// к доскам дна, по удельной нагрузке и расстоянию между осями смежных
+// полозьев (GOST10198_91DOSKI_DNA.html - крепление к доскам дна).
+const T4_LOADS = [0.10,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
+const T4_DISTANCES = [500,600,800,1000,1200];
+const TABLE4 = [
+  [19,19,19,22,25],
+  [19,19,22,32,32],
+  [19,22,25,32,40],
+  [19,22,32,40,40],
+  [19,22,32,40,50],
+  [22,25,32,40,50],
+  [22,25,40,50,50],
+  [22,32,40,50,50],
+];
+function floorBoardThickness(mass, Lmm, Wmm, distanceMm){
+  const S_cm2 = (Lmm/10)*(Wmm/10);
+  const udel = mass/S_cm2;
+  let exceeded = false;
+  if(udel<0.10) return {value:19, udel, exceeded:false}; // примечание 2 к табл.4
+  let rowIdx = T4_LOADS.findIndex(v=>udel<=v);
+  if(rowIdx===-1){ rowIdx = T4_LOADS.length-1; exceeded = true; }
+  let colIdx = T4_DISTANCES.findIndex(v=>distanceMm<=v);
+  if(colIdx===-1){ colIdx = T4_DISTANCES.length-1; exceeded = true; }
+  return {value:TABLE4[rowIdx][colIdx], udel, exceeded};
 }
 
 // ГОСТ 10198-91, Таблица 14: толщина поперечных брусьев крышки для нештабелируемых
