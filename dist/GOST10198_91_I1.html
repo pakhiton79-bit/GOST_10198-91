@@ -662,19 +662,19 @@
     <div class="inputs">
       <div>
         <label for="L">Длина</label>
-        <input type="number" id="L" min="1">
+        <input type="number" id="L" value="1500" min="1">
       </div>
       <div>
         <label for="W">Ширина</label>
-        <input type="number" id="W" min="1">
+        <input type="number" id="W" value="1000" min="1">
       </div>
       <div>
         <label for="H">Высота</label>
-        <input type="number" id="H" min="1">
+        <input type="number" id="H" value="700" min="1">
       </div>
       <div>
         <label for="M">Масса груза, кг</label>
-        <input type="number" id="M" min="1">
+        <input type="number" id="M" value="500" min="1">
       </div>
     </div>
   </div>
@@ -1825,8 +1825,7 @@ function calculate(){
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
 
-// Поля размеров пустые при открытии - автоматический расчёт при загрузке
-// не выполняется (иначе сразу показывалась бы ошибка "заполните поля").
+calculate();
 
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{

@@ -664,19 +664,19 @@
     <div class="inputs">
       <div>
         <label for="L">Длина</label>
-        <input type="number" id="L" min="1">
+        <input type="number" id="L" value="2350" min="1">
       </div>
       <div>
         <label for="W">Ширина</label>
-        <input type="number" id="W" min="1">
+        <input type="number" id="W" value="1400" min="1">
       </div>
       <div>
         <label for="H">Высота</label>
-        <input type="number" id="H" min="1">
+        <input type="number" id="H" value="900" min="1">
       </div>
       <div>
         <label for="M">Масса груза, кг</label>
-        <input type="number" id="M" min="1">
+        <input type="number" id="M" value="1000" min="1">
       </div>
     </div>
   </div>
@@ -2512,8 +2512,7 @@ function calculate(){
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
 
-// Поля размеров пустые при открытии - автоматический расчёт при загрузке
-// не выполняется (иначе сразу показывалась бы ошибка "заполните поля").
+calculate();
 
 // Галочка "расчёт выполнен" сбрасывается, если пользователь меняет входные
 // данные после расчёта — чтобы не вводить в заблуждение устаревшим результатом.

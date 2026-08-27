@@ -244,8 +244,7 @@ function calculate(){
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
 
-// Поля размеров пустые при открытии - автоматический расчёт при загрузке
-// не выполняется (иначе сразу показывалась бы ошибка "заполните поля").
+calculate();
 
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
