@@ -2,18 +2,22 @@
 """Собирает src/*.{html,css,js} + src/images/* в готовые файлы dist/*.html.
 
 Два независимых калькулятора (разная методика ГОСТ 10198-91), у каждого
-свой набор исходников, но общий src/style.css (единый визуальный стиль)
-и общий src/common-print.js (механика печати - подгонка под 1 лист А4,
+свой набор исходников, но общий src/style.css (единый визуальный стиль),
+общий src/common-print.js (механика печати - подгонка под 1 лист А4,
 резерв места под вылет подписей чертежей - в обоих типах одинаковая,
-кроме содержимого buildPrintHtml(), которое остаётся в каждом типе своё):
+кроме содержимого buildPrintHtml(), которое остаётся в каждом типе своё)
+и общий src/common-diagrams.js (рендер чертежей-фото renderDiagram() и
+общие для обоих типов чертёж торца без раскосины/с 1 раскосиной - у
+типа I-1 раскосин на торце не бывает больше одной):
 
 == Тип I-3 (крепление за полозья / к доскам дна) ==
 src/calc.src.html - HTML-каркас с плейсхолдерами:
-  /*__STYLE_CSS__*/        -> src/style.css
-  /*__LOGIC_JS__*/         -> src/logic.js (расчётные формулы ГОСТ)
-  /*__DIAGRAMS_JS__*/      -> src/diagrams.js (чертежи деталей)
-  /*__COMMON_PRINT_JS__*/  -> src/common-print.js (общая механика печати)
-  /*__APP_JS__*/           -> src/app.js (UI, calculate(), buildPrintHtml())
+  /*__STYLE_CSS__*/          -> src/style.css
+  /*__LOGIC_JS__*/           -> src/logic.js (расчётные формулы ГОСТ)
+  /*__COMMON_DIAGRAMS_JS__*/ -> src/common-diagrams.js (общий рендер чертежей)
+  /*__DIAGRAMS_JS__*/        -> src/diagrams.js (чертежи деталей)
+  /*__COMMON_PRINT_JS__*/    -> src/common-print.js (общая механика печати)
+  /*__APP_JS__*/             -> src/app.js (UI, calculate(), buildPrintHtml())
 Плюс три плейсхолдера - единственные места, где расходятся два файла этого
 типа (иначе всё общее): /*__FLOOR_BOARD_CALC__*/ и /*__FASTENING_DEFAULT__*/
 (в src/app.js), <!--__FASTENING_OPTIONS__--> (в src/calc.src.html).
@@ -50,11 +54,13 @@ DIST_DIR = ROOT / "dist"
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
+COMMON_DIAGRAMS_JS = SRC_DIR / "common-diagrams.js"
 
 I3_SHELL = SRC_DIR / "calc.src.html"
 I3_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__LOGIC_JS__*/": SRC_DIR / "logic.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__APP_JS__*/": SRC_DIR / "app.js",
@@ -79,6 +85,7 @@ I1_SHELL = I1_DIR / "shell.html"
 I1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__LOGIC_JS__*/": I1_DIR / "logic.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": I1_DIR / "diagrams.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__UI_JS__*/": I1_DIR / "ui.js",
