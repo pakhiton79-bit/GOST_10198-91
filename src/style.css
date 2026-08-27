@@ -340,7 +340,7 @@
   .spec-row-diagram{
     display:flex;
     gap:34px;
-    align-items:flex-start;
+    align-items:center;
   }
   .spec-row-diagram .spec-table{flex:1;min-width:0;margin-bottom:0;}
 

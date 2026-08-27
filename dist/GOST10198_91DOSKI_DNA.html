@@ -350,7 +350,7 @@
   .spec-row-diagram{
     display:flex;
     gap:34px;
-    align-items:flex-start;
+    align-items:center;
   }
   .spec-row-diagram .spec-table{flex:1;min-width:0;margin-bottom:0;}
 
@@ -734,7 +734,7 @@
     <div class="fastening-option-list">
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм, толщина планки бокового щита увеличивается на 2 мм</span></span>
       </label>
       <label>
         <input type="checkbox" id="removeFloorBoards">
@@ -1464,9 +1464,10 @@ function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKr
   // Ширина груза + толщина основной доски боковой стенки*2.
   const valWidth       = Math.round(widthMm + t41*2);
   // Толщина основной доски бокового щита (t41) — постоянная величина, от «Оптимизировать размеры»
-  // не зависит (эта галочка меняет только длину внутреннего поперечного бруса, k21).
+  // не зависит.
   const valBokThick     = Math.round(t41);
-  // Толщина вертикальной боковой планки (t40, планка бокового щита).
+  // Толщина вертикальной боковой планки (t40, планка бокового щита) - при
+  // «Оптимизировать размеры» увеличена на 2мм (см. вызов в app.js).
   const valPlankaThick  = Math.round(t40);
   // Расстояние от крайней планки крышки до края крышки (edgeDistKryshka = min(L/6, 1000)).
   const valEdgePlanka   = Math.round(edgeDistKryshkaMm);
@@ -2305,7 +2306,7 @@ function calculate(){
   if(crossBeam.exceeded){
     warnings.push('Масса или ширина ящика вне Табл. 14 — брус крышки принят по крайнему значению.');
   }
-  const t21=roundUpToAvailable(crossBeam.value), w21=100, k21=W - (optimizeSizes ? 2 : 0), l21=ceilInt(L/800);
+  const t21=roundUpToAvailable(crossBeam.value), w21=100, k21=W - (optimizeSizes ? 4 : 0), l21=ceilInt(L/800);
   kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21});
 
   const volKryshka = vol(t19,w19,k19,l19)+vol(t20,w20,k20,l20)+vol(t21,w21,k21,l21)
@@ -2411,7 +2412,9 @@ function calculate(){
   // Планка (вертикальная): длина = высота груза + 2/3 толщины полоза (не более 70мм).
   // Количество — равно количеству планок крышки (l19), планки бокового щита стоят по
   // тем же местам, что и планки крышки.
-  const t40 = wall.value, w40 = 100;
+  // При «Оптимизировать размеры» толщина планки бокового щита увеличивается
+  // на 2мм (с переокруглением до ближайшей доступной «в наличии» толщины).
+  const t40 = optimizeSizes ? roundUpToAvailable(wallRaw.value + 2) : wall.value, w40 = 100;
   const k40 = H + Math.min(t9*2/3, 70);
   const l40 = l19;
 
