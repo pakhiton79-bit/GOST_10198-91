@@ -1669,7 +1669,8 @@ function calculate(){
   // планка) + доска дна + доска крышки; ширина/длина груза + толщина
   // соответствующих боковых/торцовых досок с двух сторон. Требует проверки.
   const bottomSupport = skidEnabled ? roundUpToAvailable(Math.max(skidThicknessRaw, 50)) : wall.value;
-  const outerH = H + bottomSupport + wall.value + wall.value;
+  // Опора снизу + доска дна + высота груза + доска крышки + планка крышки.
+  const outerH = bottomSupport + wall.value*3 + H;
   const outerW = W + wall.value*2;
   const outerL = L + wall.value*2;
 

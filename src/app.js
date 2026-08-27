@@ -280,7 +280,8 @@ function calculate(){
   // --- Наружные размеры ---
   const outerL = L+150;
   const outerW = W+100;
-  const outerH = H + t9 + t12 + wall.value + wall.value; // H + полоз + доска дна + доска крышки + планка крышки
+  // H + (подполозная доска, если не убрана) + полоз + доска дна + доска крышки + планка крышки
+  const outerH = (removeSkidBoards ? 0 : t10) + t9 + t12 + wall.value + wall.value + H;
 
   // --- КРЫШКА ---
   const kryshka = [];
@@ -372,7 +373,7 @@ function calculate(){
     return Math.atan2(k30, torecSectionWidth(sections)) * 180 / Math.PI;
   }
   let torecSections = 1;
-  if(H > 600 && W > 600){
+  if(outerH > 600 && W > 600){
     while(torecAngleDeg(torecSections) < 20 && torecSections < 4){
       torecSections++;
     }
@@ -382,7 +383,7 @@ function calculate(){
   }
   // п.102 docx: при ширине груза 600мм или менее раскосины на торце тоже не нужны
   // (независимо от высоты).
-  const torecHasRaskosina = H > 600 && W > 600 && !(torecSections === 1 && torecAngleDeg(1) > 60);
+  const torecHasRaskosina = outerH > 600 && W > 600 && !(torecSections === 1 && torecAngleDeg(1) > 60);
 
   const l30 = (torecSections + 1) * torecFloors; // вертикальная планка: (секций+1) на каждый этаж
 
@@ -465,7 +466,7 @@ function calculate(){
   const bokSectionW = l19 > 1 ? middleKryshka / (l19 - 1) : 0;
   const bokVertSpan = bokFloors === 2 ? ((H + t12) - w43) / 2 : H + t12;
   const k42 = Math.sqrt(Math.pow(bokSectionW,2) + Math.pow(bokVertSpan,2));
-  const bokHasRaskosina = H > 600 && l19 > 1;
+  const bokHasRaskosina = outerH > 600 && l19 > 1;
   const l42 = bokHasRaskosina ? (l19 - 1) * bokFloors : 0;
 
   const volBokPanel = vol(t40,w40,k40,l40) + vol(t41,w41,k41,l41)
@@ -508,7 +509,7 @@ function calculate(){
     return html;
   }
 
-  const torecNoRaskosinaDiagram = !torecHasRaskosina && (H <= 600 || W > 600);
+  const torecNoRaskosinaDiagram = !torecHasRaskosina && (outerH <= 600 || W > 600);
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9Base, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
