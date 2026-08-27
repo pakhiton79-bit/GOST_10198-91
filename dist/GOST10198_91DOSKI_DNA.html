@@ -2209,7 +2209,7 @@ function calculate(){
 
     // Толщина доски дна - Таблица 4 (п.1.6.9): по удельной нагрузке на дно и
   // расстоянию между осями смежных полозьев.
-  const floorSkidDistance = Math.min(W, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
+  const floorSkidDistance = Math.min(skidCalcWidth, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
   const floor = floorBoardThickness(MASS, L, W, floorSkidDistance); // Таблица 4
   if(floor.exceeded){
     const loadExceeded = floor.udel > T4_LOADS[T4_LOADS.length-1];
@@ -2250,9 +2250,9 @@ function calculate(){
   const outerL = k9Base;
   // Ширина груза + толщина досок бокового щита*2 + толщина боковых планок*2.
   const outerW = W + wall.value*4;
-  // H + (подполозная доска, если не убрана) + полоз + доска дна (если не
-  // убрана) + доска крышки + планка крышки.
-  const outerH = (removeSkidBoards ? 0 : t10) + t9 + (removeFloorBoards ? 0 : t12) + wall.value + wall.value + H;
+  // H + (подполозная доска, если не убрана) + полоз + доска дна (t12 уже 0,
+  // если убрана - см. variants/floor_board_*.js) + доска крышки + планка крышки.
+  const outerH = (removeSkidBoards ? 0 : t10) + t9 + t12 + wall.value + wall.value + H;
 
   // --- КРЫШКА ---
   const kryshka = [];

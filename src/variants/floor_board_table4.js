@@ -1,6 +1,6 @@
   // Толщина доски дна - Таблица 4 (п.1.6.9): по удельной нагрузке на дно и
   // расстоянию между осями смежных полозьев.
-  const floorSkidDistance = Math.min(W, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
+  const floorSkidDistance = Math.min(skidCalcWidth, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
   const floor = floorBoardThickness(MASS, L, W, floorSkidDistance); // Таблица 4
   if(floor.exceeded){
     const loadExceeded = floor.udel > T4_LOADS[T4_LOADS.length-1];

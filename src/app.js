@@ -286,9 +286,9 @@ function calculate(){
   const outerL = k9Base;
   // Ширина груза + толщина досок бокового щита*2 + толщина боковых планок*2.
   const outerW = W + wall.value*4;
-  // H + (подполозная доска, если не убрана) + полоз + доска дна (если не
-  // убрана) + доска крышки + планка крышки.
-  const outerH = (removeSkidBoards ? 0 : t10) + t9 + (removeFloorBoards ? 0 : t12) + wall.value + wall.value + H;
+  // H + (подполозная доска, если не убрана) + полоз + доска дна (t12 уже 0,
+  // если убрана - см. variants/floor_board_*.js) + доска крышки + планка крышки.
+  const outerH = (removeSkidBoards ? 0 : t10) + t9 + t12 + wall.value + wall.value + H;
 
   // --- КРЫШКА ---
   const kryshka = [];
