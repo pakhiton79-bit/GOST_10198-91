@@ -80,6 +80,7 @@ function calculate(){
 
   // --- ДНО ---
   const dno = [];
+  let dnoWidth; // для чертежа - см. diagramDno() ниже
   if(skidEnabled){
     const t9 = roundUpToAvailable(Math.max(skidThicknessRaw, 50));
     if(skidThicknessRaw < 50){
@@ -88,9 +89,11 @@ function calculate(){
     const w9 = 100;
     const k9 = W + wall.value*2; // ширина груза + толщина доски бокового щита*2
     dno.push({name:'Полоз', t:t9, w:w9, l:k9, qty:plankQty});
+    dnoWidth = k9;
   } else {
     const kPlanka = W + wall.value*4; // ширина груза + (толщина доски бок.щита + толщина боковой планки)*2
     dno.push({name:'Планка', t:wall.value, w:100, l:kPlanka, qty:plankQty});
+    dnoWidth = kPlanka;
   }
   const spanDno = W + wall.value*2; // ширина груза + толщина доски дна*2
   const fbDno = fillBoards(spanDno);
@@ -211,12 +214,12 @@ function calculate(){
   }
 
   let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno() + `</div>` + renderSection('', dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka() + `</div>` + renderSection('', kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(H, W, raskosinaNeeded) + `</div>` + renderSection('', torec) + `</div>`;
   if(plankQty > 4){
-    warnings.push(`Число планок бокового щита (${plankQty}) больше максимального доступного на чертеже (4) — показан чертёж с 4 планками.`);
+    warnings.push(`Число планок (${plankQty}) больше максимального доступного на чертежах дна/крышки/бока (4) — показаны чертежи с 4 планками.`);
   }
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(dnoWidth, kLen, plank.edgeDist, plankQty, raskosinaNeeded) + `</div>` + renderSection('', dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(kPlankaKryshka, kLen, plank.edgeDist, plankQty, raskosinaNeeded) + `</div>` + renderSection('', kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(H, W, raskosinaNeeded) + `</div>` + renderSection('', torec) + `</div>`;
   tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, wall.value, plank.edgeDist, kLen, plankQty, raskosinaNeeded) + `</div>` + renderSection('', bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
