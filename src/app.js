@@ -299,7 +299,7 @@ function calculate(){
     warnings.push(`Планка крышки: длина ящика ${Math.round(k9Base)} мм недостаточна для отступа — принято минимальное количество (2 шт.).`);
     l19 = 2;
   } else {
-    l19 = ceilInt(middleKryshka/1000) + 2;
+    l19 = ceilInt(middleKryshka/1000) + 1;
   }
   kryshka.push({name:'Планка', t:t19, w:w19, l:k19, qty:l19});
 
