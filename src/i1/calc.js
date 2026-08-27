@@ -244,7 +244,10 @@ function calculate(){
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
 
-calculate();
+// Поля размеров пустые при открытии (по требованию) - автоматический
+// расчёт при загрузке не выполняется. Блок результатов скрыт через CSS
+// (#results{display:none}) и появляется только после первого успешного
+// расчёта - это ожидаемое поведение, а не ошибка.
 
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
