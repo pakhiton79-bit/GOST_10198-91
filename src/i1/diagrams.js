@@ -25,27 +25,27 @@ const BOK_I1_4R_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_4planks_3raskosin
 // высота груза, толщина планки, отступ от края до крайней планки, длина
 // доски), координаты которых у каждого фото свои: IW/IH - натуральный размер
 // фото; stubL/stubR - центр крайней (не выступающей) вертикальной линии по
-// краям щита; p1L - центр левого края первой планки; pNR - центр правого
-// края последней планки; topY/botY - y верхней/нижней линии рамки щита.
+// краям щита; p1L - центр левого края первой планки; topY/botY - y верхней/
+// нижней линии рамки щита.
 const BOK_I1_GEOM = {
-  '0_2': {img: BOK_I1_2_IMG_B64,  IW:1178, IH:876, stubL:71.5, p1L:207.5, pNR:987.5,  stubR:1123.5, topY:68.5, botY:786.5},
-  '0_3': {img: BOK_I1_3_IMG_B64,  IW:1807, IH:884, stubL:55.5, p1L:190.5, pNR:1616.5, stubR:1752.5, topY:73.5, botY:792.5},
-  '0_4': {img: BOK_I1_4_IMG_B64,  IW:2208, IH:834, stubL:73.5, p1L:193.5, pNR:2033.5, stubR:2153.5, topY:90.5, botY:728.5},
-  '1_2': {img: BOK_I1_2R_IMG_B64, IW:1141, IH:891, stubL:32.5, p1L:168.5, pNR:948.5,  stubR:1084.5, topY:89.5, botY:807.5},
-  '1_3': {img: BOK_I1_3R_IMG_B64, IW:1812, IH:909, stubL:66.5, p1L:201.5, pNR:1627.5, stubR:1763.5, topY:95.5, botY:814.5},
-  '1_4': {img: BOK_I1_4R_IMG_B64, IW:2212, IH:790, stubL:68.5, p1L:188.5, pNR:2028.5, stubR:2148.5, topY:69.5, botY:707.5},
+  '0_2': {img: BOK_I1_2_IMG_B64,  IW:1178, IH:876, stubL:71.5, p1L:207.5, stubR:1123.5, topY:68.5, botY:786.5},
+  '0_3': {img: BOK_I1_3_IMG_B64,  IW:1807, IH:884, stubL:55.5, p1L:190.5, stubR:1752.5, topY:73.5, botY:792.5},
+  '0_4': {img: BOK_I1_4_IMG_B64,  IW:2208, IH:834, stubL:73.5, p1L:193.5, stubR:2153.5, topY:90.5, botY:728.5},
+  '1_2': {img: BOK_I1_2R_IMG_B64, IW:1141, IH:891, stubL:32.5, p1L:168.5, stubR:1084.5, topY:89.5, botY:807.5},
+  '1_3': {img: BOK_I1_3R_IMG_B64, IW:1812, IH:909, stubL:66.5, p1L:201.5, stubR:1763.5, topY:95.5, botY:814.5},
+  '1_4': {img: BOK_I1_4R_IMG_B64, IW:2212, IH:790, stubL:68.5, p1L:188.5, stubR:2148.5, topY:69.5, botY:707.5},
 };
 
 function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
   const IW = g.IW, IH = g.IH, topY = g.topY, botY = g.botY;
-  const stubL = g.stubL, p1L = g.p1L, pNR = g.pNR, stubR = g.stubR;
+  const stubL = g.stubL, p1L = g.p1L, stubR = g.stubR;
 
-  // Стрелка высоты груза - справа от последней планки, с отступом в поле
-  // за пределами фото (аналогично Дно/торцу - линии-выноски продолжаются
-  // за край снимка).
-  const extOffset = 0.335*IW;
-  const heightFarX = pNR + extOffset;
-  const dblArrowX = pNR + extOffset*0.82;
+  // Стрелка высоты груза - у правого внешнего края щита (stubR, а не у
+  // последней планки - там она уходила бы слишком далеко вправо, через
+  // весь правый торцевой обрез щита), с небольшим отступом за кадр.
+  const extOffset = 0.09*IW;
+  const heightFarX = stubR + extOffset;
+  const dblArrowX = stubR + extOffset*0.55;
 
   // Стрелка толщины планки - указывает на выступающий верхний левый угол
   // первой планки.
@@ -69,8 +69,8 @@ function diagramBokovoyPhoto(g, heightVal, plankTVal, edgeVal, boardLenVal){
   const boardLen = Math.round(boardLenVal);
 
   const records = [
-    {type:'line', x1:pNR, y1:topY, x2:heightFarX, y2:topY},
-    {type:'line', x1:pNR, y1:botY, x2:heightFarX, y2:botY},
+    {type:'line', x1:stubR, y1:topY, x2:heightFarX, y2:topY},
+    {type:'line', x1:stubR, y1:botY, x2:heightFarX, y2:botY},
     {type:'double', x1:dblArrowX, y1:topY, x2:dblArrowX, y2:botY, lx:dblArrowX+7, ly:(topY+botY)/2, text: height+' мм', vertical:true},
 
     {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX+25, ly:thickTailY+45, text: plankT+' мм'},
