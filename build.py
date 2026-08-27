@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Собирает src/*.{html,css,js} + src/images/* в единый готовый файл dist/calc.html.
+"""Собирает src/*.{html,css,js} + src/images/* в единый готовый файл
+dist/GOST10198_91POLOZIA.html.
 
 src/calc.src.html - HTML-каркас (разметка форм и таблиц) с плейсхолдерами:
   /*__STYLE_CSS__*/    -> содержимое src/style.css
@@ -23,7 +24,7 @@ ROOT = Path(__file__).resolve().parent
 SRC_DIR = ROOT / "src"
 SHELL = SRC_DIR / "calc.src.html"
 IMAGES_DIR = SRC_DIR / "images"
-OUT = ROOT / "dist" / "calc.html"
+OUT = ROOT / "dist" / "GOST10198_91POLOZIA.html"
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
