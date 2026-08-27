@@ -71,12 +71,14 @@ I3_VARIANTS = [
         "/*__FLOOR_BOARD_CALC__*/": VARIANTS_DIR / "floor_board_new.js",
         "/*__FASTENING_DEFAULT__*/": VARIANTS_DIR / "fastening_default_polozia.js",
         "<!--__FASTENING_OPTIONS__-->": VARIANTS_DIR / "fastening_options_polozia.html",
+        "<!--__REMOVE_FLOOR_BOARDS_OPTION__-->": VARIANTS_DIR / "remove_floor_boards_polozia.html",
     },
     {
         "out_name": "GOST10198_91DOSKI_DNA.html",
         "/*__FLOOR_BOARD_CALC__*/": VARIANTS_DIR / "floor_board_table4.js",
         "/*__FASTENING_DEFAULT__*/": VARIANTS_DIR / "fastening_default_doski_dna.js",
         "<!--__FASTENING_OPTIONS__-->": VARIANTS_DIR / "fastening_options_doski_dna.html",
+        "<!--__REMOVE_FLOOR_BOARDS_OPTION__-->": VARIANTS_DIR / "remove_floor_boards_doski_dna.html",
     },
 ]
 

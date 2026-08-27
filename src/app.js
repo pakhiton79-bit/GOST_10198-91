@@ -154,8 +154,12 @@ function calculate(){
   const H = parseFloat(document.getElementById('H').value);
   const MASS = parseFloat(document.getElementById('M').value);
   const optimizeSizes = document.getElementById('optimizeSizes').checked;
-  const removeFloorBoards = document.getElementById('removeFloorBoards').checked;
+  // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
+  // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
+  const removeFloorBoardsEl = document.getElementById('removeFloorBoards');
+  const removeFloorBoards = removeFloorBoardsEl ? removeFloorBoardsEl.checked : false;
   const removeSkidBoards = document.getElementById('removeSkidBoards').checked;
+  const roundBoardWidths = document.getElementById('roundBoardWidths').checked;
   const solidRigidBase = document.getElementById('solidRigidBase').checked;
   const forkliftLoading = document.getElementById('forkliftLoading').checked;
 
@@ -261,7 +265,7 @@ function calculate(){
   /*__FLOOR_BOARD_CALC__*/
   // Доска дна: максимум досок 100мм + при необходимости 1-2 доски 75-99мм на остаток
   // (fillBoards), заполняем пространство (длина груза - 2×ширина торцового бруса дна).
-  const fbDno = fillBoards(L - w11*2);
+  const fbDno = fillBoards(L - w11*2, roundBoardWidths);
   const w12 = 100, l12 = fbDno.mainQty;
   if(!removeFloorBoards){
     if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12});
@@ -315,7 +319,7 @@ function calculate(){
   // при необходимости 1-2 доски 75-99мм на остаток (fillBoards). Длина каждой доски —
   // та же наружная длина, что и у полоза (k9Base).
   const t20 = wall.value, k20 = k9Base;
-  const fbKryshka = fillBoards(W + wall.value*2);
+  const fbKryshka = fillBoards(W + wall.value*2, roundBoardWidths);
   const w20 = 100, l20 = fbKryshka.mainQty;
   if(l20>0) kryshka.push({name:'Доска крышки', t:t20, w:w20, l:k20, qty:l20});
   fbKryshka.extra.forEach((e,i)=>{
@@ -405,7 +409,7 @@ function calculate(){
   // Доска торца: заполняем (высота груза + толщина доски дна) досками 100мм + при
   // необходимости 1-2 доски 75-99мм на остаток (fillBoards). Длина каждой доски = ширина груза.
   const t32 = wall.value, k32 = W;
-  const fbTorec = fillBoards(H + t12);
+  const fbTorec = fillBoards(H + t12, roundBoardWidths);
   const w32 = 100, l32 = fbTorec.mainQty;
   if(fbTorec.warn){
     warnings.push('Доска торца: остаток занят доской нестандартной ширины (вне 75–99 мм).');
@@ -452,7 +456,7 @@ function calculate(){
   // 2×(толщина доски торца + толщина вертикальной планки торца) — та же величина, что и
   // наружная длина полоза (k9Base).
   const t41 = wall.value, k41 = k9Base;
-  const fbBok = fillBoards(H + t12);
+  const fbBok = fillBoards(H + t12, roundBoardWidths);
   const w41 = 100, l41 = fbBok.mainQty;
   if(fbBok.warn){
     warnings.push('Доска бока: остаток занят доской нестандартной ширины (вне 75–99 мм).');

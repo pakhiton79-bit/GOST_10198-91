@@ -275,8 +275,14 @@ function crossBeamThickness(mass, outerWmm){
 // необходимое количество (в первую очередь стараемся сохранить максимум досок 100мм).
 // Если разложить строго в 75-99мм не получается (совсем небольшое пространство) —
 // используем как есть и сообщаем через .warn.
-function fillBoards(space){
+function fillBoards(space, roundWidths){
   space = Math.round(space);
+  if(roundWidths){
+    // «Округлить ширину досок» - используем только доски 100мм, без узких
+    // дополнительных досок 75-99мм, даже если по факту это занимает больше
+    // места, чем есть.
+    return {mainQty: ceilInt(space/100), extra: [], warn: false, singleNarrow: false};
+  }
   let mainQty = Math.floor(space/100);
   const remainder = space - mainQty*100;
   const extra = [];

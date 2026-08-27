@@ -39,8 +39,14 @@ function stepDownGrade(v){
 // ширины — выбираются сами, для полного заполнения пространства). Если остаток < 75мм,
 // "занимаем" одну доску 100мм и делим (остаток+100) на 2 доски; если из-за этого ширина
 // всё равно выходит за 75-99мм — используем как есть и сообщаем через .warn.
-function fillBoards(space){
+function fillBoards(space, roundWidths){
   space = Math.round(space);
+  if(roundWidths){
+    // «Округлить ширину досок» - используем только доски 100мм, без узких
+    // дополнительных досок 75-99мм, даже если по факту это занимает больше
+    // места, чем есть.
+    return {mainQty: ceilInt(space/100), extra: [], warn: false, singleNarrow: false};
+  }
   let mainQty = Math.floor(space/100);
   const remainder = space - mainQty*100;
   const extra = [];

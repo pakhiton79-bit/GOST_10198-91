@@ -100,10 +100,7 @@
         <input type="checkbox" id="optimizeSizes">
         <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм, толщина планки бокового щита увеличивается на 2 мм</span></span>
       </label>
-      <label>
-        <input type="checkbox" id="removeFloorBoards">
-        <span>Убрать доски дна</span>
-      </label>
+      <!--__REMOVE_FLOOR_BOARDS_OPTION__-->
       <label>
         <input type="checkbox" id="removeSkidBoards">
         <span>Убрать подполозные доски</span>
@@ -115,6 +112,10 @@
       <label>
         <input type="checkbox" id="solidRigidBase">
         <span>Сплошное жёсткое основание груза<span class="option-hint">Сечение полозьев — по п.1.6.5 (по массе груза), а не по Табл. 19</span></span>
+      </label>
+      <label>
+        <input type="checkbox" id="roundBoardWidths">
+        <span>Округлить ширину досок<span class="option-hint">Только доски шириной 100 мм, без узких дополнительных — даже если по факту это занимает больше места, чем есть</span></span>
       </label>
     </div>
   </div>

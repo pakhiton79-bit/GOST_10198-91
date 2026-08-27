@@ -10,6 +10,7 @@ function calculate(){
   const MASS = parseFloat(document.getElementById('M').value);
   const skidEnabled = document.getElementById('skidEnabled').checked;
   const skidThicknessRaw = skidThicknessValue;
+  const roundBoardWidths = document.getElementById('roundBoardWidths').checked;
 
   if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
     errEl.textContent = 'Заполните все поля положительными числами.';
@@ -96,7 +97,7 @@ function calculate(){
     dnoWidth = kPlanka;
   }
   const spanDno = W + wall.value*2; // ширина груза + толщина доски дна*2
-  const fbDno = fillBoards(spanDno);
+  const fbDno = fillBoards(spanDno, roundBoardWidths);
   const w12 = 100, l12 = fbDno.mainQty;
   if(l12>0) dno.push({name:'Доска дна', t:wall.value, w:w12, l:kLen, qty:l12});
   fbDno.extra.forEach((e,i)=>{
@@ -108,7 +109,7 @@ function calculate(){
   const kPlankaKryshka = W + wall.value*2; // ширина груза + толщина доски бок.щита*2
   kryshka.push({name:'Планка', t:wall.value, w:100, l:kPlankaKryshka, qty:plankQty});
   const spanKryshka = W + wall.value*2; // ширина груза + толщина доски крышки*2
-  const fbKryshka = fillBoards(spanKryshka);
+  const fbKryshka = fillBoards(spanKryshka, roundBoardWidths);
   const w20 = 100, l20 = fbKryshka.mainQty;
   if(l20>0) kryshka.push({name:'Доска крышки', t:wall.value, w:w20, l:kLen, qty:l20});
   fbKryshka.extra.forEach((e,i)=>{
@@ -119,7 +120,7 @@ function calculate(){
   const bokovoy = [];
   const kPlankaBok = H + wall.value*4; // высота груза + (толщина доски крышки + толщина доски дна)*2
   bokovoy.push({name:'Планка', t:wall.value, w:100, l:kPlankaBok, qty:plankQty});
-  const fbBok = fillBoards(H); // расстояние, равное высоте груза
+  const fbBok = fillBoards(H, roundBoardWidths); // расстояние, равное высоте груза
   const w41 = 100, l41 = fbBok.mainQty;
   if(l41>0) bokovoy.push({name:'Доска бокового щита', t:wall.value, w:w41, l:kLen, qty:l41});
   fbBok.extra.forEach((e,i)=>{
@@ -130,7 +131,7 @@ function calculate(){
   const torec = [];
   torec.push({name:'Вертикальная планка', t:wall.value, w:100, l:H, qty:2});
   torec.push({name:'Горизонтальная планка', t:wall.value, w:100, l:horizPlankaLen, qty:2});
-  const fbTorec = fillBoards(H); // расстояние, равное высоте груза
+  const fbTorec = fillBoards(H, roundBoardWidths); // расстояние, равное высоте груза
   const w31 = 100, l31 = fbTorec.mainQty;
   if(l31>0) torec.push({name:'Доска торцевого щита', t:wall.value, w:w31, l:W, qty:l31});
   fbTorec.extra.forEach((e,i)=>{
