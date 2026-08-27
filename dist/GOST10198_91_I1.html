@@ -121,6 +121,21 @@
     outline-offset:2px;
     border-color:var(--accent);
   }
+  select{
+    width:100%;
+    padding:12px 14px;
+    border:1px solid var(--border-input);
+    border-radius:10px;
+    font-family:inherit;
+    font-size:16px;
+    background:#ffffff;
+    color:var(--ink);
+  }
+  select:focus{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+    border-color:var(--accent);
+  }
 
   .comment-field{
     width:100%;
@@ -684,19 +699,18 @@
         <span>Полоз нужен<span class="option-hint">Если не нужен — в дне вместо полоза используется планка</span></span>
       </label>
     </div>
-    <div class="inputs" id="skidThicknessRow" style="margin-top:14px;max-width:260px;">
-      <div>
-        <label for="skidThickness">Толщина полоза, мм (не менее 50)</label>
-        <select id="skidThickness">
-          <option value="25">25</option>
-          <option value="32">32</option>
-          <option value="40">40</option>
-          <option value="50" selected>50</option>
-          <option value="100">100</option>
-          <option value="150">150</option>
-          <option value="200">200</option>
-        </select>
-      </div>
+    <div id="skidThicknessRow" style="margin-top:14px;max-width:220px;">
+      <label for="skidThickness">Толщина полоза, мм</label>
+      <select id="skidThickness">
+        <option value="25">25</option>
+        <option value="32">32</option>
+        <option value="40">40</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+        <option value="150">150</option>
+        <option value="200">200</option>
+      </select>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Не менее 50 мм.</div>
     </div>
   </div>
 
