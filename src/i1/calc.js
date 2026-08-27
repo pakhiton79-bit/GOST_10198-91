@@ -206,7 +206,10 @@ function calculate(){
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno() + `</div>` + renderSection('', dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka() + `</div>` + renderSection('', kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(H, W, raskosinaNeeded) + `</div>` + renderSection('', torec) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy() + `</div>` + renderSection('', bokovoy) + `</div>`;
+  if(plankQty > 4){
+    warnings.push(`Число планок бокового щита (${plankQty}) больше максимального доступного на чертеже (4) — показан чертёж с 4 планками.`);
+  }
+  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, wall.value, plank.edgeDist, kLen, plankQty, raskosinaNeeded) + `</div>` + renderSection('', bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
