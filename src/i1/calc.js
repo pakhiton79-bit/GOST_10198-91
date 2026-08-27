@@ -26,21 +26,18 @@ function calculate(){
 
   // --- Толщина досок/планок/раскосов - по плотности упаковывания (масса/объём груза) ---
   const density = packingDensity(MASS, L, W, H);
-  const wall = {value: roundUpToAvailable(wallThicknessI1(density))};
+  let wallRaw = wallThicknessI1(density); // 22/25/32, до округления "в наличии"
 
   // Раскосина (укосина) обязательна при высоте груза ≥1000мм, длине >5000мм
   // или плотности упаковывания >3кг/дм³ (на боковых, торцовых стенках, дне
-  // и крышке) - формулы её толщины/ширины/длины/количества в исходном
-  // техзадании появятся вместе с чертежами, пока не реализованы.
+  // и крышке) - геометрия ниже (п. "Раскосина") задана без проверки по
+  // чертежам (их пока нет), только по уточнению от пользователя.
   const raskosinaNeeded = H>=1000 || L>5000 || density>3;
-  if(raskosinaNeeded){
-    warnings.push(`Требуется раскосина (высота груза ≥1000мм и/или длина >5000мм и/или плотность упаковывания ${density.toFixed(2)} кг/дм³ >3) — расчёт раскосины не реализован, результат ниже неполный.`);
-  }
 
   // --- Общая длина досок вдоль длины груза (доска дна/крышки/бокового щита) ---
   // Равна длине груза + (толщина доски торца + толщина вертикальной планки
   // торца)*2 - обе толщины равны wall.value (п.1.6.15-аналог для типа I-1).
-  const kLen = L + wall.value*4;
+  const kLen = L + wallRaw*4;
 
   // --- Количество планок (боковой щит и крышка, общая формула) ---
   // 2 крайние на расстоянии kLen/6 от каждого края + промежуточные так, чтобы
@@ -50,7 +47,29 @@ function calculate(){
     errEl.textContent = `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок (по 1/6 с каждого края) — расчёт не выполняется.`;
     return;
   }
-  const plankQty = plank.count; // общее для боковых планок и планок крышки
+  const plankQty = plank.count; // общее для боковых планок, планок крышки, полозьев/планки дна
+  const plankGap = plank.middle / (plankQty-1); // фактическое расстояние между соседними планками
+
+  // Горизонтальная планка торца: ширина груза - ширина вертикальной планки*2.
+  const horizPlankaLen = W - 200;
+  if(horizPlankaLen < 0){
+    errEl.textContent = `Ширина груза ${W} мм недостаточна для двух вертикальных планок торца (по 100мм) — расчёт не выполняется.`;
+    return;
+  }
+
+  // При расстоянии между поясами планок 400-500мм толщина досок/планок/
+  // раскосов снижается на одну градацию (проверяем расстояние между
+  // планками бока/крышки и оба зазора внутри рамки торца).
+  const beltGaps = [plankGap, horizPlankaLen, H-200];
+  const beltGapHit = beltGaps.find(g => g>=400 && g<=500);
+  if(beltGapHit !== undefined){
+    const stepped = stepDownGrade(wallRaw);
+    if(stepped !== wallRaw){
+      warnings.push(`Расстояние между планками ${Math.round(beltGapHit)} мм (400-500мм) — толщина досок/планок/раскосов снижена на одну градацию (${wallRaw}→${stepped} мм).`);
+      wallRaw = stepped;
+    }
+  }
+  const wall = {value: roundUpToAvailable(wallRaw)};
 
   function checkExtraBoardLimit(name, span, fb){
     const max = span<=400 ? 1 : 2;
@@ -110,11 +129,6 @@ function calculate(){
 
   // --- ТОРЕЦ (расчёт на 1 щит, далее удвоение) ---
   const torec = [];
-  const horizPlankaLen = W - 200; // ширина груза - ширина вертикальной планки*2 (100мм каждая)
-  if(horizPlankaLen < 0){
-    errEl.textContent = `Ширина груза ${W} мм недостаточна для двух вертикальных планок торца (по 100мм) — расчёт не выполняется.`;
-    return;
-  }
   torec.push({name:'Вертикальная планка', t:wall.value, w:100, l:H, qty:2});
   torec.push({name:'Горизонтальная планка', t:wall.value, w:100, l:horizPlankaLen, qty:2});
   const fbTorec = fillBoards(H); // расстояние, равное высоте груза
@@ -124,6 +138,41 @@ function calculate(){
     torec.push({name:'Доска торцевого щита (дополнительная) '+(i+1), t:wall.value, w:e.width, l:W, qty:e.qty});
   });
   checkExtraBoardLimit('Доска торцевого щита', H, fbTorec);
+
+  // --- Раскосина (укосина) ---
+  // Требуется при высоте груза ≥1000мм, длине >5000мм или плотности >3кг/дм³
+  // (см. raskosinaNeeded выше). Геометрия - по уточнению пользователя, без
+  // проверки по чертежам (их пока нет): раскосина - прямоугольный треугольник.
+  if(raskosinaNeeded){
+    warnings.push(`Раскосина требуется (высота груза ≥1000мм и/или длина >5000мм и/или плотность упаковывания ${density.toFixed(2)} кг/дм³ >3) — геометрия предварительная, чертежей пока нет.`);
+
+    // Торец: всегда 1 раскосина. Катеты - расстояния внутри рамки из 2
+    // вертикальных + 2 горизонтальных планок (за вычетом их ширины).
+    const torecLegH = H - 200;
+    const torecLegW = horizPlankaLen - 200;
+    if(torecLegH <= 0 || torecLegW <= 0){
+      errEl.textContent = `Недостаточно места для раскосины торца (катеты должны быть >0, получено ${Math.round(torecLegH)}×${Math.round(torecLegW)} мм) — расчёт не выполняется.`;
+      return;
+    }
+    const torecRaskosinaLen = Math.sqrt(torecLegH*torecLegH + torecLegW*torecLegW);
+    torec.push({name:'Раскосина', t:wall.value, w:100, l:torecRaskosinaLen, qty:1});
+
+    // Боковой щит, крышка, дно: раскосины между планками (планки по обе
+    // стороны от каждой раскосины) - количество = кол-во планок минус 1.
+    // Катеты - высота/ширина щита и фактическое расстояние между планками.
+    const raskosinaQty = plankQty - 1;
+    if(raskosinaQty > 0){
+      const bokRaskosinaLen = Math.sqrt(H*H + plankGap*plankGap);
+      bokovoy.push({name:'Раскосина', t:wall.value, w:100, l:bokRaskosinaLen, qty:raskosinaQty});
+
+      const kryshkaRaskosinaLen = Math.sqrt(kPlankaKryshka*kPlankaKryshka + plankGap*plankGap);
+      kryshka.push({name:'Раскосина', t:wall.value, w:100, l:kryshkaRaskosinaLen, qty:raskosinaQty});
+
+      const dnoLegW = W + wall.value*2; // ширина груза + толщина доски бок.щита*2 (как у крышки)
+      const dnoRaskosinaLen = Math.sqrt(dnoLegW*dnoLegW + plankGap*plankGap);
+      dno.push({name:'Раскосина', t:wall.value, w:100, l:dnoRaskosinaLen, qty:raskosinaQty});
+    }
+  }
 
   // --- Наружные размеры ---
   // Техзадание не даёт отдельной формулы наружных размеров - выведена по
