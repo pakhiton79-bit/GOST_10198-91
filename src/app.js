@@ -684,7 +684,8 @@ function buildPrintHtml(){
           <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
         </table>
       </div>
-      <div class="print-summary-block">
+      <img class="print-box-view" src="${BOX_IMG_B64}" alt="">
+      <div class="print-summary-block print-summary-block-last">
         <h2>Итог</h2>
         <table class="print-plain-table">
           <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
@@ -692,7 +693,6 @@ function buildPrintHtml(){
           <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
         </table>
       </div>
-      <img class="print-box-view" src="${BOX_IMG_B64}" alt="">
     </div>
 
     ${sections}

@@ -544,14 +544,19 @@
   #printArea, #printArea *{ box-sizing:border-box; }
 
   /* Водяной знак — в правом нижнем углу. Общий вид ящика встроен в строку
-     шапки как обычный флекс-элемент (не абсолютом), чтобы он не мог
-     наложиться на значения «Итога». По высоте он ниже строки, поэтому
-     дополнительной высоты странице не добавляет. */
+     шапки как обычный флекс-элемент (не абсолютом), между «Внутренние
+     размеры груза» и «Итог» (порядок по указанию пользователя), поэтому
+     он не может наложиться на значения «Итога». Занимает почти всю
+     доступную ширину строки, отсюда и высота больше, чем у текстовых
+     блоков рядом (--pk автоматически подстраивается под общую высоту
+     страницы, см. fitPrintAreaToOnePage). */
   #printArea .print-box-view{
-    margin-left:auto;
     align-self:center;
-    width:calc(var(--pk)*195px);height:auto;
-    flex:0 0 calc(var(--pk)*195px);
+    width:calc(var(--pk)*480px);height:auto;
+    flex:0 0 calc(var(--pk)*480px);
+  }
+  #printArea .print-summary-block-last{
+    margin-left:auto;
   }
   #printArea .print-watermark{
     position:absolute;right:4px;bottom:0;
