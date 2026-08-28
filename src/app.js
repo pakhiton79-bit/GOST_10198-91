@@ -148,6 +148,16 @@ function toggleFasteningDropdown(){
 
 updateFasteningSummary();
 
+// «Убрать подполозные доски» и «Погрузка авто/электропогрузчиком» взаимоисключающие:
+// требование ≥300мм для погрузчика (п.1.6.11) проверяется именно по подполозным
+// доскам, а если их совсем убрать - проверять и требовать становится нечего.
+function onSkidForkliftExclusive(el){
+  if(!el.checked) return;
+  const otherId = el.id === 'removeSkidBoards' ? 'forkliftLoading' : 'removeSkidBoards';
+  const other = document.getElementById(otherId);
+  if(other && other.checked) other.checked = false;
+}
+
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
@@ -561,9 +571,9 @@ function calculate(){
   }
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram, torecFloors, k30 + w31) + `</div>` + renderSection('', endPanel) + `</div>`;
   if(bokFloors === 2){
-    warnings.push('Щит боковой (2 этажа): чертёж приблизительный — использован чертёж одного этажа.');
+    warnings.push('Щит боковой (2 этажа): чертёж для этого случая ещё не готов — на месте чертежа заглушка.');
   }
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, bokOverhang, edgeDistKryshka, l42, bokFloors, bokVertSpan) + `</div>` + renderSection('', bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, bokOverhang, edgeDistKryshka, l42, bokFloors, bokVertSpan, t40) + `</div>` + renderSection('', bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   // Подписи/стрелки чертежей могут выходить за пределы картинки (см.

@@ -284,11 +284,12 @@ function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm
   return diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm);
 }
 
-function diagramBokovoy1Raskosina(heightPlusFloorVal, overhangVal, boardLenVal){
+function diagramBokovoy1Raskosina(heightPlusFloorVal, overhangVal, boardLenVal, plankaThickVal){
   // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1752×1093).
   const valHeight = Math.round(heightPlusFloorVal);   // высота груза + толщина доски дна
   const valOverhang = Math.round(overhangVal);        // на сколько вертикальная планка перекрывает полоз (2/3 толщины полоза, не более 70мм)
   const valBoardLen = Math.round(boardLenVal);        // длина доски бока
+  const valPlankaThick = Math.round(plankaThickVal);  // толщина вертикальной планки (t40) - при «Оптимизировать размеры» +2мм
 
   const records = [
     {type:'line', x1:1641, y1:36, x2:1835, y2:36},
@@ -299,18 +300,21 @@ function diagramBokovoy1Raskosina(heightPlusFloorVal, overhangVal, boardLenVal){
     {type:'single', x1:1613, y1:1216, x2:1910, y2:953, lx:1583, ly:1231, text: valOverhang+' мм'},
     {type:'line', x1:1710, y1:125, x2:1710, y2:-114},
     {type:'line', x1:33, y1:126, x2:32, y2:-115},
-    {type:'double', x1:32, y1:-114, x2:1706, y2:-114, lx:878, ly:-108, text: valBoardLen+' мм'}
+    {type:'double', x1:32, y1:-114, x2:1706, y2:-114, lx:878, ly:-108, text: valBoardLen+' мм'},
+    {type:'line', x1:349, y1:150, x2:374, y2:150},
+    {type:'single', x1:470, y1:60, x2:363, y2:148, lx:480, ly:35, text: valPlankaThick+' мм'}
   ];
 
   return renderDiagram(BOKOVOY_1_IMG_B64, 'Щит боковой (1 раскосина) - схема расположения деталей', 1752, 1093, records, null, photoStrokeScale(1752));
 }
 
-function diagramBokovoy2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankaThickVal){
   // Фото-чертёж для варианта с 2 раскосинами (натуральный размер 1811×1077).
   const valBoardLen = Math.round(boardLenVal);         // длина боковой доски
   const valOverhang = Math.round(overhangVal);         // на сколько планка перекрывает полоз
   const valEdgeDist = Math.round(edgeDistVal);         // расстояние от крайней планки до края бокового щита
   const valHeight = Math.round(heightPlusFloorVal);    // высота груза + толщина досок дна
+  const valPlankaThick = Math.round(plankaThickVal);   // толщина вертикальной планки (t40) - при «Оптимизировать размеры» +2мм
 
   const records = [
     {type:'line', x1:1739, y1:104, x2:1736, y2:-153},
@@ -325,13 +329,15 @@ function diagramBokovoy2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightP
     {type:'double', x1:62, y1:1076, x2:204, y2:1077},
     {type:'single', x1:392, y1:1161, x2:131, y2:1078, lx:489, ly:1162, text: valEdgeDist+' мм'},
     {type:'line', x1:1607, y1:41, x2:1917, y2:39},
-    {type:'double', x1:1889, y1:39, x2:1886, y2:902, lx:1934, ly:498, text: valHeight+' мм', vertical:true}
+    {type:'double', x1:1889, y1:39, x2:1886, y2:902, lx:1934, ly:498, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:192, y1:150, x2:217, y2:150},
+    {type:'single', x1:310, y1:60, x2:206, y2:148, lx:320, ly:35, text: valPlankaThick+' мм'}
   ];
 
   return renderDiagram(BOKOVOY_2_IMG_B64, 'Щит боковой (2 раскосины) - схема расположения деталей', 1811, 1077, records, null, photoStrokeScale(1811));
 }
 
-function diagramBokovoy3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankaThickVal){
   // Фото-чертёж для варианта с 3 раскосинами (натуральный размер 1731×773 - фото
   // заменено на исправленную версию, у исходного не хватало одной разделительной
   // линии на щите; координаты пересчитаны через привязку по границам самого рисунка
@@ -341,6 +347,7 @@ function diagramBokovoy3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightP
   const valOverhang = Math.round(overhangVal);         // на сколько планка перекрывает полоз
   const valEdgeDist = Math.round(edgeDistVal);         // расстояние от крайней планки до края бокового щита
   const valHeight = Math.round(heightPlusFloorVal);    // высота груза + толщина досок дна
+  const valPlankaThick = Math.round(plankaThickVal);   // толщина вертикальной планки (t40) - при «Оптимизировать размеры» +2мм
 
   const records = [
     {type:'line', x1:1560.4, y1:618.9, x2:1807.7, y2:619.6},
@@ -356,18 +363,21 @@ function diagramBokovoy3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightP
     {type:'double', x1:88.9, y1:-43.0, x2:1651.6, y2:-41.5, lx:844.9, ly:-55.1, text: valBoardLen+' мм'},
     {type:'line', x1:187.2, y1:55.6, x2:-17.3, y2:55.6},
     {type:'line', x1:177.2, y1:619.6, x2:-19.5, y2:623.9},
-    {type:'double', x1:1.2, y1:55.6, x2:2.6, y2:625.3, lx:-25.2, ly:354.7, text: valHeight+' мм', vertical:true}
+    {type:'double', x1:1.2, y1:55.6, x2:2.6, y2:625.3, lx:-25.2, ly:354.7, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:80, y1:150, x2:105, y2:150},
+    {type:'single', x1:200, y1:230, x2:94, y2:152, lx:210, ly:245, text: valPlankaThick+' мм'}
   ];
 
   return renderDiagram(BOKOVOY_3_IMG_B64, 'Щит боковой (3 раскосины) - схема расположения деталей', 1731, 773, records, null, photoStrokeScale(1731));
 }
 
-function diagramBokovoyNoRaskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoyNoRaskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankaThickVal){
   // Фото-чертёж для варианта без раскосины (натуральный размер 1146×693).
   const valBoardLen = Math.round(boardLenVal);         // длина доски бока (основной или дополнительной — совпадает)
   const valOverhang = Math.round(overhangVal);         // на сколько планка перекрывает полоз
   const valEdgeDist = Math.round(edgeDistVal);         // расстояние от края бокового щита до первой планки
   const valHeight = Math.round(heightPlusFloorVal);    // высота груза + толщина досок дна
+  const valPlankaThick = Math.round(plankaThickVal);   // толщина вертикальной планки (t40) - при «Оптимизировать размеры» +2мм
 
   const records = [
     {type:'line', x1:275, y1:547, x2:275, y2:780},
@@ -382,46 +392,35 @@ function diagramBokovoyNoRaskosina(boardLenVal, overhangVal, edgeDistVal, height
     {type:'single', x1:935, y1:727, x2:1233, y2:600, lx:904, ly:743, text: valOverhang+' мм'},
     {type:'line', x1:1085, y1:123, x2:1082, y2:-95},
     {type:'line', x1:80, y1:129, x2:80, y2:-93},
-    {type:'double', x1:80, y1:-71, x2:1082, y2:-73, lx:567, ly:-81, text: valBoardLen+' мм'}
+    {type:'double', x1:80, y1:-71, x2:1082, y2:-73, lx:567, ly:-81, text: valBoardLen+' мм'},
+    {type:'line', x1:70, y1:150, x2:95, y2:150},
+    {type:'single', x1:170, y1:230, x2:83, y2:152, lx:180, ly:245, text: valPlankaThick+' мм'}
   ];
 
   return renderDiagram(BOKOVOY_0_IMG_B64, 'Щит боковой (без раскосины) - схема расположения деталей', 1146, 693, records, null, photoStrokeScale(1146));
 }
 
-function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal, floorsVal, floorSpanVal){
+function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal, floorsVal, floorSpanVal, t40val){
   // Для варианта без раскосины (H≤600) и для 1, 2, 3 раскосин уже есть фото-чертежи.
   // Для 4+ раскосин фото ещё нет — показываем чертёж с максимальным доступным числом
   // раскосин (3) вместо заглушки: расположение планок то же самое, просто на фото
   // меньше секций, чем в реальном ящике.
-  // Для щита на 2 этажа (наружная высота >2000мм) отдельного фото ещё нет — вместо
-  // заглушки показываем чертёж ОДНОГО этажа (по числу раскосин на этот этаж, т.е.
-  // raskosinCountVal/floorsVal) с его собственной высотой (floorSpanVal). Реальный
-  // щит состоит из двух таких этажей со средней планкой между ними, поэтому картинка
-  // приблизительная — соответствующее предупреждение выводится в calculate().
+  // Для щита на 2 этажа фото ещё нет вообще (ни на 1 этаж, ни тем более на оба сразу
+  // с центральной планкой) - показываем заглушку.
   if(floorsVal === 2){
-    const perFloor = Math.round(raskosinCountVal / floorsVal);
-    if(perFloor === 0){
-      return diagramBokovoyNoRaskosina(k41val, overhangVal, edgeDistVal, floorSpanVal);
-    }
-    if(perFloor === 1){
-      return diagramBokovoy1Raskosina(floorSpanVal, overhangVal, k41val);
-    }
-    if(perFloor === 2){
-      return diagramBokovoy2Raskosina(k41val, overhangVal, edgeDistVal, floorSpanVal);
-    }
-    return diagramBokovoy3Raskosina(k41val, overhangVal, edgeDistVal, floorSpanVal);
+    return diagramPlaceholder('Щит боковой (2 этажа)');
   }
   if(raskosinCountVal === 0){
-    return diagramBokovoyNoRaskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
+    return diagramBokovoyNoRaskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val, t40val);
   }
   if(raskosinCountVal === 1){
-    return diagramBokovoy1Raskosina(Hmm + t12val, overhangVal, k41val);
+    return diagramBokovoy1Raskosina(Hmm + t12val, overhangVal, k41val, t40val);
   }
   if(raskosinCountVal === 2){
-    return diagramBokovoy2Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
+    return diagramBokovoy2Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val, t40val);
   }
   if(raskosinCountVal >= 3){
-    return diagramBokovoy3Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val);
+    return diagramBokovoy3Raskosina(k41val, overhangVal, edgeDistVal, Hmm + t12val, t40val);
   }
 
   return diagramPlaceholder('Щит боковой');
