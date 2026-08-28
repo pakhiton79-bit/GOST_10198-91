@@ -21,11 +21,14 @@ function saveAvailableThicknesses(){
 let availableThicknesses = loadAvailableThicknesses();
 let thicknessLimitExceeded = false;
 
+// Если расчётная толщина превышает даже максимальную из выбранных "в наличии" -
+// значение НЕ занижается до складского максимума (см. тот же комментарий в типе
+// I-3, src/app.js), а остаётся расчётным по ГОСТ; при этом взводится предупреждение.
 function roundUpToAvailable(t){
   if(availableThicknesses.length === 0) return t;
   for(const a of availableThicknesses){ if(t<=a) return a; }
   thicknessLimitExceeded = true;
-  return availableThicknesses[availableThicknesses.length-1];
+  return t;
 }
 
 function buildThicknessCheckboxList(){

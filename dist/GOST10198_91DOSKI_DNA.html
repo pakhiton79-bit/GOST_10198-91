@@ -2031,27 +2031,17 @@ function saveAvailableThicknesses(){
 
 let availableThicknesses = loadAvailableThicknesses();
 let thicknessLimitExceeded = false; // взводится в roundUpToAvailable(), если расчётная толщина больше максимальной выбранной "в наличии"
-let requiredThicknessNotAvailable = false; // взводится в roundUpToAvailableRequired() - см. ниже
 
 // Округление вверх до ближайшей выбранной толщины "в наличии".
 // Список пуст -> округление не выполняется, толщина возвращается как есть (строго по ГОСТ).
+// Если расчётная толщина превышает даже максимальную из выбранных "в наличии" -
+// значение НЕ занижается до складского максимума (заниженная толщина для детали,
+// которая требует больше, недопустима вне зависимости от того, что есть на складе),
+// а остаётся расчётным по ГОСТ; при этом взводится предупреждение.
 function roundUpToAvailable(t){
   if(availableThicknesses.length === 0) return t;
   for(const a of availableThicknesses){ if(t<=a) return a; }
   thicknessLimitExceeded = true;
-  return availableThicknesses[availableThicknesses.length-1];
-}
-
-// То же округление вверх до "в наличии", но для несущих элементов, где заниженная
-// толщина недопустима: полоз, торцовый брус дна, подполозная доска. Если расчётная
-// толщина превышает даже максимальную из выбранных "в наличии" - в отличие от
-// roundUpToAvailable() значение НЕ занижается до складского максимума, а остаётся
-// расчётным (по ГОСТ). Предупреждение при этом всё равно выводится - см.
-// requiredThicknessNotAvailable ниже.
-function roundUpToAvailableRequired(t){
-  if(availableThicknesses.length === 0) return t;
-  for(const a of availableThicknesses){ if(t<=a) return a; }
-  requiredThicknessNotAvailable = true;
   return t;
 }
 
@@ -2171,7 +2161,6 @@ function calculate(){
   errEl.textContent = '';
   document.getElementById('calcCheck').style.visibility = 'hidden';
   thicknessLimitExceeded = false;
-  requiredThicknessNotAvailable = false;
   const L = parseFloat(document.getElementById('L').value);
   const W = parseFloat(document.getElementById('W').value);
   const H = parseFloat(document.getElementById('H').value);
@@ -2234,13 +2223,13 @@ function calculate(){
     if(l9_default < widthMinSkids162){
       l9 = widthMinSkids162;
     }
-    t9 = roundUpToAvailableRequired(poloz.h); w9 = poloz.w;
+    t9 = roundUpToAvailable(poloz.h); w9 = poloz.w;
   } else {
     // По умолчанию - новый стандарт (Табл. 19): по массе, рабочей длине полоза
     // (= k9Base) и количеству полозьев (приоритет - совпадение высоты полоза с
     // одной из выбранных «в наличии» толщин, затем минимальное число полозьев).
     const sel = selectSkid19(MASS, k9Base, skidCalcWidth);
-    l9 = sel.count; t9 = roundUpToAvailableRequired(sel.h); w9 = sel.w;
+    l9 = sel.count; t9 = roundUpToAvailable(sel.h); w9 = sel.w;
     if(sel.massSnapped){
       warnings.push(`Масса ${MASS} кг отсутствует в Табл. 19 — принята ближайшая (${sel.massUsed} кг).`);
     }
@@ -2266,7 +2255,7 @@ function calculate(){
   // размеров в таблице выводится ⚠ (по указанию пользователя - оба предупреждения
   // сосуществуют, не заменяют друг друга).
   const t10Raw = forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
-  const t10=roundUpToAvailableRequired(t10Raw), w10=Math.min(w9, 150), k10=k9Base-400, l10=l9;
+  const t10=roundUpToAvailable(t10Raw), w10=Math.min(w9, 150), k10=k9Base-400, l10=l9;
   if(k10 < 300){
     warnings.push(`Длина подполозной доски ${Math.round(k10)} мм менее 300 мм.`);
   }
@@ -2285,7 +2274,7 @@ function calculate(){
   }
 
   const endBeam = endBeamSection(MASS); // п.1.6.8
-  const t11=roundUpToAvailableRequired(endBeam.h), w11=endBeam.w, k11=W, l11=2;
+  const t11=roundUpToAvailable(endBeam.h), w11=endBeam.w, k11=W, l11=2;
   dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
 
     // Толщина доски дна - Таблица 4 (п.1.6.9): по удельной нагрузке на дно и
@@ -2585,10 +2574,7 @@ function calculate(){
     .then(()=> reserveDiagramOverflowScreen(boardTablesEl));
 
   if(thicknessLimitExceeded){
-    warnings.push(`Расчётная толщина превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — использовано максимальное значение.`);
-  }
-  if(requiredThicknessNotAvailable){
-    warnings.push(`Расчётная толщина полоза, торцового бруса дна или подполозной доски превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — для этих несущих элементов занижать толщину нельзя, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
+    warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
   }
 
   let warningsHtml = '';

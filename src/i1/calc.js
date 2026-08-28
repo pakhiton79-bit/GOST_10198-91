@@ -229,7 +229,7 @@ function calculate(){
     .then(()=> reserveDiagramOverflowScreen(boardTablesEl));
 
   if(thicknessLimitExceeded){
-    warnings.push(`Расчётная толщина превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — использовано максимальное значение.`);
+    warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
   }
 
   let warningsHtml = '';
