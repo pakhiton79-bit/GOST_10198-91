@@ -332,6 +332,11 @@ function calculate(){
   }
   kryshka.push({name:'Планка', t:t19, w:w19, l:k19, qty:l19});
 
+  // Расстояние между соседними планками крышки - тот же шаг, что и у планок бокового
+  // щита (стоят по тем же местам). Считается сразу здесь (не только в блоке «ЩИТ
+  // БОКОВОЙ» ниже), т.к. нужен также для чертежа крышки, который рендерится раньше.
+  const bokSectionW = l19 > 1 ? middleKryshka / (l19 - 1) : 0;
+
   // Доска крышки: заполняем (ширина груза + 2×толщина доски бок. щита) досками 100мм +
   // при необходимости 1-2 доски 75-99мм на остаток (fillBoards). Длина каждой доски —
   // та же наружная длина, что и у полоза (k9Base).
@@ -460,7 +465,6 @@ function calculate(){
   // горизонтальной планки вообще — при 2 этажах добавляется только одна средняя
   // (см. «2000мм+.docx»: «нет верхней и нижней планок, только центральная, а укосины
   // упираются в края крышки»).
-  const bokSectionW = l19 > 1 ? middleKryshka / (l19 - 1) : 0;
   const bokHasRaskosina = outerH > 600 && l19 > 1;
   const bokAngle1FloorDeg = bokSectionW > 0 ? Math.atan2(H + t12, bokSectionW) * 180 / Math.PI : null;
   const bokFloors = (outerH > 2000 || (bokHasRaskosina && bokAngle1FloorDeg !== null && bokAngle1FloorDeg > 60)) ? 2 : 1;
@@ -565,7 +569,7 @@ function calculate(){
   const torecNoRaskosinaDiagram = !torecHasRaskosina && (outerH <= 600 || W > 600);
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9Base, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21) + `</div>` + renderSection('', kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21, l19, bokSectionW) + `</div>` + renderSection('', kryshka) + `</div>`;
   if(torecFloors === 2 && !torecHasRaskosina){
     warnings.push('Щит торцевой (2 этажа, без раскосины): чертёж приблизительный — использован чертёж одного этажа.');
   }
