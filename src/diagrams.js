@@ -15,7 +15,7 @@ const KRYSHKA_2BEAMS_IMG_B64 = "data:image/jpeg;base64,__IMG:kryshka_2beams.jpg_
 // наконечник считается вручную по углу линии, чтобы кончик точно совпадал с указанной точкой
 const BOKOVOY_1_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_1.png__"; // натуральный размер 1752x1093 (вариант с 1 раскосиной)
 const BOKOVOY_2_IMG_B64 = "data:image/png;base64,__IMG:bokovoy_2.png__"; // натуральный размер 1811x1077 (вариант с 2 раскосинами)
-const BOKOVOY_3_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_3.jpg__"; // натуральный размер 2290x1069 (вариант с 3 раскосинами)
+const BOKOVOY_3_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_3.jpg__"; // натуральный размер 1731x773 (вариант с 3 раскосинами, исправленное фото)
 const BOKOVOY_0_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_0.jpg__"; // натуральный размер 1146x693 (вариант без раскосины)
 
 // headTriangle, photoStrokeScale, DIAGRAM_DEFAULT_WIDTH/DIAGRAM_MAX_HEIGHT,
@@ -332,30 +332,34 @@ function diagramBokovoy2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightP
 }
 
 function diagramBokovoy3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
-  // Фото-чертёж для варианта с 3 раскосинами (натуральный размер 2290×1069).
+  // Фото-чертёж для варианта с 3 раскосинами (натуральный размер 1731×773 - фото
+  // заменено на исправленную версию, у исходного не хватало одной разделительной
+  // линии на щите; координаты пересчитаны через привязку по границам самого рисунка
+  // на старом/новом фото, т.к. новое фото - не чистый увеличенный кроп старого, а
+  // отдельный снимок с другими полями).
   const valBoardLen = Math.round(boardLenVal);         // длина боковой доски
   const valOverhang = Math.round(overhangVal);         // на сколько планка перекрывает полоз
   const valEdgeDist = Math.round(edgeDistVal);         // расстояние от крайней планки до края бокового щита
   const valHeight = Math.round(heightPlusFloorVal);    // высота груза + толщина досок дна
 
   const records = [
-    {type:'line', x1:2119, y1:855, x2:2466, y2:856},
-    {type:'line', x1:1973, y1:1006, x2:2467, y2:1008},
-    {type:'line', x1:2423, y1:856, x2:2425, y2:1009},
-    {type:'single', x1:1802, y1:1152, x2:2421, y2:931, lx:1774, ly:1168, text: valOverhang+' мм'},
-    {type:'line', x1:58, y1:854, x2:57, y2:1155},
-    {type:'line', x1:191, y1:856, x2:191, y2:1154},
-    {type:'line', x1:57, y1:1059, x2:191, y2:1059},
-    {type:'single', x1:371, y1:1170, x2:119, y2:1060, lx:430, ly:1181, text: valEdgeDist+' мм'},
-    {type:'line', x1:56, y1:138, x2:54, y2:-101},
-    {type:'line', x1:2245, y1:152, x2:2245, y2:-97},
-    {type:'double', x1:54, y1:-72, x2:2247, y2:-70, lx:1115, ly:-89, text: valBoardLen+' мм'},
-    {type:'line', x1:192, y1:66, x2:-95, y2:66},
-    {type:'line', x1:178, y1:856, x2:-98, y2:862},
-    {type:'double', x1:-69, y1:66, x2:-67, y2:864, lx:-106, ly:485, text: valHeight+' мм', vertical:true}
+    {type:'line', x1:1560.4, y1:618.9, x2:1807.7, y2:619.6},
+    {type:'line', x1:1456.3, y1:726.7, x2:1808.4, y2:728.2},
+    {type:'line', x1:1777.0, y1:619.6, x2:1778.4, y2:728.9},
+    {type:'single', x1:1334.5, y1:831.0, x2:1775.6, y2:673.2, lx:1314.5, ly:842.4, text: valOverhang+' мм'},
+    {type:'line', x1:91.7, y1:618.2, x2:91.0, y2:833.1},
+    {type:'line', x1:186.5, y1:619.6, x2:186.5, y2:832.4},
+    {type:'line', x1:91.0, y1:764.6, x2:186.5, y2:764.6},
+    {type:'single', x1:314.7, y1:843.8, x2:135.2, y2:765.3, lx:356.8, ly:851.7, text: valEdgeDist+' мм'},
+    {type:'line', x1:90.3, y1:107.0, x2:88.9, y2:-63.7},
+    {type:'line', x1:1650.2, y1:117.0, x2:1650.2, y2:-60.8},
+    {type:'double', x1:88.9, y1:-43.0, x2:1651.6, y2:-41.5, lx:844.9, ly:-55.1, text: valBoardLen+' мм'},
+    {type:'line', x1:187.2, y1:55.6, x2:-17.3, y2:55.6},
+    {type:'line', x1:177.2, y1:619.6, x2:-19.5, y2:623.9},
+    {type:'double', x1:1.2, y1:55.6, x2:2.6, y2:625.3, lx:-25.2, ly:354.7, text: valHeight+' мм', vertical:true}
   ];
 
-  return renderDiagram(BOKOVOY_3_IMG_B64, 'Щит боковой (3 раскосины) - схема расположения деталей', 2290, 1069, records, null, photoStrokeScale(2290));
+  return renderDiagram(BOKOVOY_3_IMG_B64, 'Щит боковой (3 раскосины) - схема расположения деталей', 1731, 773, records, null, photoStrokeScale(1731));
 }
 
 function diagramBokovoyNoRaskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){

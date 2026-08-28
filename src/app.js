@@ -489,6 +489,17 @@ function calculate(){
   const bokHasRaskosina = outerH > 600 && l19 > 1;
   const l42 = bokHasRaskosina ? (l19 - 1) * bokFloors : 0;
 
+  // В отличие от торца (torecSections растёт 1→4, чтобы угол раскосины уложился
+  // в 20-60°), число секций бокового щита определяется планками крышки (l19) и
+  // под угол не подстраивается - значит угол вполне может выйти за 20-60°.
+  // ГОСТ/логика.docx для этого случая не дают формулы - только предупреждаем.
+  if(bokHasRaskosina && bokSectionW > 0){
+    const bokAngleDeg = Math.atan2(bokVertSpan, bokSectionW) * 180 / Math.PI;
+    if(bokAngleDeg < 20 || bokAngleDeg > 60){
+      warnings.push(`Угол раскосины бокового щита ${Math.round(bokAngleDeg)}° вне рекомендуемого диапазона 20-60° — требуется консультация с конструктором.`);
+    }
+  }
+
   const volBokPanel = vol(t40,w40,k40,l40) + vol(t41,w41,k41,l41)
     + fbBok.extra.reduce((s,e)=>s+vol(t41,e.width,k41,e.qty),0)
     + vol(t42,w42,k42,l42) + vol(t43,w43,k43,l43);

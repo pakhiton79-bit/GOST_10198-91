@@ -157,9 +157,14 @@ function nearestIndexBy(arr, keyFn, target){
 function selectSkid19(mass, workingLengthMm, widthMm){
   const massIdx = nearestIndexBy(TABLE19, r=>r.mass, mass);
   const massRow = TABLE19[massIdx];
-  const massSnapped = massRow.mass !== mass;
+  // Предупреждение о "снэппинге" массы/длины к ближайшему значению Табл.19 нужно
+  // только когда исходное значение реально ВЫШЕ максимального в таблице (т.е. вне
+  // её диапазона) - обычное округление до ближайшей строки/колонки внутри диапазона
+  // (напр. 1300кг -> 1500кг) для этой таблицы - штатный, ожидаемый механизм подбора,
+  // не повод для уведомления.
+  const massSnapped = mass > TABLE19[TABLE19.length-1].mass;
 
-  const lenIdx = nearestIndexBy(T19_LENGTHS.map(l=>({l})), r=>r.l, workingLengthMm);
+  const lengthExceeded = workingLengthMm > T19_LENGTHS[T19_LENGTHS.length-1];
 
   // Для каждого варианта количества полозьев ищем ближайшую непустую колонку
   // длины (своя для каждой строки - у тяжёлых грузов крайние левые колонки пустые).
@@ -172,7 +177,7 @@ function selectSkid19(mass, workingLengthMm, widthMm){
       if(diff<bestDiff || (diff===bestDiff && T19_LENGTHS[i]>T19_LENGTHS[bestI])){ bestDiff=diff; bestI=i; }
     });
     const [h,w] = row.dims[bestI].split('x').map(Number);
-    return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: bestI!==lenIdx};
+    return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 
   const minNeeded = minSkidsByWidth162(widthMm); // п.1.6.2 - минимум полозьев по шагу 1200мм
