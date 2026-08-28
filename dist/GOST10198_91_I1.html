@@ -558,13 +558,15 @@
      .diagram-wrap, что и у остальных чертежей - размер подхватывается
      автоматически через applyDiagramWidths()), а не в шапке. Обе итоговые
      таблицы - "Внутренние размеры груза" и "Итог" - справа от него, друг
-     под другом (margin-left:auto прижимает колонку к правому краю строки). */
+     под другом. flex:1, как у .spec-table в остальных строках, - колонка
+     растягивается на всю ширину, оставшуюся после чертежа, а не жмётся
+     по ширине своего текста. */
   #printArea .print-summary-col{
     display:flex;
     flex-direction:column;
     gap:calc(var(--pk)*14px);
-    margin-left:auto;
-    flex:0 0 auto;
+    flex:1;
+    min-width:0;
   }
   #printArea .print-watermark{
     position:absolute;right:4px;bottom:0;
@@ -585,9 +587,10 @@
   /* Внутренние размеры груза + Итог — в колонке справа от чертежа ящика (см. .print-summary-col) */
   #printArea .print-summary-block{flex:0 0 auto;}
   #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#4E342E;margin:0 0 6px;font-weight:700;}
-  #printArea .print-plain-table{border-collapse:collapse;width:auto;}
-  #printArea .print-plain-table td{padding:calc(var(--pk)*2px) calc(var(--pk)*14px) calc(var(--pk)*2px) 0;text-align:left;font-size:calc(var(--pk)*13px);font-weight:700;white-space:nowrap;}
+  #printArea .print-plain-table{border-collapse:collapse;width:100%;}
+  #printArea .print-plain-table td{padding:calc(var(--pk)*2px) 0;text-align:left;font-size:calc(var(--pk)*13px);font-weight:700;white-space:nowrap;}
   #printArea .print-plain-table td.k{color:#6B625D;}
+  #printArea .print-plain-table td:not(.k){width:100%;text-align:right;}
 
   /* Таблицы конфигурации досок.
      Ширины колонок подобраны под бюджет: «Подполозная» и «2450» влезают
