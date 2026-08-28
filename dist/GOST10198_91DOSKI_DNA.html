@@ -565,6 +565,13 @@
     width:calc(var(--pk)*480px);height:auto;
     flex:0 0 calc(var(--pk)*480px);
   }
+  /* У типа I-1 исходное фото гораздо ниже разрешением (266×249 против
+     762×641 у типа I-3) - при том же 480px оно бы заметно размылилось,
+     поэтому размер меньше (умеренный апскейл от нативного разрешения). */
+  #printArea .print-box-view-i1{
+    width:calc(var(--pk)*300px);
+    flex:0 0 calc(var(--pk)*300px);
+  }
   #printArea .print-summary-block-last{
     margin-left:auto;
   }

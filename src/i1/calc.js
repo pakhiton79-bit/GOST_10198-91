@@ -342,7 +342,8 @@ function buildPrintHtml(){
           <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
         </table>
       </div>
-      <div class="print-summary-block">
+      <img class="print-box-view print-box-view-i1" src="${BOX_I1_IMG_B64}" alt="">
+      <div class="print-summary-block print-summary-block-last">
         <h2>Итог</h2>
         <table class="print-plain-table">
           <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
@@ -356,3 +357,6 @@ function buildPrintHtml(){
     ${commentHtml}
   `;
 }
+
+// Общий вид ящика показываем и на самом сайте, не только в печати.
+document.getElementById('boxView').src = BOX_I1_IMG_B64;
