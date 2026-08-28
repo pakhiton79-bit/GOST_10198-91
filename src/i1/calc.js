@@ -342,7 +342,11 @@ function buildPrintHtml(){
           <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
         </table>
       </div>
-      <img class="print-box-view print-box-view-i1" src="${BOX_I1_IMG_B64}" alt="">
+    </div>
+
+    <div class="part-title">Общий вид ящика</div>
+    <div class="spec-row-diagram">
+      <div class="diagram-slot"><div class="diagram-wrap"><img src="${BOX_I1_IMG_B64}" alt=""></div></div>
       <div class="print-summary-block print-summary-block-last">
         <h2>Итог</h2>
         <table class="print-plain-table">

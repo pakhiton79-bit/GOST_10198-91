@@ -553,25 +553,12 @@
   #printScale{ transform-origin:top left; position:relative; --pk:1; }
   #printArea, #printArea *{ box-sizing:border-box; }
 
-  /* Водяной знак — в правом нижнем углу. Общий вид ящика встроен в строку
-     шапки как обычный флекс-элемент (не абсолютом), между «Внутренние
-     размеры груза» и «Итог» (порядок по указанию пользователя), поэтому
-     он не может наложиться на значения «Итога». Занимает почти всю
-     доступную ширину строки, отсюда и высота больше, чем у текстовых
-     блоков рядом (--pk автоматически подстраивается под общую высоту
-     страницы, см. fitPrintAreaToOnePage). */
-  #printArea .print-box-view{
-    align-self:center;
-    width:calc(var(--pk)*480px);height:auto;
-    flex:0 0 calc(var(--pk)*480px);
-  }
-  /* У типа I-1 исходное фото гораздо ниже разрешением (266×249 против
-     762×641 у типа I-3) - при том же 480px оно бы заметно размылилось,
-     поэтому размер меньше (умеренный апскейл от нативного разрешения). */
-  #printArea .print-box-view-i1{
-    width:calc(var(--pk)*300px);
-    flex:0 0 calc(var(--pk)*300px);
-  }
+  /* Водяной знак — в правом нижнем углу. Общий вид ящика - отдельная
+     строка перед "Дно" (та же вёрстка .spec-row-diagram/.diagram-slot/
+     .diagram-wrap, что и у остальных чертежей - размер подхватывается
+     автоматически через applyDiagramWidths()), а не в шапке. "Итог"
+     рядом с ним, справа (margin-left:auto прижимает к правому краю
+     строки). */
   #printArea .print-summary-block-last{
     margin-left:auto;
   }
@@ -1956,7 +1943,11 @@ function buildPrintHtml(){
           <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
         </table>
       </div>
-      <img class="print-box-view print-box-view-i1" src="${BOX_I1_IMG_B64}" alt="">
+    </div>
+
+    <div class="part-title">Общий вид ящика</div>
+    <div class="spec-row-diagram">
+      <div class="diagram-slot"><div class="diagram-wrap"><img src="${BOX_I1_IMG_B64}" alt=""></div></div>
       <div class="print-summary-block print-summary-block-last">
         <h2>Итог</h2>
         <table class="print-plain-table">
