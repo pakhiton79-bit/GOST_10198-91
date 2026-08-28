@@ -227,6 +227,9 @@ function calculate(){
     if(sel.spacingExceeded){
       warnings.push(`Шаг между осями полозьев >1200 мм (п.1.6.2) не устранён — принято максимальное количество по Табл. 19 (${sel.count} шт.).`);
     }
+    if(sel.extrapolatedCount){
+      warnings.push(`Табл. 19 не предусматривает ${sel.extrapolatedCount} полоза(ьев) для массы ${sel.massUsed} кг — сечение получено уменьшением на 1 градацию толщины и ширины от максимального варианта в таблице (шаг между осями ≤1200 мм, п.1.6.2).`);
+    }
   }
   dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9});
 

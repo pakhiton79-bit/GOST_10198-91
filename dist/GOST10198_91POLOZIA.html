@@ -946,6 +946,15 @@ const TABLE19 = [
   ]},
 ];
 
+// Полная градационная последовательность сечений полоза, встречающаяся в
+// Табл. 19 (используется, когда таблица не предусматривает нужное
+// количество полозьев для данной массы - см. selectSkid19 ниже).
+const SKID_GRADATIONS = [40,50,60,75,100,125,150,175,200,225,250];
+function skidGradeDown(mm){
+  const i = SKID_GRADATIONS.indexOf(mm);
+  return i > 0 ? SKID_GRADATIONS[i-1] : mm; // ниже некуда - минимум таблицы
+}
+
 function nearestIndexBy(arr, keyFn, target){
   let best = 0, bestDiff = Infinity;
   arr.forEach((item,i)=>{
@@ -986,11 +995,28 @@ function selectSkid19(mass, workingLengthMm, widthMm){
   const minNeeded = minSkidsByWidth162(widthMm); // п.1.6.2 - минимум полозьев по шагу 1200мм
   let valid = options.filter(o=>o.count>=minNeeded);
   let spacingExceeded = false;
+  let extrapolatedCount = null;
   if(valid.length===0){
-    // ни один вариант из таблицы не даёт нужное количество полозьев -
-    // берём максимальное доступное в этой строке массы и предупреждаем
-    valid = [options.reduce((a,b)=> b.count>a.count ? b : a)];
-    spacingExceeded = true;
+    // Ни один вариант из таблицы не даёт нужное количество полозьев (например,
+    // у масс 500-4000кг в Табл.19 предусмотрено только 2/3 полоза). Достраиваем
+    // недостающие варианты сами: каждый следующий полоз - предыдущее сечение
+    // (максимальное из тех, что есть в таблице для этой массы), уменьшенное на
+    // 1 градацию по толщине И ширине - тот же принцип, которым отличаются
+    // соседние столбцы "количество полозьев" внутри самой таблицы.
+    let base = options.reduce((a,b)=> b.count>a.count ? b : a);
+    let cur = base;
+    while(cur.count < minNeeded){
+      const h = skidGradeDown(cur.h), w = skidGradeDown(cur.w);
+      if(h===cur.h && w===cur.w) break; // упёрлись в минимум градации - дальше не уменьшить
+      cur = {count:cur.count+1, h, w, lengthUsed:cur.lengthUsed, lengthSnapped:cur.lengthSnapped};
+    }
+    if(cur.count >= minNeeded){
+      valid = [cur];
+      extrapolatedCount = cur.count;
+    } else {
+      valid = [base];
+      spacingExceeded = true;
+    }
   }
 
   let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
@@ -1002,7 +1028,8 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     h: chosen.h, w: chosen.w, count: chosen.count,
     massUsed: massRow.mass, massSnapped,
     lengthUsed: chosen.lengthUsed, lengthSnapped: chosen.lengthSnapped,
-    spacingExceeded
+    spacingExceeded,
+    extrapolatedCount
   };
 }
 
@@ -2203,6 +2230,9 @@ function calculate(){
     }
     if(sel.spacingExceeded){
       warnings.push(`Шаг между осями полозьев >1200 мм (п.1.6.2) не устранён — принято максимальное количество по Табл. 19 (${sel.count} шт.).`);
+    }
+    if(sel.extrapolatedCount){
+      warnings.push(`Табл. 19 не предусматривает ${sel.extrapolatedCount} полоза(ьев) для массы ${sel.massUsed} кг — сечение получено уменьшением на 1 градацию толщины и ширины от максимального варианта в таблице (шаг между осями ≤1200 мм, п.1.6.2).`);
     }
   }
   dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9});
