@@ -546,11 +546,15 @@
   /* Водяной знак — в правом нижнем углу. Общий вид ящика - отдельная
      строка перед "Дно" (та же вёрстка .spec-row-diagram/.diagram-slot/
      .diagram-wrap, что и у остальных чертежей - размер подхватывается
-     автоматически через applyDiagramWidths()), а не в шапке. "Итог"
-     рядом с ним, справа (margin-left:auto прижимает к правому краю
-     строки). */
-  #printArea .print-summary-block-last{
+     автоматически через applyDiagramWidths()), а не в шапке. Обе итоговые
+     таблицы - "Внутренние размеры груза" и "Итог" - справа от него, друг
+     под другом (margin-left:auto прижимает колонку к правому краю строки). */
+  #printArea .print-summary-col{
+    display:flex;
+    flex-direction:column;
+    gap:calc(var(--pk)*14px);
     margin-left:auto;
+    flex:0 0 auto;
   }
   #printArea .print-watermark{
     position:absolute;right:4px;bottom:0;
@@ -568,8 +572,7 @@
   #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#4E342E;font-weight:700;}
   #printArea .print-subtitle{color:#6B625D;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
 
-  /* Внутренние размеры груза + Итог — рядом, на одном уровне */
-  #printArea .print-summary-row{display:flex;gap:calc(var(--pk)*24px);flex-wrap:nowrap;margin-bottom:0;align-items:center;}
+  /* Внутренние размеры груза + Итог — в колонке справа от чертежа ящика (см. .print-summary-col) */
   #printArea .print-summary-block{flex:0 0 auto;}
   #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#4E342E;margin:0 0 6px;font-weight:700;}
   #printArea .print-plain-table{border-collapse:collapse;width:auto;}

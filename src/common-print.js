@@ -246,15 +246,20 @@ function fitPrintAreaToOnePage(printArea){
   fits(best);
 
   // Остаток высоты раздаём как отступы между секциями, чтобы лист был
-  // заполнен, а не обрывался на середине.
+  // заполнен, а не обрывался на середине. Заполняем только до того же
+  // бюджета contentH*0.97, что и в fits() выше, — иначе этот шаг съедает
+  // запас, оставленный на расхождения между замером и реальной печатью,
+  // и лист начинает переполняться на реальной печати (уходит на 2-й лист),
+  // даже когда на измерение в браузере всё ещё «влезало».
   const sections = Array.from(scaleBox.querySelectorAll('.print-section'));
   sections.forEach(s=>{ s.style.marginTop = '0px'; });
-  const slack = contentH - scaleBox.scrollHeight;
+  const safeContentH = contentH * 0.97;
+  const slack = safeContentH - scaleBox.scrollHeight;
   if(sections.length && slack > 0){
     const per = Math.floor((slack / sections.length) * 0.97);
     sections.forEach(s=>{ s.style.marginTop = per + 'px'; });
-    if(scaleBox.scrollHeight > contentH){
-      const fix = Math.max(0, per - Math.ceil((scaleBox.scrollHeight - contentH) / sections.length) - 1);
+    if(scaleBox.scrollHeight > safeContentH){
+      const fix = Math.max(0, per - Math.ceil((scaleBox.scrollHeight - safeContentH) / sections.length) - 1);
       sections.forEach(s=>{ s.style.marginTop = fix + 'px'; });
     }
   }

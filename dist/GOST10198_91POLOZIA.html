@@ -556,11 +556,15 @@
   /* Водяной знак — в правом нижнем углу. Общий вид ящика - отдельная
      строка перед "Дно" (та же вёрстка .spec-row-diagram/.diagram-slot/
      .diagram-wrap, что и у остальных чертежей - размер подхватывается
-     автоматически через applyDiagramWidths()), а не в шапке. "Итог"
-     рядом с ним, справа (margin-left:auto прижимает к правому краю
-     строки). */
-  #printArea .print-summary-block-last{
+     автоматически через applyDiagramWidths()), а не в шапке. Обе итоговые
+     таблицы - "Внутренние размеры груза" и "Итог" - справа от него, друг
+     под другом (margin-left:auto прижимает колонку к правому краю строки). */
+  #printArea .print-summary-col{
+    display:flex;
+    flex-direction:column;
+    gap:calc(var(--pk)*14px);
     margin-left:auto;
+    flex:0 0 auto;
   }
   #printArea .print-watermark{
     position:absolute;right:4px;bottom:0;
@@ -578,8 +582,7 @@
   #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#4E342E;font-weight:700;}
   #printArea .print-subtitle{color:#6B625D;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
 
-  /* Внутренние размеры груза + Итог — рядом, на одном уровне */
-  #printArea .print-summary-row{display:flex;gap:calc(var(--pk)*24px);flex-wrap:nowrap;margin-bottom:0;align-items:center;}
+  /* Внутренние размеры груза + Итог — в колонке справа от чертежа ящика (см. .print-summary-col) */
   #printArea .print-summary-block{flex:0 0 auto;}
   #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#4E342E;margin:0 0 6px;font-weight:700;}
   #printArea .print-plain-table{border-collapse:collapse;width:auto;}
@@ -1940,15 +1943,20 @@ function fitPrintAreaToOnePage(printArea){
   fits(best);
 
   // Остаток высоты раздаём как отступы между секциями, чтобы лист был
-  // заполнен, а не обрывался на середине.
+  // заполнен, а не обрывался на середине. Заполняем только до того же
+  // бюджета contentH*0.97, что и в fits() выше, — иначе этот шаг съедает
+  // запас, оставленный на расхождения между замером и реальной печатью,
+  // и лист начинает переполняться на реальной печати (уходит на 2-й лист),
+  // даже когда на измерение в браузере всё ещё «влезало».
   const sections = Array.from(scaleBox.querySelectorAll('.print-section'));
   sections.forEach(s=>{ s.style.marginTop = '0px'; });
-  const slack = contentH - scaleBox.scrollHeight;
+  const safeContentH = contentH * 0.97;
+  const slack = safeContentH - scaleBox.scrollHeight;
   if(sections.length && slack > 0){
     const per = Math.floor((slack / sections.length) * 0.97);
     sections.forEach(s=>{ s.style.marginTop = per + 'px'; });
-    if(scaleBox.scrollHeight > contentH){
-      const fix = Math.max(0, per - Math.ceil((scaleBox.scrollHeight - contentH) / sections.length) - 1);
+    if(scaleBox.scrollHeight > safeContentH){
+      const fix = Math.max(0, per - Math.ceil((scaleBox.scrollHeight - safeContentH) / sections.length) - 1);
       sections.forEach(s=>{ s.style.marginTop = fix + 'px'; });
     }
   }
@@ -2643,28 +2651,27 @@ function buildPrintHtml(){
     <h1>ГОСТ 10198-91 · тип 1, комплектация 3</h1>
     <div class="print-subtitle">Плотный дощатый ящик с полозьями</div>
 
-    <div class="print-summary-row">
-      <div class="print-summary-block">
-        <h2>Внутренние размеры груза, мм</h2>
-        <table class="print-plain-table">
-          <tr><td class="k">Длина</td><td>${L}</td></tr>
-          <tr><td class="k">Ширина</td><td>${W}</td></tr>
-          <tr><td class="k">Высота</td><td>${H}</td></tr>
-          <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
-        </table>
-      </div>
-    </div>
-
     <div class="part-title">Общий вид ящика</div>
     <div class="spec-row-diagram">
       <div class="diagram-slot"><div class="diagram-wrap"><img src="${BOX_IMG_B64}" alt=""></div></div>
-      <div class="print-summary-block print-summary-block-last">
-        <h2>Итог</h2>
-        <table class="print-plain-table">
-          <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
-          <tr><td class="k">Расход пиломатериала</td><td>${volumeText}</td></tr>
-          <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
-        </table>
+      <div class="print-summary-col">
+        <div class="print-summary-block">
+          <h2>Внутренние размеры груза, мм</h2>
+          <table class="print-plain-table">
+            <tr><td class="k">Длина</td><td>${L}</td></tr>
+            <tr><td class="k">Ширина</td><td>${W}</td></tr>
+            <tr><td class="k">Высота</td><td>${H}</td></tr>
+            <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
+          </table>
+        </div>
+        <div class="print-summary-block">
+          <h2>Итог</h2>
+          <table class="print-plain-table">
+            <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
+            <tr><td class="k">Расход пиломатериала</td><td>${volumeText}</td></tr>
+            <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
+          </table>
+        </div>
       </div>
     </div>
 

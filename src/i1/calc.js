@@ -332,28 +332,27 @@ function buildPrintHtml(){
 
     <h1>ГОСТ 10198-91, тип I-1</h1>
 
-    <div class="print-summary-row">
-      <div class="print-summary-block">
-        <h2>Внутренние размеры груза, мм</h2>
-        <table class="print-plain-table">
-          <tr><td class="k">Длина</td><td>${L}</td></tr>
-          <tr><td class="k">Ширина</td><td>${W}</td></tr>
-          <tr><td class="k">Высота</td><td>${H}</td></tr>
-          <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
-        </table>
-      </div>
-    </div>
-
     <div class="part-title">Общий вид ящика</div>
     <div class="spec-row-diagram">
       <div class="diagram-slot"><div class="diagram-wrap"><img src="${BOX_I1_IMG_B64}" alt=""></div></div>
-      <div class="print-summary-block print-summary-block-last">
-        <h2>Итог</h2>
-        <table class="print-plain-table">
-          <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
-          <tr><td class="k">Расход пиломатериала</td><td>${volumeText}</td></tr>
-          <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
-        </table>
+      <div class="print-summary-col">
+        <div class="print-summary-block">
+          <h2>Внутренние размеры груза, мм</h2>
+          <table class="print-plain-table">
+            <tr><td class="k">Длина</td><td>${L}</td></tr>
+            <tr><td class="k">Ширина</td><td>${W}</td></tr>
+            <tr><td class="k">Высота</td><td>${H}</td></tr>
+            <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
+          </table>
+        </div>
+        <div class="print-summary-block">
+          <h2>Итог</h2>
+          <table class="print-plain-table">
+            <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
+            <tr><td class="k">Расход пиломатериала</td><td>${volumeText}</td></tr>
+            <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
+          </table>
+        </div>
       </div>
     </div>
 
