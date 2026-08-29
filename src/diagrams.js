@@ -72,7 +72,7 @@ function diagramEndPanel2Raskosina(heightPlusT12Val, planLenVal){
     {type:'double', x1:1931, y1:21, x2:1934, y2:832, lx:1923, ly:427, text: val+' мм', vertical:true}
   ];
 
-  return renderDiagram(TOREC_2_IMG_B64, 'Щит торцевой (2 раскосины) - схема расположения деталей', 1811, 842, records, null, photoStrokeScale(1811));
+  return renderDiagram(TOREC_2_IMG_B64, 'Щит торцевой (2 раскосины) - схема расположения деталей', 1811, 842, records, 210, photoStrokeScale(1811));
 }
 
 function diagramEndPanel3Raskosina(heightPlusT12Val, planLenVal){
@@ -89,7 +89,7 @@ function diagramEndPanel3Raskosina(heightPlusT12Val, planLenVal){
     {type:'double', x1:2593, y1:13, x2:2598, y2:793, lx:2598, ly:424, text: val+' мм', vertical:true}
   ];
 
-  return renderDiagram(TOREC_3_IMG_B64, 'Щит торцевой (3 раскосины) - схема расположения деталей', 2476, 802, records, null, photoStrokeScale(2476));
+  return renderDiagram(TOREC_3_IMG_B64, 'Щит торцевой (3 раскосины) - схема расположения деталей', 2476, 802, records, 210, photoStrokeScale(2476));
 }
 
 function diagramEndPanel2Floors1Raskosina(heightPlusT12Val, floorSpanVal, planLenVal){
@@ -135,7 +135,7 @@ function diagramEndPanel2Floors2Raskosina(heightPlusT12Val, floorSpanVal, planLe
     {type:'double', x1:19, y1:-109, x2:1207, y2:-112, lx:604, ly:-124, text: planLen+' мм'}
   ];
 
-  return renderDiagram(TOREC_2FLOORS_2_IMG_B64, 'Щит торцевой (2 этажа, 2 раскосины на этаж) - схема расположения деталей', 1222, 1044, records, null, photoStrokeScale(1222));
+  return renderDiagram(TOREC_2FLOORS_2_IMG_B64, 'Щит торцевой (2 этажа, 2 раскосины на этаж) - схема расположения деталей', 1222, 1044, records, 210, photoStrokeScale(1222));
 }
 
 function diagramEndPanel2Floors3Raskosina(heightPlusT12Val, floorSpanVal, planLenVal){
@@ -158,7 +158,7 @@ function diagramEndPanel2Floors3Raskosina(heightPlusT12Val, floorSpanVal, planLe
     {type:'double', x1:13, y1:-100, x2:1741, y2:-101, lx:1154, ly:-102, text: planLen+' мм'}
   ];
 
-  return renderDiagram(TOREC_2FLOORS_3_IMG_B64, 'Щит торцевой (2 этажа, 3 раскосины на этаж) - схема расположения деталей', 1757, 1030, records, null, photoStrokeScale(1757));
+  return renderDiagram(TOREC_2FLOORS_3_IMG_B64, 'Щит торцевой (2 этажа, 3 раскосины на этаж) - схема расположения деталей', 1757, 1030, records, 210, photoStrokeScale(1757));
 }
 
 // diagramEndPanelNoRaskosina - см. src/common-diagrams.js (общие с типом I-1).

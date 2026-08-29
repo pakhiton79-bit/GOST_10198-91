@@ -89,6 +89,13 @@ function diagramPlaceholder(label){
   return `<div class="diagram-wrap diagram-placeholder" style="display:flex;align-items:center;justify-content:center;min-height:160px;border:1px dashed var(--border-input);border-radius:12px;color:var(--ink-soft);font-size:13px;text-align:center;padding:12px;">Чертёж «${label}» ещё не готов</div>`;
 }
 
+// Чертежи торцевого щита (эта функция и все diagramEndPanel*Raskosina в
+// src/diagrams.js) заданы явной шириной 210px вместо DIAGRAM_DEFAULT_WIDTH
+// (260px, как у остальных чертежей) - по замечанию пользователя, на общем
+// фоне остальных чертежей торец выглядел заметно крупнее (при том же
+// формальном размере слота его фото зрительно доминировало). У функции
+// diagramEndPanel2Floors1Raskosina явную ширину не задаём - у неё портретная (высокая) фотография и она и так
+// автоматически ужимается по высоте (DIAGRAM_MAX_HEIGHT) сильнее, чем 210px.
 function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal){
   // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1352×1158).
   // Подпись высоты — полная высота рамы щита = высота груза + толщина доски дна.
@@ -104,7 +111,7 @@ function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal){
     {type:'double', x1:30, y1:1275, x2:1330, y2:1277, lx:650, ly:1275, text: innerWidth+' мм'}
   ];
 
-  return renderDiagram(TOREC_1_IMG_B64, 'Щит торцевой (1 раскосина) - схема расположения деталей', 1352, 1158, records, null, photoStrokeScale(1352));
+  return renderDiagram(TOREC_1_IMG_B64, 'Щит торцевой (1 раскосина) - схема расположения деталей', 1352, 1158, records, 210, photoStrokeScale(1352));
 }
 
 function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
@@ -125,5 +132,5 @@ function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
     {type:'double', x1:36, y1:1265, x2:1341, y2:1265, lx:696, ly:1271, text: width+' мм'}
   ];
 
-  return renderDiagram(TOREC_0_IMG_B64, 'Щит торцевой (без раскосины) - схема расположения деталей', 1354, 1134, records, null, photoStrokeScale(1354));
+  return renderDiagram(TOREC_0_IMG_B64, 'Щит торцевой (без раскосины) - схема расположения деталей', 1354, 1134, records, 210, photoStrokeScale(1354));
 }
