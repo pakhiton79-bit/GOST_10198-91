@@ -853,7 +853,7 @@ function buildPrintHtml(){
   }
 
   return `
-    <img class="print-watermark" src="${LOGO_F_B64}" alt="">
+    <img class="print-watermark" src="${LOGO_B64}" alt="">
 
     <h1>ГОСТ 10198-91 · тип 1, комплектация 3</h1>
     <div class="print-subtitle">Плотный дощатый ящик с полозьями</div>
