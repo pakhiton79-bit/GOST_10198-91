@@ -65,9 +65,18 @@ function printBox(){
 }
 
 // Подписи размеров и стрелки нарисованы ЗА пределами прямоугольника картинки
-// (по замерам — до ~70px ниже и ~28px выше). Вёрстка про этот вылет не знает,
-// поэтому соседние секции наезжали друг на друга. Здесь измеряются настоящие
-// границы каждого чертежа и вылет резервируется отступами.
+// (по замерам — до ~70px ниже и ~28px выше, у некоторых чертежей и заметно
+// левее/правее - например, у 2-этажных чертежей торца). Вёрстка про этот
+// вылет не знает, поэтому соседние секции наезжали друг на друга. Здесь
+// измеряются настоящие границы каждого чертежа и вылет резервируется
+// отступами - в т.ч. margin-left теперь считается ПО ЭТОМУ чертежу, а не
+// берётся как единая фиксированная оценка «на глаз» для всех сразу (было
+// margin-left:44px в CSS): вылет влево у разных чертежей отличается в разы,
+// а если задать общий отступ по худшему случаю - остальные чертежи занимали
+// бы лишнее место, а если по «среднему» - то, что вылезает сильнее (как торец
+// на 2 этажа), обрезалось бы уже на самой печати, т.к. вылет влево не
+// увеличивает scrollWidth и потому не ловится проверкой fits() в
+// fitPrintAreaToOnePage - страница «влезала» при замере, а печатала обрезанной.
 function reserveDiagramOverflow(printArea){
   printArea.querySelectorAll('.diagram-slot').forEach(slot=>{
     const wrap = slot.querySelector('.diagram-wrap');
@@ -75,14 +84,19 @@ function reserveDiagramOverflow(printArea){
 
     slot.style.paddingTop = '0px';
     slot.style.paddingBottom = '0px';
+    slot.style.marginLeft = '0px';
 
     const box = wrap.getBoundingClientRect();
-    let top = box.top, bottom = box.bottom;
+    let top = box.top, bottom = box.bottom, left = box.left;
 
     // подписи в рамках
     wrap.querySelectorAll('.diagram-label').forEach(lbl=>{
       const r = lbl.getBoundingClientRect();
-      if(r.height){ top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom); }
+      if(r.height){
+        top = Math.min(top, r.top);
+        bottom = Math.max(bottom, r.bottom);
+        left = Math.min(left, r.left);
+      }
     });
 
     // стрелки/линии SVG (координаты могут быть отрицательными)
@@ -92,16 +106,18 @@ function reserveDiagramOverflow(printArea){
         const bb = svg.getBBox();
         const sr = svg.getBoundingClientRect();
         const vb = svg.viewBox.baseVal;
-        if(vb.height && sr.height){
-          const sy = sr.height / vb.height;
+        if(vb.width && vb.height && sr.width && sr.height){
+          const sx = sr.width / vb.width, sy = sr.height / vb.height;
           top = Math.min(top, sr.top + bb.y * sy);
           bottom = Math.max(bottom, sr.top + (bb.y + bb.height) * sy);
+          left = Math.min(left, sr.left + bb.x * sx);
         }
       }catch(e){ /* getBBox недоступен — останутся отступы по подписям */ }
     }
 
     slot.style.paddingTop = Math.max(0, Math.ceil(box.top - top)) + 'px';
     slot.style.paddingBottom = Math.max(0, Math.ceil(bottom - box.bottom)) + 'px';
+    slot.style.marginLeft = Math.max(0, Math.ceil(box.left - left)) + 'px';
   });
 }
 

@@ -232,7 +232,9 @@ function calculate(){
 
   let warningsHtml = '';
   if(warnings.length){
-    warningsHtml += '<div style="color:#a13d2b;margin-bottom:10px;font-weight:700;">Внимание:</div>' +
+    // Цвет — var(--warn) из общей палитры (design.md), а не произвольный hex
+    // (см. тот же фикс в src/app.js).
+    warningsHtml += '<div style="color:var(--warn);margin-bottom:10px;font-weight:700;">Внимание:</div>' +
       warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
   }
   const warningsEl = document.getElementById('warningsTop');

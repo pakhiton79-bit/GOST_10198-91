@@ -646,9 +646,6 @@ function calculate(){
     warnings.push('Щит торцевой (2 этажа, без раскосины): чертёж приблизительный — использован чертёж одного этажа.');
   }
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram, torecFloors, k30 + w31) + `</div>` + renderSection('', endPanel) + `</div>`;
-  if(bokFloors === 2){
-    warnings.push('Щит боковой (2 этажа): чертёж для этого случая ещё не готов — на месте чертежа заглушка.');
-  }
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, bokOverhang, edgeDistKryshka, l42, bokFloors, bokVertSpan, l19, k40, w43) + `</div>` + renderSection('', bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
@@ -665,7 +662,10 @@ function calculate(){
 
   let warningsHtml = '';
   if(warnings.length){
-    warningsHtml += '<div style="color:#a13d2b;margin-bottom:10px;font-weight:700;">Внимание:</div>' +
+    // Цвет — var(--warn) из общей палитры (design.md), а не произвольный hex:
+    // .note (класс контейнера #warningsTop) уже даёт фон/рамку по той же
+    // палитре, здесь только сам текст должен ей соответствовать.
+    warningsHtml += '<div style="color:var(--warn);margin-bottom:10px;font-weight:700;">Внимание:</div>' +
       warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
   }
   const warningsEl = document.getElementById('warningsTop');
