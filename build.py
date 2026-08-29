@@ -35,6 +35,14 @@ I-3, файлы те же) плюс UI_JS/CALC_JS (src/i1/ui.js - фильтр �
 полоза, src/i1/calc.js - calculate() и buildPrintHtml()).
   - GOST10198_91_I1.html
 
+== Стартовая страница ==
+src/launcher/launcher.src.html - список калькуляторов (карточки по ГОСТам,
+внутри - ссылки на типы/комплектации), стиль - общий src/style.css (design.md).
+Список калькуляторов - src/launcher/catalog.js: чтобы добавить новый ГОСТ или
+тип, достаточно дописать в него запись и пересобрать, разметку менять не надо.
+  - index.html (лежит в dist/ рядом с остальными - ссылки в нём на файлы
+    по имени, без пути)
+
 Плейсхолдеры вида __IMG:filename.ext__ (внутри diagrams.js/app.js) заменяются
 на base64-содержимое соответствующего файла из src/images/. Запуск:
 
@@ -97,6 +105,16 @@ I1_VARIANTS = [
     {"out_name": "GOST10198_91_I1.html"},
 ]
 
+LAUNCHER_DIR = SRC_DIR / "launcher"
+LAUNCHER_SHELL = LAUNCHER_DIR / "launcher.src.html"
+LAUNCHER_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__CATALOG_JS__*/": LAUNCHER_DIR / "catalog.js",
+}
+LAUNCHER_VARIANTS = [
+    {"out_name": "index.html"},
+]
+
 
 def build_one(shell, parts, variant):
     text = shell.read_text(encoding="utf-8")
@@ -143,6 +161,8 @@ def main():
         build_one(I3_SHELL, I3_PARTS, variant)
     for variant in I1_VARIANTS:
         build_one(I1_SHELL, I1_PARTS, variant)
+    for variant in LAUNCHER_VARIANTS:
+        build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
 
 
 if __name__ == "__main__":
