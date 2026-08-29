@@ -33,7 +33,6 @@
     background:var(--accent-wash);
   }
   .gost-link .gost-name{font-size:16px;font-weight:600;}
-  .gost-link .gost-title{font-size:13px;color:var(--ink-soft);margin-top:4px;}
   .gost-link .arrow{color:var(--accent);font-size:18px;line-height:1;flex:none;}
   .empty-note{color:var(--ink-soft);font-size:14px;}
 </style>
@@ -41,9 +40,8 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">WOODCALC</div>
     <h1>Калькуляторы производства тары</h1>
-    <div class="subtitle">Выберите ГОСТ, затем тип тары</div>
+    <div class="subtitle">Выберите ГОСТ</div>
   </header>
 
   <div id="gosts"></div>
@@ -61,7 +59,7 @@
   let html = '<div class="gost-list">';
   GOSTS.forEach(g => {
     html += `<a class="gost-link" href="${g.file}">
-      <div><div class="gost-name">${g.gost}</div><div class="gost-title">${g.title}</div></div>
+      <div class="gost-name">${g.gost}</div>
       <span class="arrow">→</span>
     </a>`;
   });

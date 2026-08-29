@@ -137,7 +137,6 @@ TYPES_VARIANTS = [
     {
         "out_name": "gost-10198-91.html",
         "/*__GOST_NAME__*/": "ГОСТ 10198-91",
-        "/*__GOST_TITLE__*/": "Ящики дощатые неразборные для грузов массой до 3000 кг",
         "/*__TYPES_JS__*/": LAUNCHER_DIR / "types-10198-91.js",
     },
 ]

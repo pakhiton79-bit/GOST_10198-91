@@ -160,7 +160,12 @@ function toggleFasteningDropdown(){
 // файле, вместе с переходом передаём через URL всё, что человек уже ввёл
 // (размеры, галочки), а на другой стороне (см. applyStateFromUrl ниже) это
 // сразу подставляется в поля и пересчитывается.
-function switchFastening(targetFile){
+function switchFastening(targetFile, targetType){
+  // Запоминаем выбор — чтобы при следующем заходе через список типов
+  // (см. src/launcher/types.src.html) сразу открывался тот же способ
+  // крепления, а не вариант по умолчанию для этого ГОСТа.
+  try{ localStorage.setItem(FASTENING_STORAGE_KEY, targetType); }catch(e){}
+
   const params = new URLSearchParams();
   ['L','W','H','M'].forEach(id=>{
     const v = document.getElementById(id).value;

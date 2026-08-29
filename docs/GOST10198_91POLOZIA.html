@@ -43,6 +43,21 @@
   }
   .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
 
+  /* Навигация «Назад» / «Главная» - вверху страниц выбора ГОСТа/типа и самих
+     калькуляторов (везде, кроме самой стартовой страницы - там некуда). */
+  .top-nav{
+    display:flex;
+    gap:16px;
+    margin-bottom:20px;
+  }
+  .top-nav a{
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink-soft);
+    text-decoration:none;
+  }
+  .top-nav a:hover{color:var(--accent);}
+
   header{
     border-bottom:1px solid var(--rule);
     padding-bottom:20px;
@@ -660,6 +675,10 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="top-nav">
+    <a href="gost-10198-91.html">← Назад</a>
+    <a href="index.html">Главная</a>
+  </div>
   <header>
     <h1>ГОСТ 10198-91 тип I-3</h1>
   </header>
@@ -717,8 +736,8 @@
             <input type="radio" name="fasteningType" value="skid" checked onchange="onFasteningTypeChange(this)">
             <span>Крепление за полозья</span>
           </label>
-          <label onclick="switchFastening('GOST10198_91DOSKI_DNA.html'); return false;">
-            <input type="radio" name="fasteningType" value="floor_boards" onclick="switchFastening('GOST10198_91DOSKI_DNA.html'); return false;">
+          <label onclick="switchFastening('GOST10198_91DOSKI_DNA.html', 'floor_boards'); return false;">
+            <input type="radio" name="fasteningType" value="floor_boards" onclick="switchFastening('GOST10198_91DOSKI_DNA.html', 'floor_boards'); return false;">
             <span>Крепление к доскам дна</span>
           </label>
           <label class="fastening-option-disabled">
@@ -2372,7 +2391,12 @@ function toggleFasteningDropdown(){
 // файле, вместе с переходом передаём через URL всё, что человек уже ввёл
 // (размеры, галочки), а на другой стороне (см. applyStateFromUrl ниже) это
 // сразу подставляется в поля и пересчитывается.
-function switchFastening(targetFile){
+function switchFastening(targetFile, targetType){
+  // Запоминаем выбор — чтобы при следующем заходе через список типов
+  // (см. src/launcher/types.src.html) сразу открывался тот же способ
+  // крепления, а не вариант по умолчанию для этого ГОСТа.
+  try{ localStorage.setItem(FASTENING_STORAGE_KEY, targetType); }catch(e){}
+
   const params = new URLSearchParams();
   ['L','W','H','M'].forEach(id=>{
     const v = document.getElementById(id).value;
