@@ -2468,13 +2468,12 @@ function calculate(){
     errEl.textContent = `Габариты ${L}×${W} мм не превышают 1200×800 мм. Применяется ГОСТ 21140.`;
     return;
   }
-  if(MASS > 3000){
-    errEl.textContent = 'Масса груза превышает 3000 кг — вне области действия типа I-3 (ГОСТ 10198-91, Табл. 1).';
-    return;
-  }
   const wallRaw = wallThickness(MASS); // п.1.6.15 — толщина досок/планок/раскосов стенок и крышки
   const wall = {value: roundUpToAvailable(wallRaw.value), exceeded: wallRaw.exceeded};
   let warnings = [];
+  if(MASS > 3000){
+    warnings.push('Масса груза превышает 3000 кг — вне области действия типа I-3 (ГОСТ 10198-91, Табл. 1), расчёт продолжен по верхней границе диапазона.');
+  }
   if(wall.exceeded){
     warnings.push('Масса вне диапазона п.1.6.15 — толщина стенок принята по верхней границе (25 мм).');
   }
