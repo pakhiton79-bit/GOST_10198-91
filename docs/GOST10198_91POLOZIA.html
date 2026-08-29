@@ -1590,9 +1590,9 @@ function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKr
   const valEdgeBeam     = crossBeamQty > 0
     ? Math.round((valLen - crossBeamQty*crossBeamWidthMm) / (crossBeamQty + 1))
     : Math.round(valLen);
-  // Расстояние между соседними планками крышки - та же величина, что и шаг планок
-  // бокового щита (bokSectionW в app.js), т.к. планки бока стоят по тем же местам.
-  const valPlankGap    = Math.round(plankGapMm);
+  // Расстояние между соседними планками крышки (plankGapMm) на чертеже не
+  // показываем - по замечанию пользователя, лишняя метка (не нужна помимо
+  // остальных размеров крышки).
 
   const records = [
     {type:'line', x1:371, y1:1138, x2:506, y2:1432},
@@ -1607,10 +1607,7 @@ function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKr
     {type:'double', x1:299, y1:989, x2:441, y2:936},
     {type:'single', x1:194, y1:1236, x2:377, y2:959, lx:205, ly:1296, text: valEdgeBeam+' мм'},
     {type:'line', x1:273, y1:422, x2:251, y2:378},
-    {type:'single', x1:-51, y1:266, x2:263, y2:400, lx:-85, ly:225, text: valPlankaThick+' мм'},
-    {type:'line', x1:963, y1:152, x2:859, y2:-50},
-    {type:'line', x1:747, y1:219, x2:638, y2:13},
-    {type:'double', x1:653, y1:42, x2:873, y2:-24, lx:751, ly:-8, text: valPlankGap+' мм'}
+    {type:'single', x1:-51, y1:266, x2:263, y2:400, lx:-85, ly:225, text: valPlankaThick+' мм'}
   ];
 
   return renderDiagram(KRYSHKA_IMG_B64, 'Крышка - схема расположения деталей', 1718, 1274, records, null, photoStrokeScale(1718));
@@ -1626,9 +1623,9 @@ function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKry
   const valEdgeBeam    = crossBeamQty > 0
     ? Math.round((valLen - crossBeamQty*crossBeamWidthMm) / (crossBeamQty + 1))
     : Math.round(valLen);
-  // Расстояние между соседними планками крышки (при l19=2 - единственный промежуток,
-  // между двумя планками на фото) - та же величина, что и шаг планок бокового щита.
-  const valPlankGap    = Math.round(plankGapMm);
+  // Расстояние между соседними планками крышки (plankGapMm) на чертеже не
+  // показываем - по замечанию пользователя, лишняя метка (не нужна помимо
+  // остальных размеров крышки, см. тот же фикс в diagramKryshkaDefault выше).
 
   const records = [
     {type:'line', x1:373, y1:758, x2:433, y2:865},
@@ -1645,9 +1642,7 @@ function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKry
     {type:'line', x1:1007, y1:552, x2:1234, y2:480},
     {type:'double', x1:996, y1:-13, x2:1236, y2:479, lx:1155, ly:205, text: valWidth+' мм'},
     {type:'line', x1:173, y1:351, x2:75, y2:384},
-    {type:'single', x1:28, y1:607, x2:117, y2:371, lx:5, ly:639, text: valEdgeBeam+' мм'},
-    {type:'line', x1:390, y1:330, x2:430, y2:310},
-    {type:'single', x1:480, y1:230, x2:410, y2:320, lx:490, ly:205, text: valPlankGap+' мм'}
+    {type:'single', x1:28, y1:607, x2:117, y2:371, lx:5, ly:639, text: valEdgeBeam+' мм'}
   ];
 
   return renderDiagram(KRYSHKA_2BEAMS_IMG_B64, 'Крышка (2 поперечных бруса) - схема расположения деталей', 1157, 839, records, null, photoStrokeScale(1157));
