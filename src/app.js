@@ -48,6 +48,13 @@ function buildThicknessCheckboxList(){
   list.innerHTML = html;
 }
 
+// Скрывает индикатор «Расчёт выполнен» при любом изменении входных данных
+// (размеры, масса, толщины «в наличии», тип крепления, доп. опции) - иначе
+// после смены параметров на экране остаются устаревшие результаты расчёта.
+function invalidateCalc(){
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+}
+
 function onThicknessCheckboxChange(el){
   const v = parseInt(el.value, 10);
   if(el.checked){
@@ -58,7 +65,7 @@ function onThicknessCheckboxChange(el){
   availableThicknesses.sort((a,b)=>a-b);
   saveAvailableThicknesses();
   updateThicknessSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden'; // результаты устарели после смены фильтра
+  invalidateCalc();
 }
 
 function setAllThickness(state){
@@ -66,7 +73,7 @@ function setAllThickness(state){
   buildThicknessCheckboxList();
   saveAvailableThicknesses();
   updateThicknessSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  invalidateCalc();
 }
 
 function updateThicknessSummary(){
@@ -134,7 +141,7 @@ function onFasteningTypeChange(el){
   fasteningType = el.value;
   saveFasteningType();
   updateFasteningSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden'; // результаты устарели после смены типа крепления
+  invalidateCalc();
 }
 
 function updateFasteningSummary(){
@@ -152,16 +159,18 @@ updateFasteningSummary();
 // требование ≥300мм для погрузчика (п.1.6.11) проверяется именно по подполозным
 // доскам, а если их совсем убрать - проверять и требовать становится нечего.
 function onSkidForkliftExclusive(el){
-  if(!el.checked) return;
-  const otherId = el.id === 'removeSkidBoards' ? 'forkliftLoading' : 'removeSkidBoards';
-  const other = document.getElementById(otherId);
-  if(other && other.checked) other.checked = false;
+  if(el.checked){
+    const otherId = el.id === 'removeSkidBoards' ? 'forkliftLoading' : 'removeSkidBoards';
+    const other = document.getElementById(otherId);
+    if(other && other.checked) other.checked = false;
+  }
+  invalidateCalc();
 }
 
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  invalidateCalc();
   thicknessLimitExceeded = false;
   const L = parseFloat(document.getElementById('L').value);
   const W = parseFloat(document.getElementById('W').value);
@@ -481,8 +490,12 @@ function calculate(){
   // крышки (l19) на этаж, ×2 при 2 этажах (планки бокового щита стоят по тем же
   // местам, что и планки крышки, на каждом этаже).
   // При «Оптимизировать размеры» толщина планки бокового щита увеличивается
-  // на 2мм (с переокруглением до ближайшей доступной «в наличии» толщины).
-  const t40 = optimizeSizes ? roundUpToAvailable(wallRaw.value + 2) : wall.value, w40 = 100;
+  // на 2мм от фактически используемой толщины (wall.value - уже округлённой до
+  // доступной «в наличии»), а не от расчётной по ГОСТ (wallRaw.value): иначе при
+  // грубом шаге между доступными толщинами оба варианта (с галочкой и без)
+  // могли округлиться до одного и того же значения, и +2мм визуально пропадали.
+  // Затем результат снова округляется вверх до ближайшей доступной толщины.
+  const t40 = optimizeSizes ? roundUpToAvailable(wall.value + 2) : wall.value, w40 = 100;
   const bokOverhang = Math.min(t9*2/3, 70);
   const bokPlankFull = H + t12 + bokOverhang;
   const k40 = bokFloors === 2 ? (bokPlankFull - w43) / 2 : bokPlankFull;
@@ -612,9 +625,13 @@ function calculate(){
 // Галочка "расчёт выполнен" сбрасывается, если пользователь меняет входные
 // данные после расчёта — чтобы не вводить в заблуждение устаревшим результатом.
 ['L','W','H','M'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', ()=>{
-    document.getElementById('calcCheck').style.visibility = 'hidden';
-  });
+  document.getElementById(id).addEventListener('input', invalidateCalc);
+});
+// То же для доп. опций (галочек), кроме тех, что уже вызывают invalidateCalc()
+// через собственный onchange-обработчик в разметке (например onSkidForkliftExclusive).
+['optimizeSizes','solidRigidBase','roundBoardWidths','removeFloorBoards'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', invalidateCalc);
 });
 
 // Пересчёт "Расход пиломатериала" и "Норма времени" при ручном редактировании
