@@ -1012,8 +1012,11 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 
-  const minNeeded = minSkidsByWidth162(widthMm); // п.1.6.2 - минимум полозьев по шагу 1200мм
-  let valid = options.filter(o=>o.count>=minNeeded);
+  // п.1.6.2 - минимум полозьев по шагу осей 1200мм. Нужное количество зависит от
+  // ширины сечения САМОГО полоза w (у каждого варианта из Табл.19 своя w), поэтому
+  // проверяем/подбираем индивидуально для каждого варианта, а не по одному общему
+  // порогу - см. minSkidsByWidth162.
+  let valid = options.filter(o=>o.count>=minSkidsByWidth162(widthMm, o.w));
   let spacingExceeded = false;
   let extrapolatedCount = null;
   if(valid.length===0){
@@ -1027,12 +1030,12 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     // градацию; высота (толщина) не меняется.
     let base = options.reduce((a,b)=> b.count>a.count ? b : a);
     let cur = base;
-    while(cur.count < minNeeded){
+    while(cur.count < minSkidsByWidth162(widthMm, cur.w)){
       const w = skidGradeDown(cur.w);
       if(w===cur.w) break; // упёрлись в минимум градации - дальше не уменьшить
       cur = {count:cur.count+1, h:cur.h, w, lengthUsed:cur.lengthUsed, lengthSnapped:cur.lengthSnapped};
     }
-    if(cur.count >= minNeeded){
+    if(cur.count >= minSkidsByWidth162(widthMm, cur.w)){
       valid = [cur];
       extrapolatedCount = cur.count;
     } else {
@@ -1058,11 +1061,16 @@ function selectSkid19(mass, workingLengthMm, widthMm){
 // ГОСТ 10198-91, п.1.6.2: "Расстояние между осями смежных полозьев не должно
 // превышать 1200 мм". Это общее требование для любого типа крепления, не привязанное
 // к конкретной таблице сечений - отсюда минимально необходимое количество полозьев
-// по ширине груза. Грубая оценка (внутренняя ширина груза как приближение пролёта
-// между крайними полозьями), но направление верное: чем шире груз, тем больше
-// полозьев нужно, чтобы уложиться в шаг 1200 мм.
-function minSkidsByWidth162(widthMm){
-  return Math.max(2, Math.ceil(widthMm / 1200) + 1);
+// по ширине ящика под полозья (см. skidCalcWidth в app.js). Расстояние считается
+// между ОСЯМИ полозьев, но при этом наружный край крайнего полоза не должен
+// выступать за габарит ящика - значит ось крайнего полоза отстоит от края не
+// более чем на skidW/2, и реальный пролёт между осями крайних полозьев равен
+// widthMm - skidW, а не widthMm (уточнение пользователя). skidW - ширина сечения
+// самого полоза; если она ещё не известна на момент вызова, передаём 0 (даёт
+// прежнюю, менее точную оценку только по ширине груза).
+function minSkidsByWidth162(widthMm, skidW){
+  const span = Math.max(0, widthMm - (skidW||0));
+  return Math.max(2, Math.ceil(span / 1200) + 1);
 }
 
 // ГОСТ 10198-91, п.1.6.8: толщина и ширина торцовых брусьев дна по массе груза.
@@ -2509,7 +2517,6 @@ function calculate(){
   // Ширина для расчёта полозьев (шаг осей, Табл. 19) - ширина груза + толщина
   // досок бокового щита*2 (без боковых планок - см. уточнение пользователя).
   const skidCalcWidth = W + wall.value*2;
-  const widthMinSkids162 = minSkidsByWidth162(skidCalcWidth); // п.1.6.2 — общий предел 1200 мм между осями полозьев, для любого типа крепления
 
   // Длина полоза (п.1.6.2 — равна наружной длине ящика): планка_торца + доска_торца +
   // планка_торца + доска_торца + длина_груза (формула из docx конструктора). Толщина
@@ -2527,8 +2534,11 @@ function calculate(){
     if(poloz.exceeded){
       warnings.push('Масса вне диапазона п.1.6.5 (500–20000 кг) — сечение полоза принято по крайнему значению таблицы.');
     }
-    if(l9_default < widthMinSkids162){
-      l9 = widthMinSkids162;
+    // п.1.6.2: минимум полозьев по шагу осей ≤1200мм с учётом того, что край
+    // крайнего полоза не должен выступать за габарит ящика (см. minSkidsByWidth162).
+    const minNeeded165 = minSkidsByWidth162(skidCalcWidth, poloz.w);
+    if(l9_default < minNeeded165){
+      l9 = minNeeded165;
     }
     t9 = roundUpToAvailable(poloz.h); w9 = poloz.w;
   } else {

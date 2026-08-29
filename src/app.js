@@ -259,7 +259,6 @@ function calculate(){
   // Ширина для расчёта полозьев (шаг осей, Табл. 19) - ширина груза + толщина
   // досок бокового щита*2 (без боковых планок - см. уточнение пользователя).
   const skidCalcWidth = W + wall.value*2;
-  const widthMinSkids162 = minSkidsByWidth162(skidCalcWidth); // п.1.6.2 — общий предел 1200 мм между осями полозьев, для любого типа крепления
 
   // Длина полоза (п.1.6.2 — равна наружной длине ящика): планка_торца + доска_торца +
   // планка_торца + доска_торца + длина_груза (формула из docx конструктора). Толщина
@@ -277,8 +276,11 @@ function calculate(){
     if(poloz.exceeded){
       warnings.push('Масса вне диапазона п.1.6.5 (500–20000 кг) — сечение полоза принято по крайнему значению таблицы.');
     }
-    if(l9_default < widthMinSkids162){
-      l9 = widthMinSkids162;
+    // п.1.6.2: минимум полозьев по шагу осей ≤1200мм с учётом того, что край
+    // крайнего полоза не должен выступать за габарит ящика (см. minSkidsByWidth162).
+    const minNeeded165 = minSkidsByWidth162(skidCalcWidth, poloz.w);
+    if(l9_default < minNeeded165){
+      l9 = minNeeded165;
     }
     t9 = roundUpToAvailable(poloz.h); w9 = poloz.w;
   } else {
