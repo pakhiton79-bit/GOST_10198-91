@@ -1043,7 +1043,15 @@ function selectSkid19(mass, workingLengthMm, widthMm){
       const diff = Math.abs(T19_LENGTHS[i]-workingLengthMm);
       if(diff<bestDiff || (diff===bestDiff && T19_LENGTHS[i]>T19_LENGTHS[bestI])){ bestDiff=diff; bestI=i; }
     });
-    const [h,w] = row.dims[bestI].split('x').map(Number);
+    // Ширина полоза (w) - всегда БОЛЬШЕЕ из двух чисел ячейки, толщина (h) -
+    // меньшее (уточнение пользователя), а не строго "первое/второе число" -
+    // в исходном файле «Новые стандарты полозьев.docx» это не выдержано
+    // позиционно: 66 из 286 ячеек таблицы записаны как "большее x меньшее"
+    // (напр. "100x75", "175x150" и т.п.), что при позиционном разборе давало
+    // толщину БОЛЬШЕ ширины - в реальности должно быть наоборот.
+    const nums = row.dims[bestI].split('x').map(Number);
+    const h = Math.min(nums[0], nums[1]);
+    const w = Math.max(nums[0], nums[1]);
     return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 
