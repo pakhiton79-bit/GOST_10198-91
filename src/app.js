@@ -602,7 +602,7 @@ function calculate(){
   if(bokFloors === 2){
     warnings.push('Щит боковой (2 этажа): чертёж для этого случая ещё не готов — на месте чертежа заглушка.');
   }
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, bokOverhang, edgeDistKryshka, l42, bokFloors, bokVertSpan, l19) + `</div>` + renderSection('', bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, bokOverhang, edgeDistKryshka, l42, bokFloors, bokVertSpan, l19, k40, w43) + `</div>` + renderSection('', bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   // Подписи/стрелки чертежей могут выходить за пределы картинки (см.

@@ -23,6 +23,12 @@ const BOKOVOY_3P_2R_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_3p_2r.jpg__"
 const BOKOVOY_4P_0R_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_4p_0r.jpg__"; // натуральный размер 1900x778 (4 планки, без раскосины)
 const BOKOVOY_4P_3R_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_4p_3r.jpg__"; // натуральный размер 1877x746 (4 планки, 3 раскосины)
 
+// 2 этажа: та же логика подбора по числу планок (число раскосин = (планок-1)*2,
+// т.к. раскосина ставится на каждую секцию на каждом из двух этажей).
+const BOKOVOY_2FL_2P_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_2fl_2r.jpg__"; // натуральный размер 966x1361 (2 этажа, 2 планки, 2 раскосины)
+const BOKOVOY_2FL_3P_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_2fl_4r.jpg__"; // натуральный размер 1381x1326 (2 этажа, 3 планки, 4 раскосины)
+const BOKOVOY_2FL_4P_IMG_B64 = "data:image/jpeg;base64,__IMG:bokovoy_2fl_6r.jpg__"; // натуральный размер 1886x1338 (2 этажа, 4 планки, 6 раскосин)
+
 // headTriangle, photoStrokeScale, DIAGRAM_DEFAULT_WIDTH/DIAGRAM_MAX_HEIGHT,
 // renderDiagram - см. src/common-diagrams.js (общие с типом I-1).
 
@@ -454,20 +460,122 @@ function diagramBokovoy4Planks3Raskosina(boardLenVal, overhangVal, edgeDistVal, 
   return renderDiagram(BOKOVOY_4P_3R_IMG_B64, 'Щит боковой (4 планки, 3 раскосины) - схема расположения деталей', 1877, 746, records, null, photoStrokeScale(1877));
 }
 
-function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal, floorsVal, floorSpanVal, plankCountVal){
-  // Для щита на 2 этажа фото ещё нет — показываем заглушку (будет добавлено
-  // отдельно, координаты для этого случая пока не присланы).
+// Три чертежа ниже - варианты на 2 этажа (средняя горизонтальная планка делит щит
+// пополам). Подписи: длина доски бока (сверху), полная высота груза+доски дна
+// (справа, целиком на весь щит), отступ до первой планки (снизу справа - на этих
+// трёх фото он оказался у последней планки, а не у первой, см. присланные
+// координаты), и отдельно две подписи слева - длина вехней вертикальной планки
+// (k40, чисто планка, от верха щита до верха средней горизонтальной планки) и
+// длина нижней планки + толщина средней горизонтальной планки (w43+k40, от ВЕРХА
+// средней планки до низа щита - поэтому включает и её толщину). Напуска на полоз
+// (overhang) на этих трёх фото нет - в присланных координатах эта подпись
+// отсутствует.
+
+function diagramBokovoy2Floors2Raskosina(boardLenVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal){
+  // Фото-чертёж: 2 этажа, 2 планки, 2 раскосины (натуральный размер 966×1361).
+  const valBoardLen = Math.round(boardLenVal);
+  const valEdgeDist = Math.round(edgeDistVal);
+  const valHeight = Math.round(heightPlusFloorVal);
+  const valUpperSpan = Math.round(upperSpanVal);
+  const valLowerSpan = Math.round(upperSpanVal + midPlankWidthVal);
+
+  const records = [
+    {type:'line', x1:805, y1:47, x2:1073, y2:47},
+    {type:'line', x1:807, y1:1250, x2:1083, y2:1250},
+    {type:'double', x1:1052, y1:47, x2:1052, y2:1250, lx:1070, ly:648, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:907, y1:123, x2:907, y2:-56},
+    {type:'line', x1:85, y1:109, x2:85, y2:-66},
+    {type:'double', x1:85, y1:-46, x2:908, y2:-46, lx:496, ly:-64, text: valBoardLen+' мм'},
+    {type:'line', x1:695, y1:1336, x2:1088, y2:1333},
+    {type:'line', x1:966, y1:1250, x2:966, y2:1334},
+    {type:'single', x1:731, y1:1471, x2:966, y2:1298, lx:728, ly:1482, text: valEdgeDist+' мм'},
+    {type:'line', x1:197, y1:588, x2:-109, y2:588},
+    {type:'line', x1:193, y1:1250, x2:-111, y2:1250},
+    {type:'double', x1:-89, y1:588, x2:-89, y2:1250, lx:-103, ly:919, text: valLowerSpan+' мм', vertical:true},
+    {type:'line', x1:197, y1:47, x2:-95, y2:46},
+    {type:'double', x1:-22, y1:47, x2:-22, y2:588, lx:-75, ly:317, text: valUpperSpan+' мм', vertical:true}
+  ];
+
+  return renderDiagram(BOKOVOY_2FL_2P_IMG_B64, 'Щит боковой (2 этажа, 2 планки, 2 раскосины) - схема расположения деталей', 966, 1361, records, null, photoStrokeScale(966));
+}
+
+function diagramBokovoy2Floors3Planks(boardLenVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal){
+  // Фото-чертёж: 2 этажа, 3 планки, 4 раскосины (натуральный размер 1381×1326).
+  const valBoardLen = Math.round(boardLenVal);
+  const valEdgeDist = Math.round(edgeDistVal);
+  const valHeight = Math.round(heightPlusFloorVal);
+  const valUpperSpan = Math.round(upperSpanVal);
+  const valLowerSpan = Math.round(upperSpanVal + midPlankWidthVal);
+
+  const records = [
+    {type:'line', x1:1236, y1:21, x2:1504, y2:21},
+    {type:'line', x1:1238, y1:1224, x2:1514, y2:1224},
+    {type:'double', x1:1483, y1:21, x2:1483, y2:1224, lx:1501, ly:622, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:1338, y1:97, x2:1338, y2:-82},
+    {type:'line', x1:34, y1:83, x2:34, y2:-92},
+    {type:'double', x1:34, y1:-72, x2:1339, y2:-72, lx:686, ly:-90, text: valBoardLen+' мм'},
+    {type:'line', x1:1126, y1:1309, x2:1519, y2:1306},
+    {type:'line', x1:1397, y1:1224, x2:1397, y2:1307},
+    {type:'single', x1:1162, y1:1444, x2:1397, y2:1272, lx:1159, ly:1455, text: valEdgeDist+' мм'},
+    {type:'line', x1:135, y1:564, x2:-160, y2:564},
+    {type:'line', x1:131, y1:1224, x2:-162, y2:1224},
+    {type:'double', x1:-140, y1:564, x2:-140, y2:1224, lx:-154, ly:894, text: valLowerSpan+' мм', vertical:true},
+    {type:'line', x1:135, y1:21, x2:-146, y2:20},
+    {type:'double', x1:-73, y1:21, x2:-73, y2:564, lx:-126, ly:292, text: valUpperSpan+' мм', vertical:true}
+  ];
+
+  return renderDiagram(BOKOVOY_2FL_3P_IMG_B64, 'Щит боковой (2 этажа, 3 планки, 4 раскосины) - схема расположения деталей', 1381, 1326, records, null, photoStrokeScale(1381));
+}
+
+function diagramBokovoy2Floors4Planks(boardLenVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal){
+  // Фото-чертёж: 2 этажа, 4 планки, 6 раскосин (натуральный размер 1886×1338).
+  const valBoardLen = Math.round(boardLenVal);
+  const valEdgeDist = Math.round(edgeDistVal);
+  const valHeight = Math.round(heightPlusFloorVal);
+  const valUpperSpan = Math.round(upperSpanVal);
+  const valLowerSpan = Math.round(upperSpanVal + midPlankWidthVal);
+
+  const records = [
+    {type:'line', x1:1737, y1:33, x2:2016, y2:33},
+    {type:'line', x1:1739, y1:1237, x2:2026, y2:1237},
+    {type:'double', x1:1995, y1:33, x2:1995, y2:1237, lx:2013, ly:635, text: valHeight+' мм', vertical:true},
+    {type:'line', x1:1850, y1:109, x2:1850, y2:-70},
+    {type:'line', x1:29, y1:95, x2:29, y2:-80},
+    {type:'double', x1:29, y1:-60, x2:1851, y2:-60, lx:940, ly:-78, text: valBoardLen+' мм'},
+    {type:'line', x1:1627, y1:1322, x2:2031, y2:1319},
+    {type:'line', x1:1909, y1:1237, x2:1909, y2:1320},
+    {type:'single', x1:1663, y1:1457, x2:1909, y2:1285, lx:1660, ly:1468, text: valEdgeDist+' мм'},
+    {type:'line', x1:142, y1:580, x2:-165, y2:580},
+    {type:'line', x1:138, y1:1237, x2:-167, y2:1237},
+    {type:'double', x1:-145, y1:580, x2:-145, y2:1237, lx:-159, ly:908, text: valLowerSpan+' мм', vertical:true},
+    {type:'line', x1:142, y1:33, x2:-151, y2:32},
+    {type:'double', x1:-78, y1:33, x2:-78, y2:580, lx:-131, ly:306, text: valUpperSpan+' мм', vertical:true}
+  ];
+
+  return renderDiagram(BOKOVOY_2FL_4P_IMG_B64, 'Щит боковой (2 этажа, 4 планки, 6 раскосин) - схема расположения деталей', 1886, 1338, records, null, photoStrokeScale(1886));
+}
+
+function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal, floorsVal, floorSpanVal, plankCountVal, plankLenVal, midPlankWidthVal){
+  const hasRaskosina = raskosinCountVal > 0;
+  const plankCount = Math.min(plankCountVal, 4);
+  const heightPlusFloor = Hmm + t12val;
+
   if(floorsVal === 2){
-    return diagramPlaceholder('Щит боковой (2 этажа)');
+    // Выбор идёт по числу планок, как и на 1 этаже - раскосина у 2-этажного щита
+    // есть почти всегда (см. bokHasRaskosina в app.js), отдельных фото «без
+    // раскосины» на 2 этажа не присылали.
+    if(plankCount <= 2){
+      return diagramBokovoy2Floors2Raskosina(k41val, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal);
+    }
+    if(plankCount === 3){
+      return diagramBokovoy2Floors3Planks(k41val, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal);
+    }
+    return diagramBokovoy2Floors4Planks(k41val, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal);
   }
   // Выбор фото идёт по числу планок (plankCountVal = l19) и наличию раскосины
   // (raskosinCountVal > 0 <=> bokHasRaskosina). Для 5+ планок фото ещё нет —
   // показываем чертёж с максимальным доступным числом планок (4): расположение
   // то же самое, просто на фото меньше планок, чем в реальном ящике.
-  const hasRaskosina = raskosinCountVal > 0;
-  const plankCount = Math.min(plankCountVal, 4);
-  const heightPlusFloor = Hmm + t12val;
-
   if(plankCount <= 2){
     return hasRaskosina
       ? diagramBokovoy2Planks1Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor)
