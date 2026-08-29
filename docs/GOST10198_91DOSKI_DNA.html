@@ -1080,11 +1080,11 @@ function minSkidsByWidth162(widthMm, skidW){
 
 // ГОСТ 10198-91, п.1.6.8: толщина и ширина торцовых брусьев дна по массе груза.
 function endBeamSection(mass){
-  if(mass<=1000) return {h:44,w:100};
-  if(mass<=2000) return {h:60,w:100};
-  if(mass<=3500) return {h:75,w:100};
-  if(mass<=5000) return {h:100,w:100};
-  return {h:125,w:125};
+  if(mass<=1000) return {h:44,w:100,exceeded:false};
+  if(mass<=2000) return {h:60,w:100,exceeded:false};
+  if(mass<=3500) return {h:75,w:100,exceeded:false};
+  if(mass<=5000) return {h:100,w:100,exceeded:false};
+  return {h:125,w:125,exceeded:true}; // за пределами явно описанного диапазона (>5000кг)
 }
 
 // Толщина доски дна по массе груза (GOST10198_91POLOZIA.html - крепление за
@@ -2596,12 +2596,18 @@ function calculate(){
   }
 
   const endBeam = endBeamSection(MASS); // п.1.6.8
+  if(endBeam.exceeded){
+    warnings.push('Масса вне диапазона п.1.6.8 (≤5000 кг) — сечение торцового бруса дна принято по крайнему значению таблицы.');
+  }
   const t11=roundUpToAvailable(endBeam.h), w11=endBeam.w, k11=W, l11=2;
   dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
 
     // Толщина доски дна - Таблица 4 (п.1.6.9): по удельной нагрузке на дно и
-  // расстоянию между осями смежных полозьев.
-  const floorSkidDistance = Math.min(skidCalcWidth, 1200); // п.1.6.2: расстояние между осями смежных полозьев не должно превышать 1200 мм
+  // расстоянию между осями смежных полозьев. Берём фактически посчитанный шаг
+  // между осями (l9/w9 уже выбраны выше), а не худший случай "ровно 1200мм" -
+  // при 3+ полозьях реальный шаг почти всегда меньше, и Табл.4 может дать
+  // меньшую (более точную) толщину доски дна (уточнение пользователя).
+  const floorSkidDistance = l9 > 1 ? (skidCalcWidth - w9) / (l9 - 1) : skidCalcWidth;
   const floor = floorBoardThickness(MASS, L, W, floorSkidDistance); // Таблица 4
   if(floor.exceeded){
     const loadExceeded = floor.udel > T4_LOADS[T4_LOADS.length-1];
@@ -2610,7 +2616,7 @@ function calculate(){
       warnings.push(`Удельная нагрузка на дно ${floor.udel.toFixed(2)} кг/см² вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
     }
     if(distExceeded){
-      warnings.push(`Расстояние между полозьями ${floorSkidDistance} мм вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
+      warnings.push(`Расстояние между полозьями ${Math.round(floorSkidDistance)} мм вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
     }
   }
   const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floor.value), k12=W;

@@ -248,11 +248,11 @@ function minSkidsByWidth162(widthMm, skidW){
 
 // ГОСТ 10198-91, п.1.6.8: толщина и ширина торцовых брусьев дна по массе груза.
 function endBeamSection(mass){
-  if(mass<=1000) return {h:44,w:100};
-  if(mass<=2000) return {h:60,w:100};
-  if(mass<=3500) return {h:75,w:100};
-  if(mass<=5000) return {h:100,w:100};
-  return {h:125,w:125};
+  if(mass<=1000) return {h:44,w:100,exceeded:false};
+  if(mass<=2000) return {h:60,w:100,exceeded:false};
+  if(mass<=3500) return {h:75,w:100,exceeded:false};
+  if(mass<=5000) return {h:100,w:100,exceeded:false};
+  return {h:125,w:125,exceeded:true}; // за пределами явно описанного диапазона (>5000кг)
 }
 
 // Толщина доски дна по массе груза (GOST10198_91POLOZIA.html - крепление за
