@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Собирает src/*.{html,css,js} + src/images/* в готовые файлы dist/*.html.
+"""Собирает src/*.{html,css,js} + src/images/* в готовые файлы docs/*.html.
 
 Два независимых калькулятора (разная методика ГОСТ 10198-91), у каждого
 свой набор исходников, но общий src/style.css (единый визуальный стиль),
@@ -40,7 +40,7 @@ src/launcher/launcher.src.html - список калькуляторов (кар
 внутри - ссылки на типы/комплектации), стиль - общий src/style.css (design.md).
 Список калькуляторов - src/launcher/catalog.js: чтобы добавить новый ГОСТ или
 тип, достаточно дописать в него запись и пересобрать, разметку менять не надо.
-  - index.html (лежит в dist/ рядом с остальными - ссылки в нём на файлы
+  - index.html (лежит в docs/ рядом с остальными - ссылки в нём на файлы
     по имени, без пути)
 
 Плейсхолдеры вида __IMG:filename.ext__ (внутри diagrams.js/app.js) заменяются
@@ -57,7 +57,7 @@ ROOT = Path(__file__).resolve().parent
 SRC_DIR = ROOT / "src"
 IMAGES_DIR = SRC_DIR / "images"
 VARIANTS_DIR = SRC_DIR / "variants"
-DIST_DIR = ROOT / "dist"
+OUT_DIR = ROOT / "docs"  # "docs" (не "dist") - так папку можно напрямую указать источником в GitHub Pages
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
@@ -150,7 +150,7 @@ def build_one(shell, parts, variant):
         print("Не найдены файлы картинок:", ", ".join(missing), file=sys.stderr)
         sys.exit(1)
 
-    out_path = DIST_DIR / variant["out_name"]
+    out_path = OUT_DIR / variant["out_name"]
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(result, encoding="utf-8")
     print(f"Собрано: {out_path} ({out_path.stat().st_size / 1024:.0f} KB)")
