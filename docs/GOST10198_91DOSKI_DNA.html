@@ -713,8 +713,8 @@
       </button>
       <div class="thickness-dropdown-panel" id="fasteningDropdownPanel">
         <div class="fastening-option-list">
-                    <label onclick="window.location.href='GOST10198_91POLOZIA.html'; return false;">
-            <input type="radio" name="fasteningType" value="skid" onclick="window.location.href='GOST10198_91POLOZIA.html'; return false;">
+                    <label onclick="switchFastening('GOST10198_91POLOZIA.html'); return false;">
+            <input type="radio" name="fasteningType" value="skid" onclick="switchFastening('GOST10198_91POLOZIA.html'); return false;">
             <span>Крепление за полозья</span>
           </label>
           <label>
@@ -2361,6 +2361,48 @@ function toggleFasteningDropdown(){
   document.getElementById('fasteningDropdownPanel').classList.toggle('open');
 }
 
+// «За полозья» и «к доскам дна» - на самом деле два разных файла (разная
+// толщина доски дна и т.п., см. src/variants/), но для пользователя это
+// должно выглядеть как один калькулятор с выпадающим списком, а не переход
+// на другую страницу - поэтому при выборе типа, реализованного в ДРУГОМ
+// файле, вместе с переходом передаём через URL всё, что человек уже ввёл
+// (размеры, галочки), а на другой стороне (см. applyStateFromUrl ниже) это
+// сразу подставляется в поля и пересчитывается.
+function switchFastening(targetFile){
+  const params = new URLSearchParams();
+  ['L','W','H','M'].forEach(id=>{
+    const v = document.getElementById(id).value;
+    if(v) params.set(id, v);
+  });
+  ['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el.checked) params.set(id, '1');
+  });
+  const qs = params.toString();
+  window.location.href = targetFile + (qs ? '?' + qs : '');
+}
+
+// Если открыты по ссылке из switchFastening (см. выше) - подставляем
+// переданные значения и сразу считаем, чтобы переход между «за полозья» и
+// «к доскам дна» не выглядел как открытие пустого калькулятора с нуля.
+function applyStateFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  if(![...params.keys()].length) return;
+  ['L','W','H','M'].forEach(id=>{
+    const v = params.get(id);
+    if(v !== null) document.getElementById(id).value = v;
+  });
+  ['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && params.get(id) === '1') el.checked = true;
+  });
+  // Чистим URL - иначе параметры остаются в адресной строке и при обновлении
+  // страницы пересчёт запускался бы заново с тем же (возможно, уже неверным
+  // после ручных правок) состоянием.
+  history.replaceState(null, '', window.location.pathname);
+  calculate();
+}
+
 updateFasteningSummary();
 
 // «Убрать подполозные доски» и «Погрузка авто/электропогрузчиком» взаимоисключающие:
@@ -3001,6 +3043,8 @@ function buildPrintHtml(){
 
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_IMG_B64;
+
+applyStateFromUrl();
 
 </script>
 </body>

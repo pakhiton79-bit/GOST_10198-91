@@ -35,13 +35,21 @@ I-3, файлы те же) плюс UI_JS/CALC_JS (src/i1/ui.js - фильтр �
 полоза, src/i1/calc.js - calculate() и buildPrintHtml()).
   - GOST10198_91_I1.html
 
-== Стартовая страница ==
-src/launcher/launcher.src.html - список калькуляторов (карточки по ГОСТам,
-внутри - ссылки на типы/комплектации), стиль - общий src/style.css (design.md).
-Список калькуляторов - src/launcher/catalog.js: чтобы добавить новый ГОСТ или
-тип, достаточно дописать в него запись и пересобрать, разметку менять не надо.
-  - index.html (лежит в docs/ рядом с остальными - ссылки в нём на файлы
-    по имени, без пути)
+== Стартовые страницы (2 уровня) ==
+Уровень 1 - список ГОСТов (src/launcher/launcher.src.html + src/launcher/
+gosts.js) -> уровень 2 - список типов тары внутри выбранного ГОСТа
+(src/launcher/types.src.html + свой src/launcher/types-<гост>.js на каждый
+ГОСТ, с чертежом общего вида ящика у каждого типа справа) -> сам калькулятор.
+Способ крепления груза внутри типа I-3 (за полозья / к доскам дна) - НЕ
+отдельный пункт на странице типов, а выпадающий список уже внутри калькулятора
+(см. onFasteningTypeChange в src/app.js) - переключает между двумя файлами
+(GOST10198_91POLOZIA.html/GOST10198_91DOSKI_DNA.html), но передаёт текущие
+введённые значения через URL, чтобы это не выглядело переходом на «другой
+калькулятор». Стиль - общий src/style.css (design.md) на всех страницах.
+Чтобы добавить новый ГОСТ - дописать запись в gosts.js и завести его типы в
+новом types-<гост>.js + TYPES_VARIANTS ниже, разметку менять не надо.
+  - index.html, gost-10198-91.html (лежат в docs/ рядом с калькуляторами -
+    ссылки по имени файла, без пути)
 
 Плейсхолдеры вида __IMG:filename.ext__ (внутри diagrams.js/app.js) заменяются
 на base64-содержимое соответствующего файла из src/images/. Запуск:
@@ -106,13 +114,32 @@ I1_VARIANTS = [
 ]
 
 LAUNCHER_DIR = SRC_DIR / "launcher"
+
+# Уровень 1 - стартовая страница (список ГОСТов).
 LAUNCHER_SHELL = LAUNCHER_DIR / "launcher.src.html"
 LAUNCHER_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
-    "/*__CATALOG_JS__*/": LAUNCHER_DIR / "catalog.js",
+    "/*__GOSTS_JS__*/": LAUNCHER_DIR / "gosts.js",
 }
 LAUNCHER_VARIANTS = [
     {"out_name": "index.html"},
+]
+
+# Уровень 2 - страница типов тары внутри одного ГОСТа. Каждая запись - один
+# ГОСТ: out_name/GOST_NAME/GOST_TITLE - как в src/launcher/gosts.js (file
+# соответствующей записи), TYPES_JS - его файл каталога типов
+# (src/launcher/types-*.js). Новый ГОСТ добавляется и сюда, и в gosts.js.
+TYPES_SHELL = LAUNCHER_DIR / "types.src.html"
+TYPES_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+}
+TYPES_VARIANTS = [
+    {
+        "out_name": "gost-10198-91.html",
+        "/*__GOST_NAME__*/": "ГОСТ 10198-91",
+        "/*__GOST_TITLE__*/": "Ящики дощатые неразборные для грузов массой до 3000 кг",
+        "/*__TYPES_JS__*/": LAUNCHER_DIR / "types-10198-91.js",
+    },
 ]
 
 
@@ -131,7 +158,11 @@ def build_one(shell, parts, variant):
         if key not in text:
             print(f"Плейсхолдер {key} не найден", file=sys.stderr)
             sys.exit(1)
-        text = text.replace(key, path.read_text(encoding="utf-8"))
+        # Значение варианта - либо путь к файлу (обычный случай), либо просто
+        # готовая строка (для плейсхолдеров вида /*__GOST_NAME__*/ на странице
+        # типов, где нет смысла заводить отдельный файл на одну строку текста).
+        content = path.read_text(encoding="utf-8") if isinstance(path, Path) else path
+        text = text.replace(key, content)
 
     missing = []
 
@@ -163,6 +194,8 @@ def main():
         build_one(I1_SHELL, I1_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
         build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
+    for variant in TYPES_VARIANTS:
+        build_one(TYPES_SHELL, TYPES_PARTS, variant)
 
 
 if __name__ == "__main__":

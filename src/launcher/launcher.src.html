@@ -11,38 +11,30 @@
 /*__STYLE_CSS__*/
 </style>
 <style>
-  /* Стили стартовой страницы - поверх общего style.css, специфика только
-     здесь (карточки-группы по ГОСТам, список ссылок на калькуляторы). */
+  /* Стили стартовой страницы (уровень 1 - список ГОСТов) - поверх общего
+     style.css, специфика только здесь. */
   .wrap{max-width:760px;}
-  .gost-desc{
-    font-size:14px;
-    color:var(--ink-soft);
-    margin:-8px 0 20px;
-  }
-  .calc-list{display:flex;flex-direction:column;gap:10px;}
-  .calc-link{
+  .gost-list{display:flex;flex-direction:column;gap:10px;}
+  .gost-link{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:16px 18px;
+    gap:16px;
+    padding:18px 20px;
     border:1px solid var(--border-input);
     border-radius:10px;
     background:#ffffff;
     color:var(--ink);
     text-decoration:none;
-    font-size:15px;
-    font-weight:500;
     transition:border-color .15s ease, background-color .15s ease;
   }
-  .calc-link:hover{
+  .gost-link:hover{
     border-color:var(--accent);
     background:var(--accent-wash);
   }
-  .calc-link .arrow{
-    color:var(--accent);
-    font-size:18px;
-    line-height:1;
-  }
+  .gost-link .gost-name{font-size:16px;font-weight:600;}
+  .gost-link .gost-title{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .gost-link .arrow{color:var(--accent);font-size:18px;line-height:1;flex:none;}
   .empty-note{color:var(--ink-soft);font-size:14px;}
 </style>
 </head>
@@ -51,32 +43,29 @@
   <header>
     <div class="eyebrow">WOODCALC</div>
     <h1>Калькуляторы производства тары</h1>
-    <div class="subtitle">Выберите ГОСТ и тип тары для расчёта</div>
+    <div class="subtitle">Выберите ГОСТ, затем тип тары</div>
   </header>
 
-  <div id="catalog"></div>
+  <div id="gosts"></div>
 </div>
 
 <script>
-/*__CATALOG_JS__*/
+/*__GOSTS_JS__*/
 
 (function(){
-  const root = document.getElementById('catalog');
-  if(!CATALOG.length){
-    root.innerHTML = '<div class="card"><span class="empty-note">Калькуляторы ещё не добавлены.</span></div>';
+  const root = document.getElementById('gosts');
+  if(!GOSTS.length){
+    root.innerHTML = '<div class="card"><span class="empty-note">ГОСТы ещё не добавлены.</span></div>';
     return;
   }
-  let html = '';
-  CATALOG.forEach(group => {
-    html += `<div class="card">
-      <h2>${group.gost}</h2>
-      <div class="gost-desc">${group.title}</div>
-      <div class="calc-list">`;
-    group.items.forEach(item => {
-      html += `<a class="calc-link" href="${item.file}"><span>${item.name}</span><span class="arrow">→</span></a>`;
-    });
-    html += `</div></div>`;
+  let html = '<div class="gost-list">';
+  GOSTS.forEach(g => {
+    html += `<a class="gost-link" href="${g.file}">
+      <div><div class="gost-name">${g.gost}</div><div class="gost-title">${g.title}</div></div>
+      <span class="arrow">→</span>
+    </a>`;
   });
+  html += '</div>';
   root.innerHTML = html;
 })();
 </script>
