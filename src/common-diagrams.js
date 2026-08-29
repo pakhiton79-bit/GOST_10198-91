@@ -75,7 +75,16 @@ function renderDiagram(imgB64, altText, IW, IH, records, widthPx, strokeScale){
     }
   }
   const sizeStyle = ` style="width:${w}px;flex-basis:${w}px"`;
-  return `<div class="diagram-wrap"${sizeStyle}>
+  // data-base-width дублирует исходную (авторскую, до любых экранных/печатных
+  // подгонок) ширину как атрибут, а не только инлайн-стиль - печать (см.
+  // printBox() в src/common-print.js) читает именно его, а не style.width:
+  // к моменту печати style.width у чертежа уже мог измениться (реальный
+  // масштаб на экране после reserveDiagramOverflowScreen, или вовсе очищен в
+  // buildPrintHtml перед вставкой в печатную область) - и раньше печать по
+  // ошибке подставляла заглушку 260px для ЛЮБОГО чертежа, если style.width
+  // на тот момент был пуст, из-за чего разная авторская ширина торца (210px
+  // у типа I-3, меньше у типа I-1) в печати никогда не применялась.
+  return `<div class="diagram-wrap" data-base-width="${w}"${sizeStyle}>
     <img src="${imgB64}" alt="${altText}">
     <svg class="diagram-arrows" viewBox="0 0 ${IW} ${IH}" preserveAspectRatio="none">
       ${shapes}
@@ -96,7 +105,12 @@ function diagramPlaceholder(label){
 // формальном размере слота его фото зрительно доминировало). У функции
 // diagramEndPanel2Floors1Raskosina явную ширину не задаём - у неё портретная (высокая) фотография и она и так
 // автоматически ужимается по высоте (DIAGRAM_MAX_HEIGHT) сильнее, чем 210px.
-function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal){
+// widthPxOverride - необязательный параметр (по умолчанию 210, как у типа
+// I-3): у типа I-1 (см. src/i1/diagrams.js) остальные чертежи (Дно/Крышка/
+// Бок) - широкие "приземистые" фото совсем другой пропорции, и при том же
+// 210px торец на их фоне выглядел непропорционально крупным (само фото почти
+// квадратное) - там передаётся своё, меньшее значение.
+function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal, widthPxOverride){
   // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1352×1158).
   // Подпись высоты — полная высота рамы щита = высота груза + толщина доски дна.
   const val = Math.round(heightPlusT12Val);
@@ -111,10 +125,10 @@ function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal){
     {type:'double', x1:30, y1:1275, x2:1330, y2:1277, lx:650, ly:1275, text: innerWidth+' мм'}
   ];
 
-  return renderDiagram(TOREC_1_IMG_B64, 'Щит торцевой (1 раскосина) - схема расположения деталей', 1352, 1158, records, 210, photoStrokeScale(1352));
+  return renderDiagram(TOREC_1_IMG_B64, 'Щит торцевой (1 раскосина) - схема расположения деталей', 1352, 1158, records, widthPxOverride || 210, photoStrokeScale(1352));
 }
 
-function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
+function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal, widthPxOverride){
   // Фото-чертёж для варианта без раскосины (H≤600мм либо W≤600мм — п.1.6.5/п.102 docx,
   // независимо друг от друга отключают раскосину на торце). Просто рамка из планок и
   // досок торца без диагоналей. Натуральный размер фото 1354×1134.
@@ -132,5 +146,5 @@ function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal){
     {type:'double', x1:36, y1:1265, x2:1341, y2:1265, lx:696, ly:1271, text: width+' мм'}
   ];
 
-  return renderDiagram(TOREC_0_IMG_B64, 'Щит торцевой (без раскосины) - схема расположения деталей', 1354, 1134, records, 210, photoStrokeScale(1354));
+  return renderDiagram(TOREC_0_IMG_B64, 'Щит торцевой (без раскосины) - схема расположения деталей', 1354, 1134, records, widthPxOverride || 210, photoStrokeScale(1354));
 }

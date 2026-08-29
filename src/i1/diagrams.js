@@ -7,11 +7,16 @@ const BOX_I1_IMG_B64 = "data:image/jpeg;base64,__IMG:box_i1.jpg__";
 // раскосины и с 1 раскосиной - у типа I-1 их бывает не больше одной),
 // поэтому переиспользует готовые чертежи типа I-3
 // (diagramPlaceholder/diagramEndPanel1Raskosina/diagramEndPanelNoRaskosina -
-// см. src/common-diagrams.js).
+// см. src/common-diagrams.js). Ширина торца передаётся своя (I1_TOREC_WIDTH),
+// меньше, чем у типа I-3 (210px) - у остальных чертежей I-1 (Дно/Крышка/Бок,
+// см. diagramKryshkaDnoPhoto/diagramBokovoyPhoto ниже) фото широкие и
+// "приземистые", а у торца - почти квадратное, и при том же 210px оно на их
+// фоне выглядело непропорционально крупным.
+const I1_TOREC_WIDTH = 150;
 function diagramTorec(heightVal, widthVal, hasRaskosinaVal){
   return hasRaskosinaVal
-    ? diagramEndPanel1Raskosina(heightVal, widthVal)
-    : diagramEndPanelNoRaskosina(heightVal, widthVal);
+    ? diagramEndPanel1Raskosina(heightVal, widthVal, I1_TOREC_WIDTH)
+    : diagramEndPanelNoRaskosina(heightVal, widthVal, I1_TOREC_WIDTH);
 }
 
 const BOK_I1_2_IMG_B64  = "data:image/jpeg;base64,__IMG:bok_i1_2planks.jpg__"; // натуральный размер 1178x876 (2 планки, без раскосины)

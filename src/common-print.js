@@ -42,11 +42,20 @@ function printBox(){
   const scaleBox  = document.getElementById('printScale');
   scaleBox.innerHTML = buildPrintHtml();
 
-  // Чертежи имеют разный собственный масштаб (у бокового щита он меньше,
-  // чтобы подписи не залезали на таблицу). Запоминаем экранную ширину —
-  // от неё считается печатная при подборе размера.
+  // Чертежи имеют разный собственный масштаб (у торца он меньше, чтобы не
+  // доминировать над остальными узлами; у бокового щита - чтобы подписи не
+  // залезали на таблицу). data-base-width уже проставлен в разметке самим
+  // renderDiagram() (см. src/common-diagrams.js) - это авторская ширина,
+  // не зависящая от того, что buildPrintHtml() чуть выше очистил style.width
+  // у клона. Раньше здесь читался именно (уже пустой к этому моменту)
+  // style.width, из-за чего печать всегда попадала в запасной 260 для ЛЮБОГО
+  // чертежа - авторская ширина торца (у типа I-3 меньше, чем у остальных
+  // узлов; у типа I-1 - ещё меньше) в печати не применялась вообще. Общий вид
+  // ящика (не из renderDiagram(), своей ширины не имеет) - как и раньше, 260.
   scaleBox.querySelectorAll('.diagram-wrap').forEach(wrap=>{
-    wrap.dataset.baseWidth = parseFloat(wrap.style.width) || 260;
+    if(!wrap.dataset.baseWidth){
+      wrap.dataset.baseWidth = parseFloat(wrap.style.width) || 260;
+    }
   });
 
   // Важно: сразу после innerHTML браузер мог ещё не декодировать вставленные
@@ -85,6 +94,7 @@ function reserveDiagramOverflow(printArea){
     slot.style.paddingTop = '0px';
     slot.style.paddingBottom = '0px';
     slot.style.marginLeft = '0px';
+    wrap.style.marginLeft = '0px';
 
     const box = wrap.getBoundingClientRect();
     let top = box.top, bottom = box.bottom, left = box.left;
@@ -117,7 +127,29 @@ function reserveDiagramOverflow(printArea){
 
     slot.style.paddingTop = Math.max(0, Math.ceil(box.top - top)) + 'px';
     slot.style.paddingBottom = Math.max(0, Math.ceil(bottom - box.bottom)) + 'px';
-    slot.style.marginLeft = Math.max(0, Math.ceil(box.left - left)) + 'px';
+
+    // Левый вылет резервируем margin-left НА САМОЙ КАРТИНКЕ (внутри слота),
+    // а не на слоте целиком, как было раньше: у margin-left на .diagram-slot
+    // вместе с ним сдвигается и соседняя таблица деталей (оба - элементы
+    // одного flex-ряда), из-за чего у узла с большим вылетом (например, торец)
+    // таблица «уезжала» правее, чем у остальных узлов на той же странице.
+    // margin-left на wrap просто двигает картинку внутри уже фиксированной по
+    // ширине ячейки (.diagram-slot{width:calc(var(--pk)*300px)} в style.css) -
+    // таблица никогда не сдвигается.
+    const leftGap = Math.max(0, Math.ceil(box.left - left));
+    wrap.style.marginLeft = leftGap + 'px';
+
+    // Подстраховка: если отступ + сама картинка не помещаются в фиксированную
+    // ширину слота, чертёж наложился бы на таблицу (слот - overflow:visible,
+    // это не ловится проверкой fits() в fitPrintAreaToOnePage, т.к. не меняет
+    // scrollWidth). Пропорционально уменьшаем ширину картинки, чтобы отступ +
+    // картинка гарантированно остались внутри слота.
+    const slotWidth = slot.getBoundingClientRect().width;
+    const wrapWidth = wrap.getBoundingClientRect().width;
+    const available = slotWidth - leftGap;
+    if(available > 0 && wrapWidth > available){
+      wrap.style.width = available + 'px';
+    }
   });
 }
 
