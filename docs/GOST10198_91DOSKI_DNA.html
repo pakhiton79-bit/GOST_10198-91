@@ -2131,18 +2131,23 @@ function reserveDiagramOverflow(printArea){
       wrap.style.width = available + 'px';
     }
 
-    // Центрируем весь видимый охват чертежа (картинка + вылетающие подписи/
-    // стрелки) в слоте, а не просто прижимаем его вылет к левому краю - иначе
-    // у разных узлов (разная ширина, разный вылет) при печати друг под другом
-    // получалась "лесенка", а не ровный столбец (см. правку пользователя).
-    // Остаток свободного места (slack) делим пополам между левым и правым
-    // отступом - тот же приём, что и в reserveDiagramOverflowScreen выше.
+    // Центрируем САМУ КАРТИНКУ (а не весь охват вместе с вылетающими подписями)
+    // в слоте. Первая попытка (центрирование охвата целиком) не подошла: вылет
+    // подписей у разных узлов разный и часто несимметричный (слева/справа), и
+    // при выравнивании охвата по центру сама картинка всё равно оказывалась в
+    // разных узлах на разной высоте от центра слота - "лесенка" пропадала не
+    // полностью, а при других размерах ящика (когда пропорция вылета меняется)
+    // могла проявиться снова. Целимся ровно в центр слота для самой картинки,
+    // но не ближе, чем позволяют вылет слева (leftGap) и вылет справа (rightGap,
+    // чтобы не наехать на таблицу) - если картинка узкая, а вылет большой и
+    // несимметричный, эти границы важнее идеальной центровки.
     const m = measure();
     const leftGap = Math.max(0, Math.ceil(m.box.left - m.left));
     const rightGap = Math.max(0, Math.ceil(m.right - m.box.right));
-    const footprint = leftGap + m.box.width + rightGap;
-    const slack = Math.max(0, slotWidth - footprint);
-    wrap.style.marginLeft = (leftGap + slack / 2) + 'px';
+    const idealCenter = (slotWidth - m.box.width) / 2;
+    const maxMargin = Math.max(leftGap, slotWidth - m.box.width - rightGap);
+    const marginLeft = Math.min(Math.max(idealCenter, leftGap), maxMargin);
+    wrap.style.marginLeft = marginLeft + 'px';
   });
 }
 
@@ -2239,20 +2244,24 @@ function reserveDiagramOverflowScreen(container){
     const leftGap = Math.max(0, Math.ceil(m.box.left - m.left));
     const rightGap = Math.max(0, Math.ceil(m.right - m.box.right));
 
-    // До этой правки чертёж просто прижимался левым краем видимого охвата
-    // (картинка + вылетающие подписи/стрелки) к левому краю слота - у разных
-    // узлов разная ширина и разный вылет, поэтому при просмотре друг под
-    // другом (Дно/Крышка/Торец/Бок) получалась "лесенка", а не ровный
-    // столбец. Вместо этого центрируем весь видимый охват в фиксированном по
-    // ширине слоте - остаток свободного места (slack) делим пополам между
-    // левым и правым отступом.
-    const footprint = leftGap + m.box.width + rightGap;
-    const slack = Math.max(0, DIAGRAM_SLOT_BUDGET - footprint);
-    const centerExtra = slack / 2;
+    // Центрируем САМУ КАРТИНКУ (а не весь охват вместе с вылетающими подписями)
+    // в слоте. Центрирование охвата целиком (первая версия этой правки) не
+    // подошло: вылет подписей у разных узлов разный и часто несимметричный
+    // (слева/справа), и при выравнивании охвата по центру сама картинка всё
+    // равно оказывалась на разной высоте от центра слота у разных узлов -
+    // "лесенка" пропадала не полностью, а при других размерах ящика (когда
+    // пропорция вылета меняется) могла проявиться снова. Целимся ровно в
+    // центр слота для самой картинки, но не ближе, чем позволяют вылет слева
+    // (leftGap) и вылет справа (rightGap, чтобы не наехать на таблицу) - если
+    // картинка узкая, а вылет большой и несимметричный, эти границы важнее
+    // идеальной центровки.
+    const idealCenter = (DIAGRAM_SLOT_BUDGET - m.box.width) / 2;
+    const maxMargin = Math.max(leftGap, DIAGRAM_SLOT_BUDGET - m.box.width - rightGap);
+    const marginLeft = Math.min(Math.max(idealCenter, leftGap), maxMargin);
 
     wrap.style.marginTop = topGap + 'px';
     wrap.style.marginBottom = bottomGap + 'px';
-    wrap.style.marginLeft = (leftGap + centerExtra) + 'px';
+    wrap.style.marginLeft = marginLeft + 'px';
   });
 }
 
