@@ -1,20 +1,21 @@
-function calculate(){
-  const errEl = document.getElementById('err');
-  errEl.textContent = '';
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+// ============ Чистый расчёт (без обращений к DOM) - тип I-1 ============
+// Разделено на «посчитать» (эта функция) и «показать» (calculate() ниже) -
+// само разделение сделано только ради структуры (проще выделить в отдельный
+// бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
+// строчку по сравнению с тем, что было раньше в единой calculate().
+// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths}.
+// Возвращает либо {error: '...'} (валидация не прошла), либо объект со
+// всеми данными для рендера: таблицы деталей (dno/kryshka/bokovoy/torec),
+// предупреждения (warnings), итоговые размеры/объём/норма времени, и
+// именованные параметры чертежей (ровно те значения, что раньше передавались
+// в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy позиционно).
+function computeGost10198I1(input){
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths} = input;
+
   thicknessLimitExceeded = false;
 
-  const L = parseFloat(document.getElementById('L').value);
-  const W = parseFloat(document.getElementById('W').value);
-  const H = parseFloat(document.getElementById('H').value);
-  const MASS = parseFloat(document.getElementById('M').value);
-  const skidEnabled = document.getElementById('skidEnabled').checked;
-  const skidThicknessRaw = skidThicknessValue;
-  const roundBoardWidths = document.getElementById('roundBoardWidths').checked;
-
   if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
-    errEl.textContent = 'Заполните все поля положительными числами.';
-    return;
+    return {error: 'Заполните все поля положительными числами.'};
   }
 
   let warnings = [];
@@ -39,8 +40,7 @@ function calculate(){
   // Не зависит от толщины досок - вынесена из цикла ниже.
   const horizPlankaLen = W - 200;
   if(horizPlankaLen < 0){
-    errEl.textContent = `Ширина груза ${W} мм недостаточна для двух вертикальных планок торца (по 100мм) — расчёт не выполняется.`;
-    return;
+    return {error: `Ширина груза ${W} мм недостаточна для двух вертикальных планок торца (по 100мм) — расчёт не выполняется.`};
   }
 
   // --- Общая длина досок вдоль длины груза (доска дна/крышки/бокового щита),
@@ -59,8 +59,7 @@ function calculate(){
     // так, чтобы расстояние между соседними планками не превышало 700мм.
     plank = plankCount(kLen);
     if(plank.count === null){
-      errEl.textContent = `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок (по 1/6 с каждого края) — расчёт не выполняется.`;
-      return;
+      return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок (по 1/6 с каждого края) — расчёт не выполняется.`};
     }
     plankQty = plank.count; // общее для боковых планок, планок крышки, полозьев/планки дна
     plankGap = plank.middle / (plankQty-1); // фактическое расстояние между соседними планками
@@ -148,8 +147,7 @@ function calculate(){
     const torecLegH = H - 200;
     const torecLegW = horizPlankaLen - 200;
     if(torecLegH <= 0 || torecLegW <= 0){
-      errEl.textContent = `Недостаточно места для раскосины торца (катеты должны быть >0, получено ${Math.round(torecLegH)}×${Math.round(torecLegW)} мм) — расчёт не выполняется.`;
-      return;
+      return {error: `Недостаточно места для раскосины торца (катеты должны быть >0, получено ${Math.round(torecLegH)}×${Math.round(torecLegW)} мм) — расчёт не выполняется.`};
     }
     const torecRaskosinaLen = Math.sqrt(torecLegH*torecLegH + torecLegW*torecLegW);
     torec.push({name:'Раскосина', t:wall.value, w:100, l:torecRaskosinaLen, qty:1});
@@ -190,10 +188,45 @@ function calculate(){
   const totalVolume = volDno + volKryshka + 2*volBok + 2*volTorec;
   const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
 
+  if(plankQty > 4){
+    warnings.push(`Число планок (${plankQty}) больше максимального доступного на чертежах дна/крышки/бока (4) — показаны чертежи с 4 планками.`);
+  }
+
+  if(thicknessLimitExceeded){
+    warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
+  }
+
+  return {
+    warnings, dno, kryshka, bokovoy, torec,
+    outerL, outerW, outerH, totalVolume, normaVremeni,
+    // Параметры чертежей - ровно те значения, что раньше шли позиционными
+    // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
+    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kPlankaKryshka, H, W, wall
+  };
+}
+
+function calculate(){
+  const errEl = document.getElementById('err');
+  errEl.textContent = '';
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+
+  const input = {
+    L: parseFloat(document.getElementById('L').value),
+    W: parseFloat(document.getElementById('W').value),
+    H: parseFloat(document.getElementById('H').value),
+    MASS: parseFloat(document.getElementById('M').value),
+    skidEnabled: document.getElementById('skidEnabled').checked,
+    skidThicknessRaw: skidThicknessValue,
+    roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+  };
+
+  const calc = computeGost10198I1(input);
+  if(calc.error){ errEl.textContent = calc.error; return; }
+
   // --- Рендер ---
-  document.getElementById('outDims').innerHTML = `${Math.round(outerL)} × ${Math.round(outerW)} × ${Math.round(outerH)} <span>мм</span>`;
-  document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
-  document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
+  document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
+  document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 
   function renderSection(title, rows){
     let html = title ? `<div class="part-title">${title}</div>` : '';
@@ -213,37 +246,31 @@ function calculate(){
   }
 
   let tablesHtml = '';
-  if(plankQty > 4){
-    warnings.push(`Число планок (${plankQty}) больше максимального доступного на чертежах дна/крышки/бока (4) — показаны чертежи с 4 планками.`);
-  }
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(dnoWidth, kLen, plank.edgeDist, plankQty, raskosinaNeeded) + `</div>` + renderSection('', dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(kPlankaKryshka, kLen, plank.edgeDist, plankQty, raskosinaNeeded) + `</div>` + renderSection('', kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(H, W, raskosinaNeeded) + `</div>` + renderSection('', torec) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, wall.value, plank.edgeDist, kLen, plankQty, raskosinaNeeded) + `</div>` + renderSection('', bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.dnoWidth, calc.kLen, calc.plank.edgeDist, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.kPlankaKryshka, calc.kLen, calc.plank.edgeDist, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.torec) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
   Promise.all(boardImages.map(img => img.decode ? img.decode().catch(()=>{}) : Promise.resolve()))
     .then(()=> reserveDiagramOverflowScreen(boardTablesEl));
 
-  if(thicknessLimitExceeded){
-    warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
-  }
-
   let warningsHtml = '';
-  if(warnings.length){
+  if(calc.warnings.length){
     // Цвет — var(--warn) из общей палитры (design.md), а не произвольный hex
     // (см. тот же фикс в src/app.js).
     warningsHtml += '<div style="color:var(--warn);margin-bottom:10px;font-weight:700;">Внимание:</div>' +
-      warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
+      calc.warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
   }
   const warningsEl = document.getElementById('warningsTop');
   warningsEl.innerHTML = warningsHtml;
-  warningsEl.style.display = warnings.length ? 'block' : 'none';
+  warningsEl.style.display = calc.warnings.length ? 'block' : 'none';
 
   document.getElementById('results').style.display = 'block';
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
+
 
 // Поля размеров пустые при открытии (по требованию) - автоматический
 // расчёт при загрузке не выполняется. Блок результатов скрыт через CSS

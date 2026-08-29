@@ -2481,33 +2481,32 @@ function onSkidForkliftExclusive(el){
   invalidateCalc();
 }
 
-function calculate(){
-  const errEl = document.getElementById('err');
-  errEl.textContent = '';
-  invalidateCalc();
+// ============ Чистый расчёт (без обращений к DOM) - тип I-3 ============
+// Разделено на «посчитать» (эта функция) и «показать» (calculate() ниже) -
+// само разделение сделано только ради структуры (проще выделить в отдельный
+// бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
+// строчку по сравнению с тем, что было раньше в единой calculate().
+// input: {L,W,H,MASS,optimizeSizes,removeFloorBoards,removeSkidBoards,
+//         roundBoardWidths,solidRigidBase,forkliftLoading}.
+// Возвращает либо {error: '...'} (валидация не прошла - формулы дальше не
+// считаются), либо объект со всеми данными для рендера: таблицы деталей
+// (dno/kryshka/endPanel/bokovoy), предупреждения (warnings), итоговые
+// размеры/объём/норма времени, и именованные параметры чертежей (ровно те
+// значения, что раньше передавались в diagramDno/diagramKryshka/
+// diagramEndPanel/diagramBokovoy позиционными аргументами).
+function computeGost10198I3(input){
+  const {L, W, H, MASS, optimizeSizes, removeFloorBoards, removeSkidBoards,
+         roundBoardWidths, solidRigidBase, forkliftLoading} = input;
+
   thicknessLimitExceeded = false;
-  const L = parseFloat(document.getElementById('L').value);
-  const W = parseFloat(document.getElementById('W').value);
-  const H = parseFloat(document.getElementById('H').value);
-  const MASS = parseFloat(document.getElementById('M').value);
-  const optimizeSizes = document.getElementById('optimizeSizes').checked;
-  // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
-  // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
-  const removeFloorBoardsEl = document.getElementById('removeFloorBoards');
-  const removeFloorBoards = removeFloorBoardsEl ? removeFloorBoardsEl.checked : false;
-  const removeSkidBoards = document.getElementById('removeSkidBoards').checked;
-  const roundBoardWidths = document.getElementById('roundBoardWidths').checked;
-  const solidRigidBase = document.getElementById('solidRigidBase').checked;
-  const forkliftLoading = document.getElementById('forkliftLoading').checked;
 
   if(!L || !W || !H || !MASS || L<=0 || W<=0 || H<=0 || MASS<=0){
-    errEl.textContent = 'Заполните все поля положительными числами.';
-    return;
+    return {error: 'Заполните все поля положительными числами.'};
   }
   if(L <= 1200 || W <= 800){
-    errEl.textContent = `Габариты ${L}×${W} мм не превышают 1200×800 мм. Применяется ГОСТ 21140.`;
-    return;
+    return {error: `Габариты ${L}×${W} мм не превышают 1200×800 мм. Применяется ГОСТ 21140.`};
   }
+
   const wallRaw = wallThickness(MASS); // п.1.6.15 — толщина досок/планок/раскосов стенок и крышки
   const wall = {value: roundUpToAvailable(wallRaw.value), exceeded: wallRaw.exceeded};
   let warnings = [];
@@ -2710,8 +2709,7 @@ function calculate(){
   // - методика не описана, расчёт для такой высоты не выполняется (по договорённости).
   const torecFloors = outerH > 2000 ? 2 : 1;
   if(outerH >= 4000){
-    errEl.textContent = `Наружная высота ящика ${Math.round(outerH)} мм — не менее 4000 мм. Расчёт не выполняется.`;
-    return;
+    return {error: `Наружная высота ящика ${Math.round(outerH)} мм — не менее 4000 мм. Расчёт не выполняется.`};
   }
 
   // Горизонтальная планка: длина = ширина груза. Количество — 2 (верх/низ) при 1 этаже,
@@ -2914,14 +2912,78 @@ function calculate(){
   // 2мм (см. комментарий у t40 выше). На реальную толщину материала (t40) не
   // влияет.
   const t40Display = optimizeSizes ? t40 + 2 : t40;
-  let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9Base, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40Display, edgeDistKryshka, l21, w21, l19, bokSectionW) + `</div>` + renderSection('', kryshka) + `</div>`;
+
   if(torecFloors === 2 && !torecHasRaskosina){
     warnings.push('Щит торцевой (2 этажа, без раскосины): чертёж приблизительный — использован чертёж одного этажа.');
   }
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(k32, torecSections, torecHasRaskosina, W, H + t12, torecNoRaskosinaDiagram, torecFloors, k30 + w31) + `</div>` + renderSection('', endPanel) + `</div>`;
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(H, t12, t41, k41, bokOverhang, edgeDistKryshka, l42, bokFloors, bokVertSpan, l19, k40, w43) + `</div>` + renderSection('', bokovoy) + `</div>`;
+
+  if(thicknessLimitExceeded){
+    warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
+  }
+
+  return {
+    warnings, dno, kryshka, endPanel, bokovoy,
+    outerL, outerW, outerH, totalVolume, normaVremeni,
+    // Параметры чертежей - ровно те значения, что раньше шли позиционными
+    // аргументами в diagramDno/diagramKryshka/diagramEndPanel/diagramBokovoy.
+    k9Base, t41, t40, torecFrameThickness: t_doska_torca + t_planka_torca,
+    W, L, t30, t32, t40Display, edgeDistKryshka, l21, w21, l19, bokSectionW,
+    k32, torecSections, torecHasRaskosina, HplusT12: H + t12, torecNoRaskosinaDiagram, torecFloors, k30plusW31: k30 + w31,
+    H, t12, k41, bokOverhang, l42, bokFloors, bokVertSpan, k40, w43
+  };
+}
+
+function calculate(){
+  const errEl = document.getElementById('err');
+  errEl.textContent = '';
+  invalidateCalc();
+
+  // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
+  // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
+  const removeFloorBoardsEl = document.getElementById('removeFloorBoards');
+  const input = {
+    L: parseFloat(document.getElementById('L').value),
+    W: parseFloat(document.getElementById('W').value),
+    H: parseFloat(document.getElementById('H').value),
+    MASS: parseFloat(document.getElementById('M').value),
+    optimizeSizes: document.getElementById('optimizeSizes').checked,
+    removeFloorBoards: removeFloorBoardsEl ? removeFloorBoardsEl.checked : false,
+    removeSkidBoards: document.getElementById('removeSkidBoards').checked,
+    roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+    solidRigidBase: document.getElementById('solidRigidBase').checked,
+    forkliftLoading: document.getElementById('forkliftLoading').checked,
+  };
+
+  const calc = computeGost10198I3(input);
+  if(calc.error){ errEl.textContent = calc.error; return; }
+
+  // --- Рендер ---
+  document.getElementById('outDims').innerHTML = `${calc.outerL} × ${calc.outerW} × ${calc.outerH} <span>мм</span>`;
+  document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
+
+  function renderSection(title, rows){
+    let html = title ? `<div class="part-title">${title}</div>` : '';
+    html += `<div class="spec-table"><table>
+      <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      html += `<tr>
+        <td>${r.name}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t">${r.t}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="w">${r.w}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="l">${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="qty">${r.qty}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    return html;
+  }
+
+  let tablesHtml = '';
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.k9Base, calc.t41, calc.outerW, calc.t40, calc.torecFrameThickness) + `</div>` + renderSection('', calc.dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31) + `</div>` + renderSection('', calc.endPanel) + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   // Подписи/стрелки чертежей могут выходить за пределы картинки (см.
@@ -2931,25 +2993,22 @@ function calculate(){
   Promise.all(boardImages.map(img => img.decode ? img.decode().catch(()=>{}) : Promise.resolve()))
     .then(()=> reserveDiagramOverflowScreen(boardTablesEl));
 
-  if(thicknessLimitExceeded){
-    warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
-  }
-
   let warningsHtml = '';
-  if(warnings.length){
+  if(calc.warnings.length){
     // Цвет — var(--warn) из общей палитры (design.md), а не произвольный hex:
     // .note (класс контейнера #warningsTop) уже даёт фон/рамку по той же
     // палитре, здесь только сам текст должен ей соответствовать.
     warningsHtml += '<div style="color:var(--warn);margin-bottom:10px;font-weight:700;">Внимание:</div>' +
-      warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
+      calc.warnings.map(w=>`<div style="margin-bottom:8px;">⚠ ${w}</div>`).join('');
   }
   const warningsEl = document.getElementById('warningsTop');
   warningsEl.innerHTML = warningsHtml;
-  warningsEl.style.display = warnings.length ? 'block' : 'none';
+  warningsEl.style.display = calc.warnings.length ? 'block' : 'none';
 
   document.getElementById('results').style.display = 'block';
   document.getElementById('calcCheck').style.visibility = 'visible';
 }
+
 
 // Поля размеров пустые при открытии (по требованию) - автоматический
 // расчёт при загрузке не выполняется. Блок результатов скрыт через CSS
