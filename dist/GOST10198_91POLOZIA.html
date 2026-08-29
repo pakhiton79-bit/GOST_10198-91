@@ -2506,8 +2506,11 @@ function calculate(){
   function torecAngleDeg(sections){
     return Math.atan2(k30, torecSectionWidth(sections)) * 180 / Math.PI;
   }
+  // Порог отключения раскосины (≤600мм) считается по высоте ГРУЗА (H, поле «Высота»),
+  // а не по наружной высоте ящика outerH - в отличие от остальных порогов (2000мм,
+  // 4000мм и т.п.), которые остаются по outerH (по договорённости с пользователем).
   let torecSections = 1;
-  if(outerH > 600 && W > 600){
+  if(H > 600 && W > 600){
     while(torecAngleDeg(torecSections) < 20 && torecSections < 4){
       torecSections++;
     }
@@ -2517,7 +2520,7 @@ function calculate(){
   }
   // п.102 docx: при ширине груза 600мм или менее раскосины на торце тоже не нужны
   // (независимо от высоты).
-  const torecHasRaskosina = outerH > 600 && W > 600 && !(torecSections === 1 && torecAngleDeg(1) > 60);
+  const torecHasRaskosina = H > 600 && W > 600 && !(torecSections === 1 && torecAngleDeg(1) > 60);
 
   const l30 = (torecSections + 1) * torecFloors; // вертикальная планка: (секций+1) на каждый этаж
 
@@ -2560,13 +2563,14 @@ function calculate(){
   // разная этажность на одном и том же ящике) - та же граница по наружной высоте
   // (>2000мм), ЛИБО, если угол укосины при 1 этаже вышел бы за 60° - боковой щит
   // переводится на 2 этажа именно из-за угла, даже если торец остаётся на 1-м.
-  // Раскосина отключена по тем же общим условиям высоты, что и у торца (H>600мм) —
+  // Раскосина отключена по тем же общим условиям высоты, что и у торца (высота
+  // ГРУЗА H, а не наружная высота ящика outerH - см. комментарий у torecHasRaskosina) —
   // ширина груза на боковой щит не влияет (в отличие от торца, п.102 docx касается
   // только торца). В отличие от торца, у бокового щита нет верхней/нижней
   // горизонтальной планки вообще — при 2 этажах добавляется только одна средняя
   // (см. «2000мм+.docx»: «нет верхней и нижней планок, только центральная, а укосины
   // упираются в края крышки»).
-  const bokHasRaskosina = outerH > 600 && l19 > 1;
+  const bokHasRaskosina = H > 600 && l19 > 1;
   const bokAngle1FloorDeg = bokSectionW > 0 ? Math.atan2(H + t12, bokSectionW) * 180 / Math.PI : null;
   const bokFloors = (outerH > 2000 || (bokHasRaskosina && bokAngle1FloorDeg !== null && bokAngle1FloorDeg > 60)) ? 2 : 1;
 
@@ -2675,7 +2679,11 @@ function calculate(){
     return html;
   }
 
-  const torecNoRaskosinaDiagram = !torecHasRaskosina && (outerH <= 600 || W > 600);
+  // Порог здесь тоже по высоте ГРУЗА (H), а не наружной высоте outerH - должен
+  // совпадать с базой, по которой считается torecHasRaskosina выше, иначе при
+  // H<=600 но outerH>600 (обычный случай - outerH всегда больше H) это условие
+  // не срабатывало бы и вместо чертежа «без раскосины» показывалась заглушка.
+  const torecNoRaskosinaDiagram = !torecHasRaskosina && (H <= 600 || W > 600);
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(k9Base, t41, outerW, t40, t_doska_torca + t_planka_torca) + `</div>` + renderSection('', dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(W, L, t30, t32, t41, t40, edgeDistKryshka, l21, w21, l19, bokSectionW) + `</div>` + renderSection('', kryshka) + `</div>`;
