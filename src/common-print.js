@@ -166,6 +166,17 @@ function reserveDiagramOverflowScreen(container){
     slot.style.width = '';
     slot.style.flexBasis = '';
 
+    // Левый вылет резервируем отступом СРАЗУ, до расчёта масштаба по правому
+    // краю: margin-left сдвигает весь чертёж (и его правый край вместе с ним)
+    // вправо внутри фиксированного по ширине слота, поэтому бюджет по правому
+    // краю ниже должен считаться уже с учётом этого сдвига - иначе при
+    // одновременном вылете подписей и слева, и справа (как на «Щит боковой»)
+    // margin-left, добавленный ПОСЛЕ проверки масштаба, мог вытолкнуть чертёж
+    // за пределы слота и наложить подпись на соседнюю таблицу деталей.
+    const m0 = measure();
+    const leftGap0 = Math.max(0, Math.ceil(m0.box.left - m0.left));
+    wrap.style.marginLeft = leftGap0 + 'px';
+
     // Правый вылет не резервируем отступом (это сдвинуло бы таблицу деталей) -
     // вместо этого уменьшаем масштаб чертежа, пока правый край не впишется в
     // фиксированную ширину слота. Несколько итераций, т.к. подписи имеют
@@ -174,8 +185,9 @@ function reserveDiagramOverflowScreen(container){
     for(let i = 0; i < 8; i++){
       const m = measure();
       const rightGap = Math.max(0, Math.ceil(m.right - m.box.right));
-      if(m.box.width + rightGap <= DIAGRAM_SLOT_BUDGET || scale <= 0.3) break;
-      scale = Math.max(0.3, scale * (DIAGRAM_SLOT_BUDGET - 4) / (m.box.width + rightGap));
+      const usedWidth = leftGap0 + m.box.width + rightGap;
+      if(usedWidth <= DIAGRAM_SLOT_BUDGET || scale <= 0.3) break;
+      scale = Math.max(0.3, scale * (DIAGRAM_SLOT_BUDGET - 4 - leftGap0) / (m.box.width + rightGap));
       wrap.style.width = Math.round(baseWidth * scale) + 'px';
       wrap.style.setProperty('--dk', scale.toFixed(3));
     }
