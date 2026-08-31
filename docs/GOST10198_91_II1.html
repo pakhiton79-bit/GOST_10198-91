@@ -2153,18 +2153,35 @@ function computeGost10198II1(input){
   // они относятся к узлу «Дно», а не к каркасу щита.
   const panelHeightFull = H + floorBoardT + t_longbeam;
 
-  // Вспомогательная функция: считает число секций (стоек) по каркасу щита -
-  // минимум по шагу осей ≤800мм (docx: "расстояние между осями не более
-  // 800мм"), при необходимости растим дальше, если угол раскосины <20°
-  // (аналогично типу I-3, torecSectionWidth/torecAngleDeg в src/app.js) -
-  // растим, пока это физически возможно (ширина секции ещё положительна).
+  // Вспомогательная функция: считает число стоек по каркасу щита. Стойки -
+  // не точки (оси), а реальные бруски шириной 100мм, поэтому, как и с
+  // полозьями в I-3 (см. minSkidsByWidth162 в src/ii1/logic.js), крайние
+  // стойки своим НАРУЖНЫМ краем не должны выходить за пределы отведённого
+  // пространства - значит пролёт между ОСЯМИ крайних стоек равен
+  // fillspace-100 (по одной половине ширины стойки убирается с каждого
+  // края), а не fillspace целиком (docx: "расстояние между осями не более
+  // 800мм, но при этом не должны заходить за пределы этого пространства").
+  // Ширина секции для раскосины - ЧИСТЫЙ просвет между соседними стойками
+  // (fillspace минус суммарная ширина всех стоек, поровну на все просветы),
+  // а не расстояние между осями - тот же приём, что и torecSectionWidth в
+  // типе I-3 (src/app.js): там ширина секции = (W - w30*(sections+1))/sections,
+  // то есть общая ширина минус ширина всех планок, а не оси.
   function buildFrame(fillspace, panelH){
-    let count = Math.max(2, ceilInt(fillspace/800) + 1);
-    function sectionW(n){ return fillspace/(n-1); }
+    const memberW = 100; // ширина стойки
+    const maxAxis = 800;
+    function minCount(){
+      const span = Math.max(0, fillspace - memberW);
+      return Math.max(2, Math.ceil(span/maxAxis) + 1);
+    }
+    let count = minCount();
+    function sectionW(n){ return (fillspace - memberW*n) / (n-1); }
     function angleDeg(n, h){ return Math.atan2(h, sectionW(n)) * 180/Math.PI; }
     let floors = H > 2000 ? 2 : 1;
     function stojkaLen(fl){
       return fl===2 ? (panelH - 100*3)/2 : panelH - 100*2;
+    }
+    if(sectionW(count) <= 0){
+      return {count, floors, len:0, sectionW:0, hasRaskosina:false, warn:null, tooNarrow:true};
     }
     if(floors===1 && angleDeg(count, stojkaLen(1)) > 60){
       floors = 2;
@@ -2172,15 +2189,18 @@ function computeGost10198II1(input){
     let len = stojkaLen(floors);
     let warn = null;
     if(len > 0){
-      while(angleDeg(count, len) < 20 && sectionW(count+1) > 0){
+      while(sectionW(count+1) > 0 && angleDeg(count, len) < 20){
         count++;
+      }
+      if(sectionW(count) <= 0){
+        return {count:count-1, floors, len, sectionW:sectionW(count-1), hasRaskosina:true, warn:null, tooNarrow:false};
       }
       if(angleDeg(count, len) < 20){
         warn = `угол раскосины менее 20° даже при максимально возможном числе секций (${count})`;
       }
     }
     const hasRaskosina = len > 0;
-    return {count, floors, len, sectionW: sectionW(count), hasRaskosina, warn};
+    return {count, floors, len, sectionW: sectionW(count), hasRaskosina, warn, tooNarrow:false};
   }
 
   const fillspaceTorec = W + t_stojka*2;
@@ -2188,6 +2208,12 @@ function computeGost10198II1(input){
   const fillspaceBok = L; // буквально "длине груза" по тексту источника
   const bokFrame = buildFrame(fillspaceBok, panelHeightFull);
 
+  if(torecFrame.tooNarrow){
+    return {error: `Ширина груза ${W} мм слишком мала для минимум двух стоек торцевого щита (по 100мм) — расчёт не выполняется.`};
+  }
+  if(bokFrame.tooNarrow){
+    return {error: `Длина груза ${L} мм слишком мала для минимум двух стоек бокового щита (по 100мм) — расчёт не выполняется.`};
+  }
   if(torecFrame.warn) warnings.push('Щит торцевой: ' + torecFrame.warn + '.');
   if(bokFrame.warn) warnings.push('Щит боковой: ' + bokFrame.warn + '.');
   if(torecFrame.len <= 0){
