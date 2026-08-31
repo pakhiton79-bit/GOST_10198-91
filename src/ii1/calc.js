@@ -244,31 +244,52 @@ function computeGost10198II1(input){
   function buildFrame(fillspace, panelH){
     const memberW = 100; // ширина стойки
     const maxAxis = 800;
-    let count = minCountBySpan(fillspace, memberW, maxAxis);
+    const spacingMinCount = minCountBySpan(fillspace, memberW, maxAxis);
     function sectionW(n){ return clearGapBySpan(fillspace, memberW, n); }
     function angleDeg(n, h){ return Math.atan2(h, sectionW(n)) * 180/Math.PI; }
-    let floors = H > 2000 ? 2 : 1;
     function stojkaLen(fl){
       return fl===2 ? (panelH - 100*3)/2 : panelH - 100*2;
     }
+    if(sectionW(2) <= 0){
+      return {count:2, floors:1, len:0, sectionW:0, hasRaskosina:false, warn:null, tooNarrow:true};
+    }
+
+    // Этажность решается по УГЛУ раскосины при минимально возможном (2, без
+    // учёта требования ≤800мм между осями) числе стоек - по уточнению
+    // пользователя: 800мм может вынудить ставить стойки чаще, но это не
+    // повод переходить на 2 этажа, если "естественный" (по одному только
+    // углу) вариант из 2 стоек уже укладывается в 20-60°. Иначе более частые
+    // стойки, вызванные исключительно шагом осей, искусственно раздували бы
+    // угол на 1 этаже и включали 2 этажа там, где они не нужны.
+    let floors = H > 2000 ? 2 : 1;
+    if(floors===1 && angleDeg(2, stojkaLen(1)) > 60){
+      floors = 2;
+    }
+    const len = stojkaLen(floors);
+    let warn = null;
+
+    // Число стоек по углу (растим от 2, пока угол <20° - тот же приём, что
+    // и torecSectionWidth в типе I-3), НЕЗАВИСИМО от требования ≤800мм.
+    let angleCount = 2;
+    if(len > 0){
+      while(sectionW(angleCount+1) > 0 && angleDeg(angleCount, len) < 20){
+        angleCount++;
+      }
+      if(angleDeg(angleCount, len) < 20){
+        warn = `угол раскосины менее 20° даже при максимально возможном числе секций (${angleCount})`;
+      }
+    }
+
+    // Итоговое число стоек - большее из угла-ориентированного и требуемого
+    // шагом осей ≤800мм (по уточнению пользователя: шаг 800мм в приоритете
+    // именно для количества стоек, даже если из-за этого угол у финальной
+    // раскосины окажется более крутым, чем нужно было бы по одному углу).
+    let count = Math.max(angleCount, spacingMinCount);
     if(sectionW(count) <= 0){
       return {count, floors, len:0, sectionW:0, hasRaskosina:false, warn:null, tooNarrow:true};
     }
-    if(floors===1 && angleDeg(count, stojkaLen(1)) > 60){
-      floors = 2;
-    }
-    let len = stojkaLen(floors);
-    let warn = null;
-    if(len > 0){
-      while(sectionW(count+1) > 0 && angleDeg(count, len) < 20){
-        count++;
-      }
-      if(sectionW(count) <= 0){
-        return {count:count-1, floors, len, sectionW:sectionW(count-1), hasRaskosina:true, warn:null, tooNarrow:false};
-      }
-      if(angleDeg(count, len) < 20){
-        warn = `угол раскосины менее 20° даже при максимально возможном числе секций (${count})`;
-      }
+    if(spacingMinCount > angleCount && len > 0 && angleDeg(count, len) > 60){
+      warn = `шаг осей ≤800мм вынуждает больше стоек (${count}), чем нужно было бы по углу (${angleCount}) — угол раскосины у финального числа секций ${Math.round(angleDeg(count,len))}° выше рекомендуемых 60°`;
     }
     const hasRaskosina = len > 0;
     return {count, floors, len, sectionW: sectionW(count), hasRaskosina, warn, tooNarrow:false};
