@@ -2405,6 +2405,10 @@ function calculate(){
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 
+  // Все числовые значения в таблице - целые, округление вверх (не занижаем
+  // размер/количество детали): толщина раскосины (t_stojka*2/3) и т.п. дают
+  // дробные мм без этого округления.
+  function displayVal(v){ return typeof v === 'number' ? ceilInt(v) : v; }
   function renderSection(title, rows){
     let html = title ? `<div class="part-title">${title}</div>` : '';
     html += `<div class="spec-table"><table>
@@ -2412,10 +2416,10 @@ function calculate(){
     rows.forEach(r=>{
       html += `<tr>
         <td>${r.name}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="t">${r.t}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="w">${r.w}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="l">${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="qty">${r.qty}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t">${displayVal(r.t)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="w">${displayVal(r.w)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="l">${displayVal(r.l)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="qty">${displayVal(r.qty)}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
