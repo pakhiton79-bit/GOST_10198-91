@@ -300,7 +300,13 @@ function computeGost10198II1(input){
   const l33 = torecFrame.hasRaskosina ? (torecFrame.count-1) * torecFrame.floors : 0;
 
   const t32 = skin.value, k32 = panelHeightFull;
-  const fbTorec = fillBoards(outerW, roundBoardWidths);
+  // Пространство для досок торца - по тексту источника буквально "внутренняя
+  // ширина груза+(ШИРИНА стойки торца+толщина досок бокового щита)*2" - это
+  // ШИРИНА стойки (100мм, фиксированная), а не её толщина, в отличие от
+  // наружной ширины ящика (outerW выше, которая как раз толщину стойки и
+  // использует) - здесь сознательно другая величина, не outerW.
+  const torecFillSpace = W + (100 + skin.value)*2;
+  const fbTorec = fillBoards(torecFillSpace, roundBoardWidths);
   const w32 = 100, l32 = fbTorec.mainQty;
   if(fbTorec.warn){
     warnings.push('Доска торца: остаток занят доской нестандартной ширины (вне 75–99 мм).');
