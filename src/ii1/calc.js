@@ -31,30 +31,22 @@ function computeGost10198II1(input){
   // skinThickness() в src/ii1/logic.js.
   const skin = {value: roundUpToAvailable(skinThickness(MASS))};
 
-  // Наружная ширина ящика: ширина груза + (ширина стойки[100] + толщина доски
-  // обшивки)×2 - по аналогии с формулой длины полоза (см. k9Base ниже), где
-  // толщина торцевого щита складывается из стойки и доски обшивки.
-  const outerW = W + (100 + skin.value)*2;
-  const crossBeamRaw = crossBeamThickness(MASS, outerW); // Табл. 14
-  if(crossBeamRaw.exceeded){
-    warnings.push('Масса или наружная ширина ящика вне Табл. 14 — поперечный брус крышки принят по крайнему значению.');
-  }
-  const t21 = roundUpToAvailable(crossBeamRaw.value), w21 = 100;
-  // Поперечные брусья крышки - на расстоянии осей не более 800мм. Брус - тело
-  // шириной 100мм (w21), а не точка - тот же принцип, что и у стоек каркаса
-  // (см. minCountBySpan в src/ii1/logic.js): крайний брус не должен выступать
-  // за пределы крышки по длине, значит пролёт между осями крайних брусьев -
-  // L минус ширина одного бруса, а не L целиком. Раньше здесь стояла
-  // временная формула без этой поправки (унаследована от типа I-3, где она
-  // и сама была помечена как временная - см. src/app.js).
-  const crossBeamCount = minCountBySpan(L, w21, 800);
+  const w21 = 100; // ширина поперечного бруса крышки - по Табл. 14 всегда 100мм
 
   const skidCalcWidth = W + skin.value*2; // без стойки, как в типе I-3 ("без боковых планок")
 
-  // --- Итеративная стабилизация: толщина стойки <-> наружная высота <->
+  // --- Итеративная стабилизация: толщина стойки <-> наружная ширина/высота <->
   //     длина полоза (Табл.19) <-> продольный брус крышки (режим "поперечное") ---
+  // Наружные ширина/длина ящика используют ТОЛЩИНУ стойки (переменное сечение,
+  // растёт наружу от груза), а не её ширину (100мм, фиксированная, идёт вдоль
+  // стенки) - по прямому уточнению пользователя. Толщина стойки, в свою
+  // очередь, зависит от наружной высоты (которая зависит от толщины
+  // поперечного бруса крышки, который сам зависит от наружной ширины) -
+  // поэтому пересчитываем ширину/поперечный брус на каждой итерации вместе со
+  // стойкой, а не один раз до цикла.
   let t_stojka = skin.value, stojkaExceeded = false;
-  let k9Base = L, t9=0, w9=0, l9=0, lastSkidInfo=null;
+  let k9Base = L, outerW = W, t9=0, w9=0, l9=0, lastSkidInfo=null;
+  let t21=0, crossBeamExceeded=false, crossBeamCount=0;
   let t_longbeam=0, w_longbeam=100, longbeamCount=0, longbeamExceeded=false;
   let floorBoardT=0, floorBoardExceeded=false, floorBoardUdel=null;
   let t10=0, w10=0, k10=0, l10=0;
@@ -63,6 +55,17 @@ function computeGost10198II1(input){
 
   for(let iter=0; iter<4; iter++){
     k9Base = L + (t_stojka + skin.value)*2;
+    outerW = W + (t_stojka + skin.value)*2;
+
+    const crossBeamRaw = crossBeamThickness(MASS, outerW); // Табл. 14
+    crossBeamExceeded = crossBeamRaw.exceeded;
+    t21 = roundUpToAvailable(crossBeamRaw.value);
+    // Поперечные брусья крышки - на расстоянии осей не более 800мм. Брус - тело
+    // шириной 100мм (w21), а не точка - тот же принцип, что и у стоек каркаса
+    // (см. minCountBySpan в src/ii1/logic.js): крайний брус не должен выступать
+    // за пределы крышки по длине, значит пролёт между осями крайних брусьев -
+    // L минус ширина одного бруса, а не L целиком.
+    crossBeamCount = minCountBySpan(L, w21, 800);
 
     if(solidRigidBase){
       const l9_default = (W>1100) ? 3 : 2;
@@ -96,13 +99,15 @@ function computeGost10198II1(input){
     stojkaExceeded = stj.exceeded;
 
     if(lidLayout === 'transverse'){
-      // Тот же принцип, что и у поперечных брусьев/стоек выше (см.
-      // minCountBySpan): продольный брус тоже тело фиксированной ширины
-      // (~100мм), а не точка - используем ширину 100мм для этого подбора
-      // (реальная ширина бруса из longBeamSection() зависит от результата,
-      // но отличие 75-100мм здесь не меняет число брусьев на практике).
-      const fillspaceLong = W + t_stojka*2;
-      longbeamCount = minCountBySpan(fillspaceLong, 100, 1000);
+      // Пространство, которое заполняют продольные брусья, - внутренняя
+      // ширина груза W (по уточнению пользователя): длина доски крышки в этом
+      // режиме - outerW = W+(t_stojka+skin.value)*2, а продольный брус сидит
+      // МЕЖДУ внутренними гранями торцевых щитов, то есть margin (t_stojka+
+      // skin.value)*2 с обеих сторон снова вычитается - в сумме остаётся
+      // ровно W. Шаг осей ≤800мм - тот же предел, что и у поперечного бруса
+      // (см. minCountBySpan выше), не 1000мм, как считалось раньше.
+      const fillspaceLong = W;
+      longbeamCount = minCountBySpan(fillspaceLong, 100, 800);
       const longbeamAxis = clearGapBySpan(fillspaceLong, 100, longbeamCount) + 100; // ось-в-ось (просвет + ширина 1 бруса)
       const crossBeamAxis = clearGapBySpan(L, w21, crossBeamCount) + w21;
       const lb = longBeamSection(crossBeamAxis, roundBoardWidths, longbeamAxis);
@@ -112,6 +117,9 @@ function computeGost10198II1(input){
     }
   }
 
+  if(crossBeamExceeded){
+    warnings.push('Масса или наружная ширина ящика вне Табл. 14 — поперечный брус крышки принят по крайнему значению.');
+  }
   if(polozSimpleExceeded){
     warnings.push('Масса вне диапазона таблицы полозьев со сплошным жёстким основанием (500–20000 кг) — сечение принято по крайнему значению.');
   }
@@ -325,7 +333,8 @@ function computeGost10198II1(input){
   // толщина - толщина доски обшивки, ширина - ширина стойки[100] минус толщина
   // поперечного бруса крышки, округлено вниз, в пределах 50-75мм; длина - равна
   // длине горизонтального бруса бокового щита.
-  const w_opora_raw = Math.floor(100 - t21);
+  const stojkaWidth = 100; // ширина стойки - фиксированная (см. w30/w40 ниже)
+  const w_opora_raw = Math.floor(stojkaWidth - t21); // ширина стойки минус ТОЛЩИНУ (не ширину) поперечного бруса крышки
   const w_opora = Math.min(75, Math.max(50, w_opora_raw));
   const t_opora = skin.value, k_opora = k43, l_opora = 2;
 
