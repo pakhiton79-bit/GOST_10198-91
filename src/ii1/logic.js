@@ -216,6 +216,30 @@ function minSkidsByWidth162(widthMm, skidW){
   const span = Math.max(0, widthMm - (skidW||0));
   return Math.max(2, Math.ceil(span / 1200) + 1);
 }
+
+// Общий принцип для ЛЮБОГО набора одинаковых брусков/стоек/полозьев,
+// расставленных по одной оси с шагом между осями не более maxAxis: сами
+// бруски - не точки, а тела шириной memberWidth, и КРАЙНИЕ из них не
+// должны выступать наружным краем за пределы отведённого пространства
+// space (см. minSkidsByWidth162 выше - тот же принцип для полозьев, п.1.6.2).
+// Значит пролёт между осями крайних элементов - не space целиком, а
+// space-memberWidth (по половине ширины крайнего элемента убирается с
+// каждого края). Используется для стоек каркаса (буквально по тексту
+// источника - "как с полозьями в I-3"), а также по аналогии - для
+// поперечных/продольных брусьев крышки (та же физика: тело фиксированной
+// ширины, позиционируемое по оси, не должно вылезать за пределы места).
+function minCountBySpan(space, memberWidth, maxAxis){
+  const span = Math.max(0, space - (memberWidth||0));
+  return Math.max(2, Math.ceil(span / maxAxis) + 1);
+}
+// Чистый просвет (без учёта самих осей) между соседними из `count`
+// одинаковых элементов шириной memberWidth, равномерно расставленных в
+// пространстве space - тот же приём, что и torecSectionWidth в типе I-3
+// (src/app.js): (W - w30*(sections+1))/sections, то есть общая ширина
+// минус суммарная ширина всех элементов, поровну на все просветы.
+function clearGapBySpan(space, memberWidth, count){
+  return (space - memberWidth*count) / (count-1);
+}
 function selectSkid19(mass, workingLengthMm, widthMm){
   const massIdx = nearestIndexBy(TABLE19, r=>r.mass, mass);
   const massRow = TABLE19[massIdx];

@@ -40,9 +40,14 @@ function computeGost10198II1(input){
     warnings.push('Масса или наружная ширина ящика вне Табл. 14 — поперечный брус крышки принят по крайнему значению.');
   }
   const t21 = roundUpToAvailable(crossBeamRaw.value), w21 = 100;
-  // Поперечные брусья крышки - на расстоянии осей не более 800мм (простая
-  // формула по аналогии с типом I-3, без отступа от краёв).
-  const crossBeamCount = Math.max(2, ceilInt(L/800));
+  // Поперечные брусья крышки - на расстоянии осей не более 800мм. Брус - тело
+  // шириной 100мм (w21), а не точка - тот же принцип, что и у стоек каркаса
+  // (см. minCountBySpan в src/ii1/logic.js): крайний брус не должен выступать
+  // за пределы крышки по длине, значит пролёт между осями крайних брусьев -
+  // L минус ширина одного бруса, а не L целиком. Раньше здесь стояла
+  // временная формула без этой поправки (унаследована от типа I-3, где она
+  // и сама была помечена как временная - см. src/app.js).
+  const crossBeamCount = minCountBySpan(L, w21, 800);
 
   const skidCalcWidth = W + skin.value*2; // без стойки, как в типе I-3 ("без боковых планок")
 
@@ -91,10 +96,15 @@ function computeGost10198II1(input){
     stojkaExceeded = stj.exceeded;
 
     if(lidLayout === 'transverse'){
+      // Тот же принцип, что и у поперечных брусьев/стоек выше (см.
+      // minCountBySpan): продольный брус тоже тело фиксированной ширины
+      // (~100мм), а не точка - используем ширину 100мм для этого подбора
+      // (реальная ширина бруса из longBeamSection() зависит от результата,
+      // но отличие 75-100мм здесь не меняет число брусьев на практике).
       const fillspaceLong = W + t_stojka*2;
-      longbeamCount = Math.max(2, ceilInt(fillspaceLong/1000)+1);
-      const longbeamAxis = longbeamCount>1 ? fillspaceLong/(longbeamCount-1) : fillspaceLong;
-      const crossBeamAxis = crossBeamCount>1 ? L/crossBeamCount : L;
+      longbeamCount = minCountBySpan(fillspaceLong, 100, 1000);
+      const longbeamAxis = clearGapBySpan(fillspaceLong, 100, longbeamCount) + 100; // ось-в-ось (просвет + ширина 1 бруса)
+      const crossBeamAxis = clearGapBySpan(L, w21, crossBeamCount) + w21;
       const lb = longBeamSection(crossBeamAxis, roundBoardWidths, longbeamAxis);
       t_longbeam = roundUpToAvailable(lb.t); w_longbeam = lb.w; longbeamExceeded = lb.exceeded;
     } else {
@@ -223,12 +233,8 @@ function computeGost10198II1(input){
   function buildFrame(fillspace, panelH){
     const memberW = 100; // ширина стойки
     const maxAxis = 800;
-    function minCount(){
-      const span = Math.max(0, fillspace - memberW);
-      return Math.max(2, Math.ceil(span/maxAxis) + 1);
-    }
-    let count = minCount();
-    function sectionW(n){ return (fillspace - memberW*n) / (n-1); }
+    let count = minCountBySpan(fillspace, memberW, maxAxis);
+    function sectionW(n){ return clearGapBySpan(fillspace, memberW, n); }
     function angleDeg(n, h){ return Math.atan2(h, sectionW(n)) * 180/Math.PI; }
     let floors = H > 2000 ? 2 : 1;
     function stojkaLen(fl){
