@@ -106,6 +106,10 @@ updateThicknessSummary();
 // src/variants/), а простой переключатель на одной странице - доска дна
 // пересчитывается на лету через параметр fasteningType в computeGost10198II1().
 const FASTENING_STORAGE_KEY = 'silvan-gost10198-ii1-fastening-type';
+const FASTENING_LABELS = {
+  skid:         'Крепление за полозья',
+  floor_boards: 'Крепление к доскам дна'
+};
 let fasteningType = 'skid';
 try{
   const saved = localStorage.getItem(FASTENING_STORAGE_KEY);
@@ -115,15 +119,23 @@ try{
 function onFasteningTypeChange(el){
   fasteningType = el.value;
   try{ localStorage.setItem(FASTENING_STORAGE_KEY, fasteningType); }catch(e){}
+  updateFasteningSummary();
   document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
   if(fasteningType !== 'skid'){
     document.getElementById('removeFloorBoards').checked = false;
   }
   invalidateCalc();
 }
-document.querySelectorAll('input[name="fasteningType"]').forEach(el=>{
-  el.checked = (el.value === fasteningType);
-});
+function updateFasteningSummary(){
+  document.getElementById('fasteningDropdownLabel').textContent = FASTENING_LABELS[fasteningType];
+  document.querySelectorAll('input[name="fasteningType"]').forEach(el=>{
+    el.checked = (el.value === fasteningType);
+  });
+}
+function toggleFasteningDropdown(){
+  document.getElementById('fasteningDropdownPanel').classList.toggle('open');
+}
+updateFasteningSummary();
 document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
 
 // «Убрать подполозные доски» и «Погрузка авто/электропогрузчиком» - взаимоисключающие
