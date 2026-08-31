@@ -735,6 +735,7 @@
   /* Стили страницы выбора типа - поверх общего style.css. */
   .wrap{max-width:820px;}
   .type-card{
+    position:relative;
     display:flex;
     align-items:center;
     gap:24px;
@@ -746,6 +747,20 @@
     color:var(--ink);
     margin-bottom:16px;
     transition:border-color .15s ease, background-color .15s ease;
+  }
+  .type-badge{
+    position:absolute;
+    top:-10px;
+    right:16px;
+    padding:4px 12px;
+    border-radius:999px;
+    background:var(--warn);
+    color:#ffffff;
+    font-size:12px;
+    font-weight:600;
+    line-height:1.4;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+    pointer-events:none;
   }
   .type-card:hover{
     border-color:var(--accent);
@@ -825,7 +840,10 @@ const TYPES = [
     // нейтральная SVG-заглушка вместо чертежа, без отдельного файла картинки.
     name: 'Тип II-1',
     file: 'GOST10198_91_II1.html',
-    image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="%23FAF8F5"/><text x="80" y="64" font-family="sans-serif" font-size="13" fill="%236B625D" text-anchor="middle">Чертёж скоро</text></svg>'
+    image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="%23FAF8F5"/><text x="80" y="64" font-family="sans-serif" font-size="13" fill="%236B625D" text-anchor="middle">Чертёж скоро</text></svg>',
+    // badge - виден поверх карточки, но сама карточка (ссылка) остаётся
+    // рабочей - калькулятор уже считает, просто чертежей и т.п. пока нет.
+    badge: 'Ещё не готово'
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];
@@ -849,7 +867,9 @@ const TYPES = [
   const root = document.getElementById('types');
   let html = '';
   TYPES.forEach(t => {
+    const badge = t.badge ? `<span class="type-badge">${t.badge}</span>` : '';
     html += `<a class="type-card" href="${resolveFile(t)}">
+      ${badge}
       <div class="type-info"><h3>${t.name}</h3></div>
       <div class="type-image"><img src="${t.image}" alt="${t.name}"></div>
     </a>`;
