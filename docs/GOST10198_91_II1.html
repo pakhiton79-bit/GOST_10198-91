@@ -2278,9 +2278,6 @@ function computeGost10198II1(input){
     if(sectionW(count) <= 0){
       return {count, floors, len:0, sectionW:0, hasRaskosina:false, warn:null, tooNarrow:true};
     }
-    if(spacingMinCount > angleCount && len > 0 && angleDeg(count, len) > 60){
-      warn = `шаг осей ≤800мм вынуждает больше стоек (${count}), чем нужно было бы по углу (${angleCount}) — угол раскосины у финального числа секций ${Math.round(angleDeg(count,len))}° выше рекомендуемых 60°`;
-    }
     const hasRaskosina = len > 0;
     return {count, floors, len, sectionW: sectionW(count), hasRaskosina, warn, tooNarrow:false};
   }
@@ -2313,14 +2310,22 @@ function computeGost10198II1(input){
   const k33 = Math.sqrt(Math.pow(torecFrame.sectionW,2) + Math.pow(torecFrame.len,2));
   const l33 = torecFrame.hasRaskosina ? (torecFrame.count-1) * torecFrame.floors : 0;
 
-  const t32 = skin.value, k32 = panelHeightFull;
-  // Пространство для досок торца - то же самое, что и у досок крышки при
-  // продольном расположении (по уточнению пользователя): ширина груза +
-  // (ТОЛЩИНА стойки + толщина обшивки)*2 = outerW, а не отдельная формула
-  // через ШИРИНУ стойки (100мм) - несмотря на то, что в тексте источника
-  // для этой строки буквально написано "ширина стойки торца".
+  // Длина доски торца (по уточнению пользователя) - (ширина стойки)*2 +
+  // длина стойки НА ОДИН ЭТАЖ (та же k30, что и у самой стойки) + толщина
+  // продольного бруса крышки - доска облицовывает один этаж целиком,
+  // включая место под верхний/нижний горизонтальный брус (те же 200мм, что
+  // вычтены из высоты панели при расчёте длины стойки - см. buildFrame) И
+  // ещё выше - место под продольный брус крышки (0 при продольном
+  // расположении досок крышки, там его просто нет). При t_longbeam=0 (режим
+  // "вдоль") это численно равно толщина досок дна+высота груза (при 1
+  // этаже - подтверждено пользователем). При 2 этажах нужен 2-й, отдельный
+  // слой таких досок - количество удваивается.
+  const t32 = skin.value, k32 = 100*2 + torecFrame.len + t_longbeam;
+  // Пространство для досок торца (по ширине, кол-во) - то же самое, что и у
+  // досок крышки при продольном расположении (по уточнению пользователя):
+  // ширина груза + (ТОЛЩИНА стойки + толщина обшивки)*2 = outerW.
   const fbTorec = fillBoards(outerW, roundBoardWidths);
-  const w32 = 100, l32 = fbTorec.mainQty;
+  const w32 = 100, l32 = fbTorec.mainQty * torecFrame.floors;
   if(fbTorec.warn){
     warnings.push('Доска торца: остаток занят доской нестандартной ширины (вне 75–99 мм).');
   }
@@ -2335,7 +2340,7 @@ function computeGost10198II1(input){
   if(torecFrame.hasRaskosina) endPanel.push({name:'Раскосина', t:t_raskosina, w:w_raskosina, l:k33, qty:l33});
   if(l32>0) endPanel.push({name:'Доска', t:t32, w:w32, l:k32, qty:l32});
   fbTorec.extra.forEach((e,i)=>{
-    endPanel.push({name:'Доска (дополнительная) '+(i+1), t:t32, w:e.width, l:k32, qty:e.qty});
+    endPanel.push({name:'Доска (дополнительная) '+(i+1), t:t32, w:e.width, l:k32, qty:e.qty*torecFrame.floors});
   });
 
   const volTorPanel = vol(t30,w30,k30,l30) + vol(t31,w31,k31,l31)
@@ -2357,9 +2362,12 @@ function computeGost10198II1(input){
   const w_opora = Math.min(75, Math.max(50, w_opora_raw));
   const t_opora = skin.value, k_opora = k43, l_opora = 2;
 
-  const t41 = skin.value, k41 = panelHeightFull;
+  // Длина доски бока - та же логика, что и у торца (см. комментарий выше у
+  // k32): (ширина стойки)*2 + длина стойки на 1 этаж + толщина продольного
+  // бруса крышки, количество удваивается при 2 этажах.
+  const t41 = skin.value, k41 = 100*2 + bokFrame.len + t_longbeam;
   const fbBok = fillBoards(L, roundBoardWidths);
-  const w41 = 100, l41 = fbBok.mainQty;
+  const w41 = 100, l41 = fbBok.mainQty * bokFrame.floors;
   if(fbBok.warn){
     warnings.push('Доска бока: остаток занят доской нестандартной ширины (вне 75–99 мм).');
   }
@@ -2375,7 +2383,7 @@ function computeGost10198II1(input){
   bokovoy.push({name:'Опорная планка', t:t_opora, w:w_opora, l:k_opora, qty:l_opora});
   if(l41>0) bokovoy.push({name:'Доска', t:t41, w:w41, l:k41, qty:l41});
   fbBok.extra.forEach((e,i)=>{
-    bokovoy.push({name:'Доска (дополнительная) '+(i+1), t:t41, w:e.width, l:k41, qty:e.qty});
+    bokovoy.push({name:'Доска (дополнительная) '+(i+1), t:t41, w:e.width, l:k41, qty:e.qty*bokFrame.floors});
   });
 
   const volBokPanel = vol(t40,w40,k40,l40) + vol(t43,w43,k43,l43)
