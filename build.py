@@ -113,6 +113,21 @@ I1_VARIANTS = [
     {"out_name": "GOST10198_91_I1.html"},
 ]
 
+II1_DIR = SRC_DIR / "ii1"
+II1_SHELL = II1_DIR / "shell.html"
+II1_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__LOGIC_JS__*/": II1_DIR / "logic.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__DIAGRAMS_JS__*/": II1_DIR / "diagrams.js",
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__UI_JS__*/": II1_DIR / "ui.js",
+    "/*__CALC_JS__*/": II1_DIR / "calc.js",
+}
+II1_VARIANTS = [
+    {"out_name": "GOST10198_91_II1.html"},
+]
+
 LAUNCHER_DIR = SRC_DIR / "launcher"
 
 # Уровень 1 - стартовая страница (список ГОСТов).
@@ -191,6 +206,8 @@ def main():
         build_one(I3_SHELL, I3_PARTS, variant)
     for variant in I1_VARIANTS:
         build_one(I1_SHELL, I1_PARTS, variant)
+    for variant in II1_VARIANTS:
+        build_one(II1_SHELL, II1_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
         build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
     for variant in TYPES_VARIANTS:
