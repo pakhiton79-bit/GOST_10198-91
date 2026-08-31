@@ -82,7 +82,11 @@ function computeGost10198I1(input){
   const dno = [];
   let dnoWidth; // для чертежа - см. diagramDno() ниже
   if(skidEnabled){
-    const t9 = roundUpToAvailable(Math.max(skidThicknessRaw, 50));
+    // Толщина полоза (t9) - исключение из правила "в наличии" (по уточнению
+    // пользователя): берётся как есть (выбранное значение, не менее 50мм),
+    // без округления вверх до ближайшего доступного номинала и без
+    // предупреждения о превышении - в отличие от всех остальных деталей.
+    const t9 = Math.max(skidThicknessRaw, 50);
     if(skidThicknessRaw < 50){
       warnings.push(`Выбранная толщина полоза ${skidThicknessRaw} мм менее 50 мм — принято 50 мм.`);
     }
@@ -174,7 +178,9 @@ function computeGost10198I1(input){
   // аналогии с устройством щитов: высота груза + опора снизу (полоз либо
   // планка) + доска дна + доска крышки; ширина/длина груза + толщина
   // соответствующих боковых/торцовых досок с двух сторон. Требует проверки.
-  const bottomSupport = skidEnabled ? roundUpToAvailable(Math.max(skidThicknessRaw, 50)) : wall.value;
+  // При полозе - та же (неокруглённая) толщина, что и t9 выше; при планке -
+  // wall.value (планка правилу "в наличии" подчиняется как обычно).
+  const bottomSupport = skidEnabled ? Math.max(skidThicknessRaw, 50) : wall.value;
   // Опора снизу + доска дна + высота груза + доска крышки + планка крышки.
   const outerH = bottomSupport + wall.value*3 + H;
   const outerW = W + wall.value*2;
