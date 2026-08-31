@@ -18,10 +18,15 @@
   html, body{ background:#fff !important; }
   #printArea{
     /* relative (а не static): блок остаётся в потоке страницы, но при этом
-       служит точкой отсчёта для общего вида ящика и водяного знака в углах */
+       служит точкой отсчёта для общего вида ящика и водяного знака в углах.
+       opacity/pointer-events сброшены обратно - на экране блок прячется
+       именно ими (см. #printArea в style.css), при печати он должен быть
+       полностью видимым и кликабельным как обычный контент. */
     position:relative !important;
     left:auto !important;
     top:auto !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
   }
 </style>
 </head>
