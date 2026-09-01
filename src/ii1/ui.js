@@ -41,8 +41,16 @@ function buildThicknessCheckboxList(){
   list.innerHTML = html;
 }
 
+// Прячет "Расчёт выполнен" при любом изменении входных данных или таблицы
+// деталей. Если расчёт уже хоть раз показывался (#results видим) - вместо
+// галочки показываем краткую подсказку "устарело" (см. #calcOutdated в
+// src/ii1/shell.html) - до первого расчёта её показывать нечего, поле ещё
+// пустое, а не "устаревшее".
 function invalidateCalc(){
   document.getElementById('calcCheck').style.visibility = 'hidden';
+  const outdated = document.getElementById('calcOutdated');
+  const results = document.getElementById('results');
+  if(outdated) outdated.style.display = (results && results.style.display === 'block') ? 'inline-flex' : 'none';
 }
 
 function onThicknessCheckboxChange(el){

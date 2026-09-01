@@ -14,7 +14,9 @@
 //         removeSkidBoards,forkliftLoading,roundBoardWidths,lidLayout}.
 function computeGost10198II1(input){
   const {L, W, H, MASS, fasteningType, solidRigidBase, removeFloorBoards,
-         removeSkidBoards, forkliftLoading, roundBoardWidths, lidLayout} = input;
+         removeSkidBoards, forkliftLoading, roundBoardWidths, lidLayout,
+         manualOverrides} = input;
+  const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
 
@@ -23,13 +25,33 @@ function computeGost10198II1(input){
   }
 
   let warnings = [];
+
+  // Ручной ввод толщины в таблице (см. data-override в renderSection ниже) -
+  // подставляется вместо расчётного по ГОСТ значения ВЕЗДЕ, где оно дальше
+  // используется (полный каскад: например, толщина стойки влияет на длину
+  // полоза, наружную высоту, длину досок обшивки и т.д. - по уточнению
+  // пользователя). Значение читается внутри цикла стабилизации на каждой
+  // итерации (см. ниже), поэтому предупреждение "меньше ГОСТ-минимума" не
+  // добавляем сразу в ov() (иначе задвоится 4 раза за 4 итерации), а
+  // копим в belowGost и печатаем один раз после того, как всё стабилизировалось.
+  const belowGost = {};
+  function ov(key, gostValue, label){
+    const v = mo[key];
+    if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+    if(v < gostValue){
+      belowGost[key] = {value:v, gostValue, label};
+    } else {
+      delete belowGost[key];
+    }
+    return v;
+  }
   if(MASS > 20000){
     warnings.push('Масса груза превышает 20000 кг — вне области действия типа II-1, расчёт продолжен по верхней границе диапазона.');
   }
 
   // Толщина досок обшивки (масса груза) - черновая таблица, см. комментарий у
   // skinThickness() в src/ii1/logic.js.
-  const skin = {value: roundUpToAvailable(skinThickness(MASS))};
+  const skin = {value: ov('skinValue', roundUpToAvailable(skinThickness(MASS)), 'Толщина обшивки (доска крышки)')};
 
   const w21 = 100; // ширина поперечного бруса крышки - по Табл. 14 всегда 100мм
 
@@ -63,7 +85,7 @@ function computeGost10198II1(input){
 
     const crossBeamRaw = crossBeamThickness(MASS, outerW); // Табл. 14
     crossBeamExceeded = crossBeamRaw.exceeded;
-    t21 = roundUpToAvailable(crossBeamRaw.value);
+    t21 = ov('t21', roundUpToAvailable(crossBeamRaw.value), 'Толщина поперечного бруса крышки');
     // Поперечные брусья крышки - на расстоянии осей не более 700мм (по
     // уточнению пользователя). Брус - тело шириной 100мм (w21), а не точка -
     // тот же принцип, что и у стоек каркаса (см. minCountBySpan в
@@ -85,9 +107,11 @@ function computeGost10198II1(input){
       l9 = sel.count; t9 = sel.h; w9 = sel.w;
       lastSkidInfo = sel;
     }
+    t9 = ov('t9', t9, 'Толщина полоза');
 
     const t10Raw = forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
-    t10 = roundUpToAvailable(t10Raw); w10 = Math.min(w9, 150); k10 = k9Base-400; l10 = l9;
+    t10 = ov('t10', roundUpToAvailable(t10Raw), 'Толщина подполозной доски');
+    w10 = Math.min(w9, 150); k10 = k9Base-400; l10 = l9;
 
     if(fasteningType === 'floor_boards'){
       const distanceMm = l9>1 ? skidCalcWidth/(l9-1) : skidCalcWidth;
@@ -96,11 +120,12 @@ function computeGost10198II1(input){
     } else {
       floorBoardT = roundUpToAvailable(floorBoardThicknessNew(MASS));
     }
+    floorBoardT = ov('floorBoardT', floorBoardT, 'Толщина доски дна');
 
     outerH = (removeSkidBoards ? 0 : t10) + t9 + floorBoardT + H + t21 + t_longbeam + skin.value;
 
     const stj = stojkaSection(MASS, outerH);
-    t_stojka = roundUpToAvailable(stj.t);
+    t_stojka = ov('tStojka', roundUpToAvailable(stj.t), 'Толщина стойки');
     stojkaExceeded = stj.exceeded;
 
     if(lidLayout === 'transverse'){
@@ -118,7 +143,8 @@ function computeGost10198II1(input){
       const longbeamAxis = clearGapBySpan(fillspaceLong, 100, longbeamCount) + 100; // ось-в-ось (просвет + ширина 1 бруса)
       const crossBeamAxis = clearGapBySpan(L, w21, crossBeamCount) + w21;
       const lb = longBeamSection(crossBeamAxis, roundBoardWidths, longbeamAxis);
-      t_longbeam = roundUpToAvailable(lb.t); w_longbeam = lb.w; longbeamExceeded = lb.exceeded;
+      t_longbeam = ov('tLongbeam', roundUpToAvailable(lb.t), 'Толщина продольного бруса крышки');
+      w_longbeam = lb.w; longbeamExceeded = lb.exceeded;
     } else {
       t_longbeam = 0; w_longbeam = 100; longbeamCount = 0;
     }
@@ -160,24 +186,25 @@ function computeGost10198II1(input){
 
   // --- ДНО ---
   const dno = [];
-  dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9});
+  dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9, overrideKey:'t9'});
   if(!removeSkidBoards){
     dno.push({
       name:'Подполозная доска',
       t: subfloorForkliftFail ? '⚠' : t10,
       w: subfloorForkliftFail ? '⚠' : w10,
       l: subfloorForkliftFail ? '⚠' : k10,
-      qty: subfloorForkliftFail ? '⚠' : l10
+      qty: subfloorForkliftFail ? '⚠' : l10,
+      overrideKey: subfloorForkliftFail ? null : 't10'
     });
   }
   const endBeam = endBeamSection(MASS);
-  const t11 = roundUpToAvailable(endBeam.h), w11 = endBeam.w, k11 = W, l11 = 2;
-  dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
+  const t11 = ov('t11', roundUpToAvailable(endBeam.h), 'Толщина торцового бруса дна'), w11 = endBeam.w, k11 = W, l11 = 2;
+  dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11, overrideKey:'t11'});
 
   const fbDno = fillBoards(L - w11*2, roundBoardWidths);
   const t12 = floorBoardT, w12 = 100, l12 = fbDno.mainQty, k12 = W;
   if(!removeFloorBoards){
-    if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12});
+    if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12, overrideKey:'floorBoardT'});
     fbDno.extra.forEach((e,i)=>{
       dno.push({name:'Доска дна (дополнительная) '+(i+1), t:t12, w:e.width, l:k12, qty:e.qty});
     });
@@ -194,13 +221,13 @@ function computeGost10198II1(input){
 
   // --- КРЫШКА ---
   const kryshka = [];
-  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:W, qty:crossBeamCount});
+  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:W, qty:crossBeamCount, overrideKey:'t21'});
   let volKryshka = vol(t21,w21,W,crossBeamCount);
 
   let lidBoardLen, lidFillspace;
   if(lidLayout === 'transverse'){
     const k_longbeam = L + t_stojka*2;
-    kryshka.push({name:'Внутренний продольный брус', t:t_longbeam, w:w_longbeam, l:k_longbeam, qty:longbeamCount});
+    kryshka.push({name:'Внутренний продольный брус', t:t_longbeam, w:w_longbeam, l:k_longbeam, qty:longbeamCount, overrideKey:'tLongbeam'});
     volKryshka += vol(t_longbeam, w_longbeam, k_longbeam, longbeamCount);
     lidBoardLen = outerW;      // ширина груза + (стойка+доска)*2
     lidFillspace = k9Base;     // внутренняя длина груза + (стойка+доска торца)*2
@@ -210,7 +237,7 @@ function computeGost10198II1(input){
   }
   const fbKryshka = fillBoards(lidFillspace, roundBoardWidths);
   const t20 = skin.value, w20 = 100, l20 = fbKryshka.mainQty, k20 = lidBoardLen;
-  if(l20>0) kryshka.push({name:'Доска крышки', t:t20, w:w20, l:k20, qty:l20});
+  if(l20>0) kryshka.push({name:'Доска крышки', t:t20, w:w20, l:k20, qty:l20, overrideKey:'skinValue'});
   fbKryshka.extra.forEach((e,i)=>{
     kryshka.push({name:'Доска крышки (дополнительная) '+(i+1), t:t20, w:e.width, l:k20, qty:e.qty});
   });
@@ -317,7 +344,7 @@ function computeGost10198II1(input){
   }
 
   // --- ЩИТ ТОРЦЕВОЙ (расчёт на 1 щит, далее удвоение) ---
-  const t_raskosina = roundUpToAvailable(t_stojka*2/3), w_raskosina = 100;
+  const t_raskosina = ov('tRaskosina', roundUpToAvailable(t_stojka*2/3), 'Толщина раскосины'), w_raskosina = 100;
 
   const t30 = t_stojka, w30 = 100, k30 = torecFrame.len, l30 = torecFrame.count * torecFrame.floors;
   const t31 = t_stojka, w31 = 100, k31 = W + t_stojka*2, l31 = torecFrame.floors + 1;
@@ -348,10 +375,10 @@ function computeGost10198II1(input){
   }
 
   const endPanel = [
-    {name:'Стойка', t:t30, w:w30, l:k30, qty:l30},
+    {name:'Стойка', t:t30, w:w30, l:k30, qty:l30, overrideKey:'tStojka'},
     {name:'Горизонтальный брус', t:t31, w:w31, l:k31, qty:l31},
   ];
-  if(torecFrame.hasRaskosina) endPanel.push({name:'Раскосина', t:t_raskosina, w:w_raskosina, l:k33, qty:l33});
+  if(torecFrame.hasRaskosina) endPanel.push({name:'Раскосина', t:t_raskosina, w:w_raskosina, l:k33, qty:l33, overrideKey:'tRaskosina'});
   if(l32>0) endPanel.push({name:'Доска', t:t32, w:w32, l:k32, qty:l32});
   fbTorec.extra.forEach((e,i)=>{
     endPanel.push({name:'Доска (дополнительная) '+(i+1), t:t32, w:e.width, l:k32, qty:e.qty*torecFrame.floors});
@@ -414,19 +441,50 @@ function computeGost10198II1(input){
     warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
   }
 
+  // Ручной ввод толщины (см. ov() выше) меньше расчётного по ГОСТ - не
+  // блокируем (по уточнению пользователя), но предупреждаем один раз на
+  // поле, уже после того как цикл стабилизации сошёлся.
+  Object.values(belowGost).forEach(b=>{
+    warnings.push(`${b.label}: введено вручную ${b.value} мм — меньше расчётного по ГОСТ (${Math.round(b.gostValue*100)/100} мм). Использовано введённое значение.`);
+  });
+
   return {
     warnings, dno, kryshka, endPanel, bokovoy,
     outerL, outerW, outerH, totalVolume, normaVremeni,
+    manualOverridesUsed: Object.keys(mo).length > 0,
     // Параметры для чертежей (пока заглушки - см. src/ii1/diagrams.js).
     k9Base, W, L, H, t_stojka, skin, t21, t_longbeam, lidLayout,
     torecFrame, bokFrame, panelHeightFull
   };
 }
 
+// Читает ручные правки толщины из уже отрисованной таблицы (см. data-role="t"
+// data-override="..." в renderSection ниже) - ДО того, как calculate() эту
+// таблицу перерисует. Один канонический ряд на общий параметр (например,
+// толщина стойки читается только со строки "Стойка" щита торцевого - строки
+// "Горизонтальный брус"/"Стойка" бокового щита её лишь отражают, поэтому
+// data-override там не проставлен, править нужно именно канонический ряд).
+// Учитываются ТОЛЬКО ячейки, реально отредактированные пользователем
+// (data-user-edited, взводится обработчиком input ниже) - иначе любое
+// каноническое поле "замораживалось" бы на прежнем расчётном значении при
+// каждом нажатии "Рассчитать", даже если пользователь его не трогал (там
+// всё равно стоит какое-то число - расчётное по ГОСТ с прошлого рендера).
+function readManualOverrides(){
+  const overrides = {};
+  document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
+    const key = cell.getAttribute('data-override');
+    const val = parseFloat(cell.textContent.replace(',','.'));
+    if(!Number.isNaN(val) && val>0) overrides[key] = val;
+  });
+  return overrides;
+}
+
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
+  const manualOverrides = readManualOverrides();
   document.getElementById('calcCheck').style.visibility = 'hidden';
+  document.getElementById('calcOutdated').style.display = 'none';
 
   const removeFloorBoardsEl = document.getElementById('removeFloorBoards');
   const input = {
@@ -441,6 +499,7 @@ function calculate(){
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
+    manualOverrides,
   };
 
   const calc = computeGost10198II1(input);
@@ -459,9 +518,10 @@ function calculate(){
     html += `<div class="spec-table"><table>
       <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
     rows.forEach(r=>{
+      const overrideAttr = r.overrideKey ? ` data-override="${r.overrideKey}"` : '';
       html += `<tr>
         <td>${r.name}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="t">${displayVal(r.t)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}>${displayVal(r.t)}</td>
         <td class="num editable-cell" contenteditable="true" data-role="w">${displayVal(r.w)}</td>
         <td class="num editable-cell" contenteditable="true" data-role="l">${displayVal(r.l)}</td>
         <td class="num editable-cell" contenteditable="true" data-role="qty">${displayVal(r.qty)}</td>
@@ -496,16 +556,14 @@ function calculate(){
 }
 
 ['L','W','H','M'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', ()=>{
-    document.getElementById('calcCheck').style.visibility = 'hidden';
-  });
+  document.getElementById(id).addEventListener('input', invalidateCalc);
 });
 ['solidRigidBase','roundBoardWidths','removeFloorBoards'].forEach(id=>{
   const el = document.getElementById(id);
-  if(el) el.addEventListener('change', ()=>{ document.getElementById('calcCheck').style.visibility = 'hidden'; });
+  if(el) el.addEventListener('change', invalidateCalc);
 });
 document.querySelectorAll('input[name="lidLayout"]').forEach(el=>{
-  el.addEventListener('change', ()=>{ document.getElementById('calcCheck').style.visibility = 'hidden'; });
+  el.addEventListener('change', invalidateCalc);
 });
 
 function recalcFromTable(){
@@ -523,7 +581,18 @@ function recalcFromTable(){
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
 document.getElementById('boardTables').addEventListener('input', e=>{
-  if(e.target.classList.contains('editable-cell')) recalcFromTable();
+  if(e.target.classList.contains('editable-cell')){
+    if(e.target.hasAttribute('data-override')){
+      e.target.setAttribute('data-user-edited', 'true');
+    }
+    recalcFromTable();
+    // Ручная правка таблицы делает наружные размеры/чертежи потенциально
+    // устаревшими относительно того, что сейчас в таблице - прячем галочку
+    // расчёта и показываем краткую подсказку (см. invalidateCalc() в
+    // src/ii1/ui.js). При нажатии "Рассчитать" правки толщины (data-override,
+    // отмеченные data-user-edited) будут учтены - см. readManualOverrides().
+    invalidateCalc();
+  }
 });
 
 function buildPrintHtml(){
