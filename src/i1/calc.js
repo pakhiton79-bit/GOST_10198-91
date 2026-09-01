@@ -9,6 +9,35 @@
 // предупреждения (warnings), итоговые размеры/объём/норма времени, и
 // именованные параметры чертежей (ровно те значения, что раньше передавались
 // в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy позиционно).
+// Ищет первое отрицательное число где угодно в результате расчёта -
+// и в таблице деталей (dno/kryshka/bokovoy/torec), и в параметрах для
+// чертежей (они в том же объекте) - по указанию пользователя: отрицательный
+// размер всегда означает ошибку формулы или невозможную геометрию, такой
+// результат нельзя показывать пользователю ни в каком виде. '⚠' (символ, не
+// число) - осознанный признак нерасчитанного узла, пропускается, это не
+// ошибка. Возвращает путь до первого найденного отрицательного значения
+// (для сообщения об ошибке) либо null, если всё в порядке.
+function findNegativeField(value, path){
+  if(typeof value === 'number'){
+    return (Number.isFinite(value) && value < 0) ? path : null;
+  }
+  if(Array.isArray(value)){
+    for(let i=0; i<value.length; i++){
+      const found = findNegativeField(value[i], `${path}[${i}]`);
+      if(found) return found;
+    }
+    return null;
+  }
+  if(value && typeof value === 'object'){
+    for(const key of Object.keys(value)){
+      const found = findNegativeField(value[key], path ? `${path}.${key}` : key);
+      if(found) return found;
+    }
+    return null;
+  }
+  return null;
+}
+
 function computeGost10198I1(input){
   const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, manualOverrides} = input;
   const mo = manualOverrides || {};
@@ -258,13 +287,18 @@ function computeGost10198I1(input){
     warnings.push('В расчёте использованы значения толщины, введённые вручную в таблице, а не расчётные по ГОСТ — чертежи ниже могут не точно отражать эти изменения.');
   }
 
-  return {
+  const result = {
     warnings, dno, kryshka, bokovoy, torec,
     outerL, outerW, outerH, totalVolume, normaVremeni,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
     dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kPlankaKryshka, H, W, wall
   };
+  const negField = findNegativeField(result, '');
+  if(negField){
+    return {error: `Расчёт дал отрицательное значение (${negField}) — результат недостоверен, проверьте входные данные.`};
+  }
+  return result;
 }
 
 // Читает ручные правки толщины из уже отрисованной таблицы (см. data-role="t"
