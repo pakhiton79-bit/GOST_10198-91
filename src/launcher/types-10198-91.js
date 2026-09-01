@@ -10,11 +10,16 @@
 // крепления, что был выбран в прошлый раз.
 // image - чертёж общего вида ящика (тот же файл, что используется в самом
 // калькуляторе, см. BOX_IMG_B64/BOX_I1_IMG_B64 в src/app.js и src/i1/calc.js).
+// badge - виден поверх карточки, но сама карточка (ссылка) остаётся рабочей -
+// калькулятор уже считает, просто расчёт стоит перепроверить перед
+// использованием в производстве (по указанию пользователя - на всех типах).
+const REVIEW_BADGE = 'Требует проверки';
 const TYPES = [
   {
     name: 'Тип I-1',
     file: 'GOST10198_91_I1.html',
-    image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__'
+    image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__',
+    badge: REVIEW_BADGE
   },
   {
     name: 'Тип I-3',
@@ -23,7 +28,8 @@ const TYPES = [
       skid: 'GOST10198_91POLOZIA.html',
       floor_boards: 'GOST10198_91DOSKI_DNA.html'
     },
-    image: 'data:image/png;base64,__IMG:box.png__'
+    image: 'data:image/png;base64,__IMG:box.png__',
+    badge: REVIEW_BADGE
   },
   {
     // Фото общего вида ящика для этого типа ещё не пришло (см. src/ii1/diagrams.js) -
@@ -31,9 +37,7 @@ const TYPES = [
     name: 'Тип II-1',
     file: 'GOST10198_91_II1.html',
     image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="%23FAF8F5"/><text x="80" y="64" font-family="sans-serif" font-size="13" fill="%236B625D" text-anchor="middle">Чертёж скоро</text></svg>',
-    // badge - виден поверх карточки, но сама карточка (ссылка) остаётся
-    // рабочей - калькулятор уже считает, просто чертежей и т.п. пока нет.
-    badge: 'Ещё не готово'
+    badge: REVIEW_BADGE
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];
