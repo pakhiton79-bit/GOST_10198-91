@@ -877,6 +877,7 @@
   <div class="card action-card">
     <button onclick="calculate()">Рассчитать</button>
     <span class="calc-check" id="calcCheck"><span class="mark">&#10003;</span>Расчёт выполнен</span>
+    <span class="calc-outdated" id="calcOutdated">⚠ Таблица изменена</span>
     <button class="print-btn btn-secondary" onclick="printBox()">🖨 Печать</button>
     <div class="error" id="err"></div>
   </div>
@@ -2475,10 +2476,17 @@ function buildThicknessCheckboxList(){
 }
 
 // Скрывает индикатор «Расчёт выполнен» при любом изменении входных данных
-// (размеры, масса, толщины «в наличии», тип крепления, доп. опции) - иначе
-// после смены параметров на экране остаются устаревшие результаты расчёта.
+// (размеры, масса, толщины «в наличии», тип крепления, доп. опции) или
+// таблицы деталей - иначе после смены параметров на экране остаются
+// устаревшие результаты расчёта. Если расчёт уже хоть раз показывался
+// (#results видим) - вместо галочки показываем краткую подсказку "устарело"
+// (см. #calcOutdated в src/calc.src.html) - до первого расчёта её показывать
+// нечего, поле ещё пустое, а не "устаревшее".
 function invalidateCalc(){
   document.getElementById('calcCheck').style.display = 'none';
+  const outdated = document.getElementById('calcOutdated');
+  const results = document.getElementById('results');
+  if(outdated) outdated.style.display = (results && results.style.display === 'block') ? 'inline-flex' : 'none';
 }
 
 function onThicknessCheckboxChange(el){
@@ -2656,7 +2664,8 @@ function onSkidForkliftExclusive(el){
 // diagramEndPanel/diagramBokovoy позиционными аргументами).
 function computeGost10198I3(input){
   const {L, W, H, MASS, optimizeSizes, removeFloorBoards, removeSkidBoards,
-         roundBoardWidths, solidRigidBase, forkliftLoading} = input;
+         roundBoardWidths, solidRigidBase, forkliftLoading, manualOverrides} = input;
+  const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
 
@@ -2667,8 +2676,32 @@ function computeGost10198I3(input){
     return {error: `Габариты ${L}×${W} мм не превышают 1200×800 мм. Применяется ГОСТ 21140.`};
   }
 
+  // Ручной ввод толщины в таблице (data-override="..." в renderSection в
+  // calculate() ниже) - подставляется вместо расчётного по ГОСТ значения
+  // (тот же приём, что и в типе I-1, см. src/i1/calc.js). У wall.value/t12
+  // (доска дна)/t21 (внутр. поперечный брус крышки) override каскадно
+  // применяется везде, где значение дальше используется - у t9 (полоз)/t11
+  // (торцовый брус дна) НЕТ каскада (по уточнению пользователя: оба сечения
+  // выбираются из таблицы ГОСТа парой толщина+ширина сразу, override только
+  // толщины без пересчёта ширины нарушил бы табличную связку) - override
+  // меняет ТОЛЬКО отображаемое число в этой одной ячейке (см. t9Display/
+  // t11Display ниже), не толщину, которая участвует в остальных формулах
+  // (расход пиломатериала, наружные размеры и т.п. считаются по чистому
+  // расчётному t9/t11, как если бы override не было).
+  const belowGost = {};
+  function ov(key, gostValue, label){
+    const v = mo[key];
+    if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+    if(v < gostValue){
+      belowGost[key] = {value:v, gostValue, label};
+    } else {
+      delete belowGost[key];
+    }
+    return v;
+  }
+
   const wallRaw = wallThickness(MASS); // п.1.6.15 — толщина досок/планок/раскосов стенок и крышки
-  const wall = {value: roundUpToAvailable(wallRaw.value), exceeded: wallRaw.exceeded};
+  const wall = {value: ov('wallValue', roundUpToAvailable(wallRaw.value), 'Толщина досок/планок/раскосов'), exceeded: wallRaw.exceeded};
   let warnings = [];
   if(MASS > 3000){
     warnings.push('Масса груза превышает 3000 кг — вне области действия типа I-3 (ГОСТ 10198-91, Табл. 1), расчёт продолжен по верхней границе диапазона.');
@@ -2739,7 +2772,11 @@ function computeGost10198I3(input){
       warnings.push(`Табл. 19 не предусматривает достаточного количества полозьев для шага осей ≤1200 мм (п.1.6.2) даже с одним полозом сверх таблицы — добавлено больше (${sel.count} шт.) того же сечения.`);
     }
   }
-  dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9});
+  // t9Display - изолированный override (см. комментарий у ov() выше): t9
+  // сам по себе НЕ переопределяется и используется дальше (volDno, outerH)
+  // расчётным по ГОСТ, override виден только в этой ячейке таблицы.
+  const t9Display = ov('t9Value', t9, 'Толщина полоза');
+  dno.push({name:'Полоз', t:t9Display, w:w9, l:k9Base, qty:l9, overrideKey:'t9Value'});
 
   // Подполозная доска: толщина по массе груза (п.1.6.11, Апдейт по подполозным доскам),
   // при включённой «Погрузка авто/электропогрузчиком» - не менее 50мм (если по массе не
@@ -2751,7 +2788,7 @@ function computeGost10198I3(input){
   // размеров в таблице выводится ⚠ (по указанию пользователя - оба предупреждения
   // сосуществуют, не заменяют друг друга).
   const t10Raw = forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
-  const t10=roundUpToAvailable(t10Raw), w10=Math.min(w9, 150), k10=k9Base-400, l10=l9;
+  const t10=ov('t10Value', roundUpToAvailable(t10Raw), 'Толщина подполозной доски'), w10=Math.min(w9, 150), k10=k9Base-400, l10=l9;
   if(k10 < 300){
     warnings.push(`Длина подполозной доски ${Math.round(k10)} мм менее 300 мм.`);
   }
@@ -2765,7 +2802,8 @@ function computeGost10198I3(input){
       t: subfloorForkliftFail ? '⚠' : t10,
       w: subfloorForkliftFail ? '⚠' : w10,
       l: subfloorForkliftFail ? '⚠' : k10,
-      qty: subfloorForkliftFail ? '⚠' : l10
+      qty: subfloorForkliftFail ? '⚠' : l10,
+      overrideKey: subfloorForkliftFail ? undefined : 't10Value'
     });
   }
 
@@ -2774,18 +2812,22 @@ function computeGost10198I3(input){
     warnings.push('Масса вне диапазона п.1.6.8 (≤5000 кг) — сечение торцового бруса дна принято по крайнему значению таблицы.');
   }
   const t11=roundUpToAvailable(endBeam.h), w11=endBeam.w, k11=W, l11=2;
-  dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11});
+  // t11Display - тот же изолированный override, что и у t9Display выше: t11
+  // сам по себе не переопределяется (нигде дальше не используется, кроме
+  // этой строки, поэтому и без того изолирован по построению).
+  const t11Display = ov('t11Value', t11, 'Толщина торцового бруса дна');
+  dno.push({name:'Торцовый брус дна', t:t11Display, w:w11, l:k11, qty:l11, overrideKey:'t11Value'});
 
     // Толщина доски дна - по новому правилу (действует всегда, независимо от галочки
   // «сплошное жёсткое основание груза»): масса ≤1000кг - не менее 16мм, иначе - не менее 19мм.
-  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floorBoardThicknessNew(MASS)), k12=W;
+  const t12 = removeFloorBoards ? 0 : ov('t12Value', roundUpToAvailable(floorBoardThicknessNew(MASS)), 'Толщина доски дна'), k12=W;
 
   // Доска дна: максимум досок 100мм + при необходимости 1-2 доски 75-99мм на остаток
   // (fillBoards), заполняем пространство (длина груза - 2×ширина торцового бруса дна).
   const fbDno = fillBoards(L - w11*2, roundBoardWidths);
   const w12 = 100, l12 = fbDno.mainQty;
   if(!removeFloorBoards){
-    if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12});
+    if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12, overrideKey:'t12Value'});
     fbDno.extra.forEach((e,i)=>{
       dno.push({name:'Доска дна (дополнительная) '+(i+1), t:t12, w:e.width, l:k12, qty:e.qty});
     });
@@ -2861,8 +2903,8 @@ function computeGost10198I3(input){
   if(crossBeam.exceeded){
     warnings.push('Масса или ширина ящика вне Табл. 14 — брус крышки принят по крайнему значению.');
   }
-  const t21=roundUpToAvailable(crossBeam.value), w21=100, k21=W - (optimizeSizes ? 4 : 0), l21=ceilInt(L/800);
-  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21});
+  const t21=ov('t21Value', roundUpToAvailable(crossBeam.value), 'Толщина внутреннего поперечного бруса крышки'), w21=100, k21=W - (optimizeSizes ? 4 : 0), l21=ceilInt(L/800);
+  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21, overrideKey:'t21Value'});
 
   const volKryshka = vol(t19,w19,k19,l19)+vol(t20,w20,k20,l20)+vol(t21,w21,k21,l21)
     + fbKryshka.extra.reduce((s,e)=>s+vol(t20,e.width,k20,e.qty),0);
@@ -3050,7 +3092,7 @@ function computeGost10198I3(input){
   const bokovoy = [
     {name:'Вертикальная планка', t:t40, w:w40, l:k40, qty:l40},
   ];
-  if(l41>0) bokovoy.push({name:'Доска бока', t:t41, w:w41, l:k41, qty:l41});
+  if(l41>0) bokovoy.push({name:'Доска бока', t:t41, w:w41, l:k41, qty:l41, overrideKey:'wallValue'});
   fbBok.extra.forEach((e,i)=>{
     bokovoy.push({name:'Доска бока (дополнительная) '+(i+1), t:t41, w:e.width, l:k41, qty:e.qty});
   });
@@ -3102,6 +3144,10 @@ function computeGost10198I3(input){
     warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
   }
 
+  Object.values(belowGost).forEach(b=>{
+    warnings.push(`${b.label}: введено вручную ${b.value} мм — меньше расчётного по ГОСТ (${Math.round(b.gostValue*100)/100} мм). Использовано введённое значение.`);
+  });
+
   return {
     warnings, dno, kryshka, endPanel, bokovoy,
     outerL, outerW, outerH, totalVolume, normaVremeni,
@@ -3114,10 +3160,28 @@ function computeGost10198I3(input){
   };
 }
 
+// Ручной ввод толщины в таблице (data-override="..." в renderSection ниже) -
+// читается ДО того, как calculate() эту таблицу перерисует. Учитываются
+// ТОЛЬКО ячейки, реально отредактированные пользователем (data-user-edited,
+// взводится обработчиком input ниже) - иначе каноническое поле
+// "замораживалось" бы на прежнем расчётном значении при каждом нажатии
+// "Рассчитать" (тот же приём, что и в типе I-1, см. src/i1/calc.js).
+function readManualOverrides(){
+  const overrides = {};
+  document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
+    const key = cell.getAttribute('data-override');
+    const val = parseFloat(cell.textContent.replace(',','.'));
+    if(!Number.isNaN(val) && val>0) overrides[key] = val;
+  });
+  return overrides;
+}
+
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
-  invalidateCalc();
+  const manualOverrides = readManualOverrides();
+  document.getElementById('calcCheck').style.display = 'none';
+  document.getElementById('calcOutdated').style.display = 'none';
 
   // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
   // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
@@ -3133,6 +3197,7 @@ function calculate(){
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
+    manualOverrides,
   };
 
   const calc = computeGost10198I3(input);
@@ -3148,9 +3213,10 @@ function calculate(){
     html += `<div class="spec-table"><table>
       <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
     rows.forEach(r=>{
+      const overrideAttr = r.overrideKey ? ` data-override="${r.overrideKey}"` : '';
       html += `<tr>
         <td>${r.name}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="t">${r.t}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}>${r.t}</td>
         <td class="num editable-cell" contenteditable="true" data-role="w">${r.w}</td>
         <td class="num editable-cell" contenteditable="true" data-role="l">${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
         <td class="num editable-cell" contenteditable="true" data-role="qty">${r.qty}</td>
@@ -3227,7 +3293,13 @@ function recalcFromTable(){
 }
 
 document.getElementById('boardTables').addEventListener('input', e=>{
-  if(e.target.classList.contains('editable-cell')) recalcFromTable();
+  if(e.target.classList.contains('editable-cell')){
+    if(e.target.hasAttribute('data-override')){
+      e.target.setAttribute('data-user-edited', 'true');
+    }
+    recalcFromTable();
+    invalidateCalc();
+  }
 });
 
 // Общий вид ящика и водяной знак — используются только в печатной версии.

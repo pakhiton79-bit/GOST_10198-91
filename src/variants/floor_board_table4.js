@@ -15,4 +15,4 @@
       warnings.push(`Расстояние между полозьями ${Math.round(floorSkidDistance)} мм вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
     }
   }
-  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floor.value), k12=W;
+  const t12 = removeFloorBoards ? 0 : ov('t12Value', roundUpToAvailable(floor.value), 'Толщина доски дна'), k12=W;

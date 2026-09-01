@@ -1,3 +1,3 @@
   // Толщина доски дна - по новому правилу (действует всегда, независимо от галочки
   // «сплошное жёсткое основание груза»): масса ≤1000кг - не менее 16мм, иначе - не менее 19мм.
-  const t12 = removeFloorBoards ? 0 : roundUpToAvailable(floorBoardThicknessNew(MASS)), k12=W;
+  const t12 = removeFloorBoards ? 0 : ov('t12Value', roundUpToAvailable(floorBoardThicknessNew(MASS)), 'Толщина доски дна'), k12=W;
