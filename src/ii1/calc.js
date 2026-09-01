@@ -26,33 +26,36 @@ function computeGost10198II1(input){
 
   let warnings = [];
 
-  // Каскадный пересчёт от ручной правки толщины в таблице - ВРЕМЕННО ОТКЛЮЧЕН
-  // по указанию пользователя (не удалять, оставить закомментированным для
-  // возможного включения позже). ov() ниже - рабочая версия, всегда
-  // возвращает расчётное по ГОСТ значение, игнорируя manualOverrides;
-  // настоящая реализация оставлена в комментарии сразу под ней.
-  const belowGost = {};
-  function ov(key, gostValue, label){
-    return gostValue;
-  }
   // Ручной ввод толщины в таблице (см. data-override в renderSection ниже) -
-  // подставляется вместо расчётного по ГОСТ значения ВЕЗДЕ, где оно дальше
-  // используется (полный каскад: например, толщина стойки влияет на длину
-  // полоза, наружную высоту, длину досок обшивки и т.д. - по уточнению
-  // пользователя). Значение читается внутри цикла стабилизации на каждой
-  // итерации (см. ниже), поэтому предупреждение "меньше ГОСТ-минимума" не
-  // добавляем сразу в ov() (иначе задвоится 4 раза за 4 итерации), а
-  // копим в belowGost и печатаем один раз после того, как всё стабилизировалось.
-  // function ov(key, gostValue, label){
-  //   const v = mo[key];
-  //   if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
-  //   if(v < gostValue){
-  //     belowGost[key] = {value:v, gostValue, label};
-  //   } else {
-  //     delete belowGost[key];
-  //   }
-  //   return v;
-  // }
+  // подставляется вместо расчётного по ГОСТ значения. У большинства полей -
+  // полный каскад (например, толщина стойки влияет на длину полоза, наружную
+  // высоту, длину досок обшивки и т.д. - по уточнению пользователя),
+  // значение читается внутри цикла стабилизации на каждой итерации (см.
+  // ниже), поэтому предупреждение "меньше ГОСТ-минимума" не добавляем сразу
+  // в ov() (иначе задвоилось бы 4 раза за 4 итерации), а копим в belowGost и
+  // печатаем один раз после того, как всё стабилизировалось.
+  // Исключение - t9 (полоз) и t11 (торцовый брус дна): у них, как и в типе
+  // I-3 (см. src/app.js), сечение выбирается из ГОСТ-таблицы парой
+  // толщина+ширина сразу - override только толщины без ширины нарушил бы
+  // табличную связку, поэтому у этих двух полей override ИЗОЛИРОВАННЫЙ (см.
+  // t9Display/t11Display ниже): меняется только отображаемое число в своей
+  // ячейке, ov() для них вызывается не здесь, а непосредственно перед
+  // помещением строки в таблицу деталей - переменные t9/t11, используемые в
+  // остальных формулах (outerH через цикл стабилизации, volDno), при этом
+  // остаются расчётными по ГОСТ.
+  const belowGost = {};
+  let overridesApplied = 0;
+  function ov(key, gostValue, label){
+    const v = mo[key];
+    if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+    overridesApplied++;
+    if(v < gostValue){
+      belowGost[key] = {value:v, gostValue, label};
+    } else {
+      delete belowGost[key];
+    }
+    return v;
+  }
   if(MASS > 20000){
     warnings.push('Масса груза превышает 20000 кг — вне области действия типа II-1, расчёт продолжен по верхней границе диапазона.');
   }
@@ -115,7 +118,10 @@ function computeGost10198II1(input){
       l9 = sel.count; t9 = sel.h; w9 = sel.w;
       lastSkidInfo = sel;
     }
-    t9 = ov('t9', t9, 'Толщина полоза');
+    // t9 - изолированный override (см. комментарий у ov() выше): здесь, в
+    // цикле стабилизации, ОСТАЁТСЯ расчётным по ГОСТ (используется дальше в
+    // outerH/t_stojka) - override применяется только к отображаемому t9Display
+    // при формировании строки "Полоз" ниже, после выхода из цикла.
 
     const t10Raw = forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
     t10 = ov('t10', roundUpToAvailable(t10Raw), 'Толщина подполозной доски');
@@ -194,7 +200,10 @@ function computeGost10198II1(input){
 
   // --- ДНО ---
   const dno = [];
-  dno.push({name:'Полоз', t:t9, w:w9, l:k9Base, qty:l9, overrideKey:'t9'});
+  // t9Display - изолированный override (см. комментарий у ov() выше): t9 сам
+  // по себе не переопределяется (используется дальше в volDno).
+  const t9Display = ov('t9', t9, 'Толщина полоза');
+  dno.push({name:'Полоз', t:t9Display, w:w9, l:k9Base, qty:l9, overrideKey:'t9'});
   if(!removeSkidBoards){
     dno.push({
       name:'Подполозная доска',
@@ -206,8 +215,11 @@ function computeGost10198II1(input){
     });
   }
   const endBeam = endBeamSection(MASS);
-  const t11 = ov('t11', roundUpToAvailable(endBeam.h), 'Толщина торцового бруса дна'), w11 = endBeam.w, k11 = W, l11 = 2;
-  dno.push({name:'Торцовый брус дна', t:t11, w:w11, l:k11, qty:l11, overrideKey:'t11'});
+  const t11 = roundUpToAvailable(endBeam.h), w11 = endBeam.w, k11 = W, l11 = 2;
+  // t11Display - тот же изолированный override, что и у t9 выше: t11 сам по
+  // себе не переопределяется (используется дальше в volDno).
+  const t11Display = ov('t11', t11, 'Толщина торцового бруса дна');
+  dno.push({name:'Торцовый брус дна', t:t11Display, w:w11, l:k11, qty:l11, overrideKey:'t11'});
 
   const fbDno = fillBoards(L - w11*2, roundBoardWidths);
   const t12 = floorBoardT, w12 = 100, l12 = fbDno.mainQty, k12 = W;
@@ -456,10 +468,19 @@ function computeGost10198II1(input){
     warnings.push(`${b.label}: введено вручную ${b.value} мм — меньше расчётного по ГОСТ (${Math.round(b.gostValue*100)/100} мм). Использовано введённое значение.`);
   });
 
+  // Только на экране - в печать warnings не попадают (buildPrintHtml() их не
+  // использует), поэтому отдельно скрывать это уведомление для печати не
+  // нужно (тот же приём, что и в типах I-1/I-3). Чертежи (пока заглушки, см.
+  // diagramPlaceholder ниже) - не параметрический рендер под конкретную
+  // введённую толщину, поэтому при override (в т.ч. изолированном - t9/t11
+  // выше) могут не точно её отражать.
+  if(overridesApplied > 0){
+    warnings.push('В расчёте использованы значения толщины, введённые вручную в таблице, а не расчётные по ГОСТ — чертежи ниже могут не точно отражать эти изменения.');
+  }
+
   return {
     warnings, dno, kryshka, endPanel, bokovoy,
     outerL, outerW, outerH, totalVolume, normaVremeni,
-    manualOverridesUsed: Object.keys(mo).length > 0,
     // Параметры для чертежей (пока заглушки - см. src/ii1/diagrams.js).
     k9Base, W, L, H, t_stojka, skin, t21, t_longbeam, lidLayout,
     torecFrame, bokFrame, panelHeightFull
@@ -477,21 +498,20 @@ function computeGost10198II1(input){
 // каноническое поле "замораживалось" бы на прежнем расчётном значении при
 // каждом нажатии "Рассчитать", даже если пользователь его не трогал (там
 // всё равно стоит какое-то число - расчётное по ГОСТ с прошлого рендера).
-// ВРЕМЕННО ОТКЛЮЧЕНО по указанию пользователя (см. ov() выше) - оставлено
-// закомментированным, не удалено.
-// function readManualOverrides(){
-//   const overrides = {};
-//   document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
-//     const key = cell.getAttribute('data-override');
-//     const val = parseFloat(cell.textContent.replace(',','.'));
-//     if(!Number.isNaN(val) && val>0) overrides[key] = val;
-//   });
-//   return overrides;
-// }
+function readManualOverrides(){
+  const overrides = {};
+  document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
+    const key = cell.getAttribute('data-override');
+    const val = parseFloat(cell.textContent.replace(',','.'));
+    if(!Number.isNaN(val) && val>0) overrides[key] = val;
+  });
+  return overrides;
+}
 
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
+  const manualOverrides = readManualOverrides();
   document.getElementById('calcCheck').style.display = 'none';
   document.getElementById('calcOutdated').style.display = 'none';
 
@@ -508,7 +528,7 @@ function calculate(){
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
-    // manualOverrides: readManualOverrides(), // временно отключено - см. ov() выше
+    manualOverrides,
   };
 
   const calc = computeGost10198II1(input);
