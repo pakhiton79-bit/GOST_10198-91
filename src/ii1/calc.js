@@ -26,6 +26,15 @@ function computeGost10198II1(input){
 
   let warnings = [];
 
+  // Каскадный пересчёт от ручной правки толщины в таблице - ВРЕМЕННО ОТКЛЮЧЕН
+  // по указанию пользователя (не удалять, оставить закомментированным для
+  // возможного включения позже). ov() ниже - рабочая версия, всегда
+  // возвращает расчётное по ГОСТ значение, игнорируя manualOverrides;
+  // настоящая реализация оставлена в комментарии сразу под ней.
+  const belowGost = {};
+  function ov(key, gostValue, label){
+    return gostValue;
+  }
   // Ручной ввод толщины в таблице (см. data-override в renderSection ниже) -
   // подставляется вместо расчётного по ГОСТ значения ВЕЗДЕ, где оно дальше
   // используется (полный каскад: например, толщина стойки влияет на длину
@@ -34,17 +43,16 @@ function computeGost10198II1(input){
   // итерации (см. ниже), поэтому предупреждение "меньше ГОСТ-минимума" не
   // добавляем сразу в ov() (иначе задвоится 4 раза за 4 итерации), а
   // копим в belowGost и печатаем один раз после того, как всё стабилизировалось.
-  const belowGost = {};
-  function ov(key, gostValue, label){
-    const v = mo[key];
-    if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
-    if(v < gostValue){
-      belowGost[key] = {value:v, gostValue, label};
-    } else {
-      delete belowGost[key];
-    }
-    return v;
-  }
+  // function ov(key, gostValue, label){
+  //   const v = mo[key];
+  //   if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+  //   if(v < gostValue){
+  //     belowGost[key] = {value:v, gostValue, label};
+  //   } else {
+  //     delete belowGost[key];
+  //   }
+  //   return v;
+  // }
   if(MASS > 20000){
     warnings.push('Масса груза превышает 20000 кг — вне области действия типа II-1, расчёт продолжен по верхней границе диапазона.');
   }
@@ -469,20 +477,21 @@ function computeGost10198II1(input){
 // каноническое поле "замораживалось" бы на прежнем расчётном значении при
 // каждом нажатии "Рассчитать", даже если пользователь его не трогал (там
 // всё равно стоит какое-то число - расчётное по ГОСТ с прошлого рендера).
-function readManualOverrides(){
-  const overrides = {};
-  document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
-    const key = cell.getAttribute('data-override');
-    const val = parseFloat(cell.textContent.replace(',','.'));
-    if(!Number.isNaN(val) && val>0) overrides[key] = val;
-  });
-  return overrides;
-}
+// ВРЕМЕННО ОТКЛЮЧЕНО по указанию пользователя (см. ov() выше) - оставлено
+// закомментированным, не удалено.
+// function readManualOverrides(){
+//   const overrides = {};
+//   document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
+//     const key = cell.getAttribute('data-override');
+//     const val = parseFloat(cell.textContent.replace(',','.'));
+//     if(!Number.isNaN(val) && val>0) overrides[key] = val;
+//   });
+//   return overrides;
+// }
 
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
-  const manualOverrides = readManualOverrides();
   document.getElementById('calcCheck').style.visibility = 'hidden';
   document.getElementById('calcOutdated').style.display = 'none';
 
@@ -499,7 +508,7 @@ function calculate(){
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
-    manualOverrides,
+    // manualOverrides: readManualOverrides(), // временно отключено - см. ov() выше
   };
 
   const calc = computeGost10198II1(input);
