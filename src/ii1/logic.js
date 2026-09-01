@@ -197,11 +197,6 @@ const TABLE19 = [
     {count:5, dims:[null,null,'175x200','200x200','200x200','200x225','225x225','225x250','225x250']},
   ]},
 ];
-const SKID_GRADATIONS = [40,50,60,75,100,125,150,175,200,225,250];
-function skidGradeDown(mm){
-  const i = SKID_GRADATIONS.indexOf(mm);
-  return i > 0 ? SKID_GRADATIONS[i-1] : mm;
-}
 function nearestIndexBy(arr, keyFn, target){
   let best = 0, bestDiff = Infinity;
   arr.forEach((item,i)=>{
@@ -261,21 +256,20 @@ function selectSkid19(mass, workingLengthMm, widthMm){
   }).filter(o=>o!==null);
 
   let valid = options.filter(o=>o.count>=minSkidsByWidth162(widthMm, o.w));
-  let spacingExceeded = false;
+  let extrapolatedBeyondOne = false;
   if(valid.length===0){
-    let base = options.reduce((a,b)=> b.count>a.count ? b : a);
-    let cur = base;
-    while(cur.count < minSkidsByWidth162(widthMm, cur.w)){
-      const w = skidGradeDown(cur.w);
-      if(w===cur.w) break;
-      cur = {count:cur.count+1, h:cur.h, w, lengthUsed:cur.lengthUsed, lengthSnapped:cur.lengthSnapped};
-    }
-    if(cur.count >= minSkidsByWidth162(widthMm, cur.w)){
-      valid = [cur];
-    } else {
-      valid = [cur];
-      spacingExceeded = true;
-    }
+    // Ни один табличный вариант не даёт нужного количества (по шагу осей
+    // ≤1200мм, п.1.6.2). По уточнению пользователя: добавляем максимум 1
+    // полоз сверх табличного варианта с БОЛЬШИМ количеством, БЕЗ понижения
+    // сечения (то же сечение, что и у табличного варианта) - вопреки тексту
+    // примечания к самой таблице ("на одну градацию ниже"), которое здесь
+    // не применяется. Если даже +1 не хватает - добавляем ещё (тем же
+    // сечением), но это уже повод для предупреждения.
+    const base = options.reduce((a,b)=> b.count>a.count ? b : a);
+    const requiredCount = minSkidsByWidth162(widthMm, base.w);
+    const finalCount = Math.max(base.count+1, requiredCount);
+    extrapolatedBeyondOne = finalCount > base.count+1;
+    valid = [{count:finalCount, h:base.h, w:base.w, lengthUsed:base.lengthUsed, lengthSnapped:base.lengthSnapped}];
   }
 
   let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
@@ -288,7 +282,7 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     h: finalH, w: finalW, count: chosen.count,
     massUsed: massRow.mass, massSnapped,
     lengthUsed: chosen.lengthUsed, lengthSnapped: chosen.lengthSnapped,
-    spacingExceeded
+    extrapolatedBeyondOne
   };
 }
 

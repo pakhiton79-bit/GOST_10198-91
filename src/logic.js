@@ -129,15 +129,6 @@ const TABLE19 = [
   ]},
 ];
 
-// Полная градационная последовательность сечений полоза, встречающаяся в
-// Табл. 19 (используется, когда таблица не предусматривает нужное
-// количество полозьев для данной массы - см. selectSkid19 ниже).
-const SKID_GRADATIONS = [40,50,60,75,100,125,150,175,200,225,250];
-function skidGradeDown(mm){
-  const i = SKID_GRADATIONS.indexOf(mm);
-  return i > 0 ? SKID_GRADATIONS[i-1] : mm; // ниже некуда - минимум таблицы
-}
-
 function nearestIndexBy(arr, keyFn, target){
   let best = 0, bestDiff = Infinity;
   arr.forEach((item,i)=>{
@@ -193,56 +184,27 @@ function selectSkid19(mass, workingLengthMm, widthMm){
   // проверяем/подбираем индивидуально для каждого варианта, а не по одному общему
   // порогу - см. minSkidsByWidth162.
   let valid = options.filter(o=>o.count>=minSkidsByWidth162(widthMm, o.w));
-  let spacingExceeded = false;
-  let extrapolatedCount = null;
+  let extrapolatedBeyondOne = false;
   if(valid.length===0){
     // Ни один вариант из таблицы не даёт нужное количество полозьев (например,
-    // у масс 500-4000кг в Табл.19 предусмотрено только 2/3 полоза). Достраиваем
-    // недостающие варианты сами: примечания к самой таблице («При четырёх
-    // полозьях высоту или ширину полозьев принимают на одну градацию ниже,
-    // чем при трёх» и т.д. для 5, 6 полозьев) прямо описывают это правило -
-    // каждый следующий полоз получает сечение предыдущего варианта (максимального
-    // из тех, что есть в таблице для этой массы) с шириной, уменьшенной на 1
-    // градацию; высота (толщина) не меняется.
-    let base = options.reduce((a,b)=> b.count>a.count ? b : a);
-    let cur = base;
-    while(cur.count < minSkidsByWidth162(widthMm, cur.w)){
-      const w = skidGradeDown(cur.w);
-      if(w===cur.w) break; // упёрлись в минимум градации - дальше не уменьшить
-      cur = {count:cur.count+1, h:cur.h, w, lengthUsed:cur.lengthUsed, lengthSnapped:cur.lengthSnapped};
-    }
-    if(cur.count >= minSkidsByWidth162(widthMm, cur.w)){
-      valid = [cur];
-      extrapolatedCount = cur.count;
-    } else {
-      // Даже достроив полозья до минимальной градации ширины, шаг ≤1200мм не
-      // получить - берём лучший достигнутый вариант (cur, с максимально
-      // возможным количеством полозьев), а не исходный base с меньшим
-      // количеством - это ближе всего подводит к требованию п.1.6.2, даже не
-      // достигая его полностью.
-      valid = [cur];
-      spacingExceeded = true;
-    }
+    // у масс 500-4000кг в Табл.19 предусмотрено только 2/3 полоза). По
+    // уточнению пользователя: добавляем максимум 1 полоз сверх табличного
+    // варианта с БОЛЬШИМ количеством, БЕЗ понижения сечения (то же сечение,
+    // что и у табличного варианта) - вопреки тексту примечания к самой
+    // таблице («на одну градацию ниже»), которое здесь не применяется. Если
+    // даже +1 не хватает - добавляем ещё (тем же сечением), но это уже повод
+    // для предупреждения.
+    const base = options.reduce((a,b)=> b.count>a.count ? b : a);
+    const requiredCount = minSkidsByWidth162(widthMm, base.w);
+    const finalCount = Math.max(base.count+1, requiredCount);
+    extrapolatedBeyondOne = finalCount > base.count+1;
+    valid = [{count:finalCount, h:base.h, w:base.w, lengthUsed:base.lengthUsed, lengthSnapped:base.lengthSnapped}];
   }
 
   let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
   if(!chosen){
     chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
   }
-
-  // Достройка сечения сверх Табл.19 (см. цикл выше) снижает градацию только
-  // одной из двух величин (той, что была названа "w" при заходе в цикл),
-  // вторая ("h") не меняется - при достаточном числе итераций это снижаемое
-  // значение может опуститься НИЖЕ той, что осталась неизменной, нарушая
-  // правило "ширина всегда больше или равна толщине" (та же природа бага,
-  // что и при разборе ячеек самой Табл.19 - см. выше в этой функции). Сам
-  // цикл (включая minSkidsByWidth162 внутри него) не трогаем - по уточнению
-  // пользователя, поправляем только то, что возвращается наружу: в толщину
-  // всегда идёт меньшее из двух чисел, в ширину - большее. t9/w9 в app.js
-  // читаются отсюда напрямую, поэтому наружная высота ящика (outerH),
-  // напуск планки бока на полоз (bokOverhang) и ширина подполозной доски
-  // (w10=min(w9,150)) автоматически пересчитаются по исправленным t9/w9,
-  // без отдельных правок в этих формулах.
   const finalH = Math.min(chosen.h, chosen.w);
   const finalW = Math.max(chosen.h, chosen.w);
 
@@ -250,8 +212,7 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     h: finalH, w: finalW, count: chosen.count,
     massUsed: massRow.mass, massSnapped,
     lengthUsed: chosen.lengthUsed, lengthSnapped: chosen.lengthSnapped,
-    spacingExceeded,
-    extrapolatedCount
+    extrapolatedBeyondOne
   };
 }
 

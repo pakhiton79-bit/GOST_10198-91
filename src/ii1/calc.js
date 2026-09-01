@@ -137,8 +137,8 @@ function computeGost10198II1(input){
     if(lastSkidInfo.lengthSnapped){
       warnings.push(`Длина полоза ${Math.round(k9Base)} мм отсутствует в Табл. 19 — принята ближайшая (${lastSkidInfo.lengthUsed} мм).`);
     }
-    if(lastSkidInfo.spacingExceeded){
-      warnings.push(`Шаг между осями полозьев >1200 мм (п.1.6.2) не устранён — полозьев слишком много (${lastSkidInfo.count} шт.).`);
+    if(lastSkidInfo.extrapolatedBeyondOne){
+      warnings.push(`Табл. 19 не предусматривает достаточного количества полозьев для шага осей ≤1200 мм (п.1.6.2) даже с одним полозом сверх таблицы — добавлено больше (${lastSkidInfo.count} шт.) того же сечения.`);
     }
   }
   if(stojkaExceeded){
