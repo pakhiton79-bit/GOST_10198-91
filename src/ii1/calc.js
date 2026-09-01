@@ -33,8 +33,6 @@ function computeGost10198II1(input){
 
   const w21 = 100; // ширина поперечного бруса крышки - по Табл. 14 всегда 100мм
 
-  const skidCalcWidth = W + skin.value*2; // без стойки, как в типе I-3 ("без боковых планок")
-
   // --- Итеративная стабилизация: толщина стойки <-> наружная ширина/высота <->
   //     длина полоза (Табл.19) <-> продольный брус крышки (режим "поперечное") ---
   // Наружные ширина/длина ящика используют ТОЛЩИНУ стойки (переменное сечение,
@@ -45,7 +43,7 @@ function computeGost10198II1(input){
   // поэтому пересчитываем ширину/поперечный брус на каждой итерации вместе со
   // стойкой, а не один раз до цикла.
   let t_stojka = skin.value, stojkaExceeded = false;
-  let k9Base = L, outerW = W, t9=0, w9=0, l9=0, lastSkidInfo=null;
+  let k9Base = L, outerW = W, skidCalcWidth = W, t9=0, w9=0, l9=0, lastSkidInfo=null;
   let t21=0, crossBeamExceeded=false, crossBeamCount=0;
   let t_longbeam=0, w_longbeam=100, longbeamCount=0, longbeamExceeded=false;
   let floorBoardT=0, floorBoardExceeded=false, floorBoardUdel=null;
@@ -56,6 +54,12 @@ function computeGost10198II1(input){
   for(let iter=0; iter<4; iter++){
     k9Base = L + (t_stojka + skin.value)*2;
     outerW = W + (t_stojka + skin.value)*2;
+    // Ширина, которую занимают полозья (для подбора количества по шагу осей
+    // ≤1200мм, п.1.6.2) - ширина груза + толщина стойки×2 (по прямому
+    // уточнению пользователя - обшивка тут не участвует). Полозья должны
+    // полностью помещаться в это пространство, а не только до осей -
+    // это уже учтено в minSkidsByWidth162 (вычитает ширину самого полоза).
+    skidCalcWidth = W + t_stojka*2;
 
     const crossBeamRaw = crossBeamThickness(MASS, outerW); // Табл. 14
     crossBeamExceeded = crossBeamRaw.exceeded;
