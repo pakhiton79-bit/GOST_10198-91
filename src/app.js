@@ -261,9 +261,11 @@ function computeGost10198I3(input){
   // (расход пиломатериала, наружные размеры и т.п. считаются по чистому
   // расчётному t9/t11, как если бы override не было).
   const belowGost = {};
+  let overridesApplied = 0;
   function ov(key, gostValue, label){
     const v = mo[key];
     if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+    overridesApplied++;
     if(v < gostValue){
       belowGost[key] = {value:v, gostValue, label};
     } else {
@@ -716,6 +718,16 @@ function computeGost10198I3(input){
   Object.values(belowGost).forEach(b=>{
     warnings.push(`${b.label}: введено вручную ${b.value} мм — меньше расчётного по ГОСТ (${Math.round(b.gostValue*100)/100} мм). Использовано введённое значение.`);
   });
+
+  // Только на экране - в печать warnings не попадают (buildPrintHtml() их не
+  // использует), поэтому отдельно скрывать это уведомление для печати не
+  // нужно. Чертежи - готовые иллюстративные фото/схемы, а не параметрический
+  // рендер под конкретную введённую толщину, поэтому при override (в т.ч.
+  // изолированном - см. t9Value/t11Value выше) могут не точно её отражать
+  // (по указанию пользователя).
+  if(overridesApplied > 0){
+    warnings.push('В расчёте использованы значения толщины, введённые вручную в таблице, а не расчётные по ГОСТ — чертежи ниже могут не точно отражать эти изменения.');
+  }
 
   return {
     warnings, dno, kryshka, endPanel, bokovoy,

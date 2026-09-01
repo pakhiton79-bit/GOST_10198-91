@@ -28,9 +28,11 @@ function computeGost10198I1(input){
   // wall.value (толщина всех досок/планок/раскосов), поэтому здесь только
   // одна точка применения (см. ниже, сразу после wall.value).
   const belowGost = {};
+  let overridesApplied = 0;
   function ov(key, gostValue, label){
     const v = mo[key];
     if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+    overridesApplied++;
     if(v < gostValue){
       belowGost[key] = {value:v, gostValue, label};
     } else {
@@ -244,6 +246,15 @@ function computeGost10198I1(input){
   Object.values(belowGost).forEach(b=>{
     warnings.push(`${b.label}: введено вручную ${b.value} мм — меньше расчётного по ГОСТ (${Math.round(b.gostValue*100)/100} мм). Использовано введённое значение.`);
   });
+
+  // Только на экране - в печать warnings не попадают (buildPrintHtml() их не
+  // использует), поэтому отдельно скрывать это уведомление для печати не
+  // нужно. Чертежи - готовые иллюстративные фото/схемы, а не параметрический
+  // рендер под конкретную введённую толщину, поэтому при override могут не
+  // точно её отражать (по указанию пользователя).
+  if(overridesApplied > 0){
+    warnings.push('В расчёте использованы значения толщины, введённые вручную в таблице, а не расчётные по ГОСТ — чертежи ниже могут не точно отражать эти изменения.');
+  }
 
   return {
     warnings, dno, kryshka, bokovoy, torec,
