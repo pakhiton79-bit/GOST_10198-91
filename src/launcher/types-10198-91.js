@@ -13,7 +13,12 @@
 // badge - виден поверх карточки, но сама карточка (ссылка) остаётся рабочей -
 // калькулятор уже считает, просто расчёт стоит перепроверить перед
 // использованием в производстве (по указанию пользователя - на всех типах).
+// badgeDanger - красный вариант плашки (.type-badge-danger в
+// src/launcher/types.src.html) вместо обычного жёлтого - у II-1 (в отличие
+// от I-1/I-3) ещё не было ни одной сверки с реальными чертежами, поэтому
+// плашка ярче и с другим текстом.
 const REVIEW_BADGE = 'Требует проверки';
+const NOT_READY_BADGE = 'Ещё не готово';
 const TYPES = [
   {
     name: 'Тип I-1',
@@ -37,7 +42,8 @@ const TYPES = [
     name: 'Тип II-1',
     file: 'GOST10198_91_II1.html',
     image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="%23FAF8F5"/><text x="80" y="64" font-family="sans-serif" font-size="13" fill="%236B625D" text-anchor="middle">Чертёж скоро</text></svg>',
-    badge: REVIEW_BADGE
+    badge: NOT_READY_BADGE,
+    badgeDanger: true
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];
