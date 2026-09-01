@@ -10,7 +10,8 @@
 // именованные параметры чертежей (ровно те значения, что раньше передавались
 // в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy позиционно).
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, manualOverrides} = input;
+  const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
 
@@ -19,6 +20,24 @@ function computeGost10198I1(input){
   }
 
   let warnings = [];
+
+  // Ручной ввод толщины в таблице (см. data-override в renderSection в
+  // calculate() ниже) - подставляется вместо расчётного по ГОСТ значения
+  // везде, где оно дальше используется (по тому же принципу, что и в типе
+  // II-1, src/ii1/calc.js). У типа I-1 всего один общий параметр -
+  // wall.value (толщина всех досок/планок/раскосов), поэтому здесь только
+  // одна точка применения (см. ниже, сразу после wall.value).
+  const belowGost = {};
+  function ov(key, gostValue, label){
+    const v = mo[key];
+    if(v === undefined || v === null || Number.isNaN(v) || v<=0) return gostValue;
+    if(v < gostValue){
+      belowGost[key] = {value:v, gostValue, label};
+    } else {
+      delete belowGost[key];
+    }
+    return v;
+  }
   if(MASS < 200){
     warnings.push('Масса груза менее 200 кг.');
   }
@@ -76,7 +95,7 @@ function computeGost10198I1(input){
     wallRaw = stepped;
     // kLen/plank/plankGap считаны по старой толщине - пересчитываем со сниженной.
   }
-  const wall = {value: roundUpToAvailable(wallRaw)};
+  const wall = {value: ov('wallValue', roundUpToAvailable(wallRaw), 'Толщина досок/планок/раскосов')};
 
   // kLen/plank/plankQty/plankGap выше посчитаны по wallRaw (толщине ДО
   // округления "в наличии") - пересчитываем под итоговую wall.value, чтобы
@@ -120,7 +139,7 @@ function computeGost10198I1(input){
   const spanDno = W + wall.value*2; // ширина груза + толщина доски дна*2
   const fbDno = fillBoards(spanDno, roundBoardWidths);
   const w12 = 100, l12 = fbDno.mainQty;
-  if(l12>0) dno.push({name:'Доска дна', t:wall.value, w:w12, l:kLen, qty:l12});
+  if(l12>0) dno.push({name:'Доска дна', t:wall.value, w:w12, l:kLen, qty:l12, overrideKey:'wallValue'});
   fbDno.extra.forEach((e,i)=>{
     dno.push({name:'Доска дна (дополнительная) '+(i+1), t:wall.value, w:e.width, l:kLen, qty:e.qty});
   });
@@ -220,6 +239,12 @@ function computeGost10198I1(input){
     warnings.push(`Расчётная толщина хотя бы одной детали превышает максимальную из «в наличии» (${availableThicknesses[availableThicknesses.length-1]} мм) — занижать толщину недопустимо, использовано расчётное значение по ГОСТ (потребуется пиломатериал большей толщины, чем отмечено «в наличии»).`);
   }
 
+  // Ручной ввод толщины (см. ov() выше) меньше расчётного по ГОСТ - не
+  // блокируем, но предупреждаем.
+  Object.values(belowGost).forEach(b=>{
+    warnings.push(`${b.label}: введено вручную ${b.value} мм — меньше расчётного по ГОСТ (${Math.round(b.gostValue*100)/100} мм). Использовано введённое значение.`);
+  });
+
   return {
     warnings, dno, kryshka, bokovoy, torec,
     outerL, outerW, outerH, totalVolume, normaVremeni,
@@ -229,10 +254,29 @@ function computeGost10198I1(input){
   };
 }
 
+// Читает ручные правки толщины из уже отрисованной таблицы (см. data-role="t"
+// data-override="..." в renderSection ниже) - ДО того, как calculate() эту
+// таблицу перерисует. Учитываются ТОЛЬКО ячейки, реально отредактированные
+// пользователем (data-user-edited, взводится обработчиком input ниже) -
+// иначе каноническое поле "замораживалось" бы на прежнем расчётном значении
+// при каждом нажатии "Рассчитать" (тот же приём, что и в типе II-1,
+// src/ii1/calc.js).
+function readManualOverrides(){
+  const overrides = {};
+  document.querySelectorAll('#boardTables td[data-override][data-user-edited="true"]').forEach(cell=>{
+    const key = cell.getAttribute('data-override');
+    const val = parseFloat(cell.textContent.replace(',','.'));
+    if(!Number.isNaN(val) && val>0) overrides[key] = val;
+  });
+  return overrides;
+}
+
 function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
+  const manualOverrides = readManualOverrides();
   document.getElementById('calcCheck').style.visibility = 'hidden';
+  document.getElementById('calcOutdated').style.display = 'none';
 
   const input = {
     L: parseFloat(document.getElementById('L').value),
@@ -242,6 +286,7 @@ function calculate(){
     skidEnabled: document.getElementById('skidEnabled').checked,
     skidThicknessRaw: skidThicknessValue,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+    manualOverrides,
   };
 
   const calc = computeGost10198I1(input);
@@ -257,9 +302,10 @@ function calculate(){
     html += `<div class="spec-table"><table>
       <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
     rows.forEach(r=>{
+      const overrideAttr = r.overrideKey ? ` data-override="${r.overrideKey}"` : '';
       html += `<tr>
         <td>${r.name}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="t">${r.t}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}>${r.t}</td>
         <td class="num editable-cell" contenteditable="true" data-role="w">${r.w}</td>
         <td class="num editable-cell" contenteditable="true" data-role="l">${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
         <td class="num editable-cell" contenteditable="true" data-role="qty">${r.qty}</td>
@@ -303,7 +349,7 @@ function calculate(){
 
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
-    document.getElementById('calcCheck').style.visibility = 'hidden';
+    invalidateCalc();
   });
 });
 
@@ -323,7 +369,13 @@ function recalcFromTable(){
 }
 
 document.getElementById('boardTables').addEventListener('input', e=>{
-  if(e.target.classList.contains('editable-cell')) recalcFromTable();
+  if(e.target.classList.contains('editable-cell')){
+    if(e.target.hasAttribute('data-override')){
+      e.target.setAttribute('data-user-edited', 'true');
+    }
+    recalcFromTable();
+    invalidateCalc();
+  }
 });
 
 function buildPrintHtml(){

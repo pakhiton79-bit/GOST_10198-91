@@ -31,6 +31,17 @@ function roundUpToAvailable(t){
   return t;
 }
 
+// Прячет "Расчёт выполнен" при любом изменении входных данных или таблицы
+// деталей. Если расчёт уже хоть раз показывался (#results видим) - вместо
+// галочки показываем краткую подсказку "устарело" (см. #calcOutdated в
+// src/i1/shell.html) - до первого расчёта её показывать нечего.
+function invalidateCalc(){
+  document.getElementById('calcCheck').style.visibility = 'hidden';
+  const outdated = document.getElementById('calcOutdated');
+  const results = document.getElementById('results');
+  if(outdated) outdated.style.display = (results && results.style.display === 'block') ? 'inline-flex' : 'none';
+}
+
 function buildThicknessCheckboxList(){
   const list = document.getElementById('thicknessCheckboxList');
   let html = '';
@@ -51,7 +62,7 @@ function onThicknessCheckboxChange(el){
   availableThicknesses.sort((a,b)=>a-b);
   saveAvailableThicknesses();
   updateThicknessSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  invalidateCalc();
 }
 
 function setAllThickness(state){
@@ -59,7 +70,7 @@ function setAllThickness(state){
   buildThicknessCheckboxList();
   saveAvailableThicknesses();
   updateThicknessSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  invalidateCalc();
 }
 
 function updateThicknessSummary(){
@@ -100,7 +111,7 @@ updateThicknessSummary();
 function onSkidToggle(){
   const enabled = document.getElementById('skidEnabled').checked;
   document.getElementById('skidThicknessRow').style.display = enabled ? '' : 'none';
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  invalidateCalc();
 }
 
 let skidThicknessValue = 50;
@@ -108,7 +119,7 @@ let skidThicknessValue = 50;
 function onSkidThicknessChange(el){
   skidThicknessValue = parseInt(el.value, 10);
   updateSkidThicknessSummary();
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  invalidateCalc();
 }
 
 function updateSkidThicknessSummary(){
