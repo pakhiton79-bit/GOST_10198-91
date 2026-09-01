@@ -219,8 +219,7 @@
   }
 
   .calc-check{
-    display:inline-flex;
-    visibility:hidden;
+    display:none;
     align-items:center;
     margin-left:14px;
     color:var(--ok);

@@ -47,7 +47,7 @@ function buildThicknessCheckboxList(){
 // src/ii1/shell.html) - до первого расчёта её показывать нечего, поле ещё
 // пустое, а не "устаревшее".
 function invalidateCalc(){
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  document.getElementById('calcCheck').style.display = 'none';
   const outdated = document.getElementById('calcOutdated');
   const results = document.getElementById('results');
   if(outdated) outdated.style.display = (results && results.style.display === 'block') ? 'inline-flex' : 'none';

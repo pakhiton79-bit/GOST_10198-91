@@ -52,7 +52,7 @@ function buildThicknessCheckboxList(){
 // (размеры, масса, толщины «в наличии», тип крепления, доп. опции) - иначе
 // после смены параметров на экране остаются устаревшие результаты расчёта.
 function invalidateCalc(){
-  document.getElementById('calcCheck').style.visibility = 'hidden';
+  document.getElementById('calcCheck').style.display = 'none';
 }
 
 function onThicknessCheckboxChange(el){
@@ -757,7 +757,7 @@ function calculate(){
   warningsEl.style.display = calc.warnings.length ? 'block' : 'none';
 
   document.getElementById('results').style.display = 'block';
-  document.getElementById('calcCheck').style.visibility = 'visible';
+  document.getElementById('calcCheck').style.display = 'inline-flex';
 }
 
 
