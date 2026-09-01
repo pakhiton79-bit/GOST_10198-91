@@ -48,6 +48,12 @@
   .type-badge-danger{
     background:var(--error);
   }
+  /* Найденные расхождения у типа уже исправлены и подтверждены контрольным
+     примером - зелёная плашка вместо жёлтой (см. badgeOk в
+     src/launcher/types-10198-91.js). */
+  .type-badge-ok{
+    background:var(--ok);
+  }
   .type-card:hover{
     border-color:var(--accent);
     background:var(--accent-wash);
@@ -114,7 +120,7 @@
   const root = document.getElementById('types');
   let html = '';
   TYPES.forEach(t => {
-    const badgeClass = 'type-badge' + (t.badgeDanger ? ' type-badge-danger' : '');
+    const badgeClass = 'type-badge' + (t.badgeDanger ? ' type-badge-danger' : t.badgeOk ? ' type-badge-ok' : '');
     const badge = t.badge ? `<span class="${badgeClass}">${t.badge}</span>` : '';
     html += `<a class="type-card" href="${resolveFile(t)}">
       ${badge}

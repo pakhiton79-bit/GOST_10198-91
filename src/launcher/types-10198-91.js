@@ -17,14 +17,19 @@
 // src/launcher/types.src.html) вместо обычного жёлтого - у II-1 (в отличие
 // от I-1/I-3) ещё не было ни одной сверки с реальными чертежами, поэтому
 // плашка ярче и с другим текстом.
+// badgeOk - зелёный вариант плашки (.type-badge-ok) - у типа, где найденные
+// расхождения (по уточнению пользователя) уже исправлены и подтверждены
+// контрольным примером.
 const REVIEW_BADGE = 'Требует проверки';
 const NOT_READY_BADGE = 'Ещё не готово';
+const FIXED_BADGE = 'Исправлено';
 const TYPES = [
   {
     name: 'Тип I-1',
     file: 'GOST10198_91_I1.html',
     image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__',
-    badge: REVIEW_BADGE
+    badge: FIXED_BADGE,
+    badgeOk: true
   },
   {
     name: 'Тип I-3',
