@@ -22,14 +22,11 @@
 // контрольным примером.
 const REVIEW_BADGE = 'Требует проверки';
 const NOT_READY_BADGE = 'Ещё не готово';
-const FIXED_BADGE = 'Исправлено';
 const TYPES = [
   {
     name: 'Тип I-1',
     file: 'GOST10198_91_I1.html',
-    image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__',
-    badge: FIXED_BADGE,
-    badgeOk: true
+    image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__'
   },
   {
     name: 'Тип I-3',
