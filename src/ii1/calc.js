@@ -432,6 +432,15 @@ function computeGost10198II1(input){
   if(bokFrame.len <= 0){
     return {error: `Внутренняя высота груза ${H} мм слишком мала для каркаса бокового щита — расчёт не выполняется.`};
   }
+  // Чертёж торцевого щита (src/ii1/diagrams.js) готов только для 1 этажа и
+  // 2/3/4 стоек (1/2/3 раскосины) - при другом числе стоек или 2 этажах
+  // берётся ближайшая доступная схема по числу стоек (тот же приём, что и у
+  // Крышки, см. kryshkaVariant ниже) - таблица деталей всегда показывает
+  // настоящее количество.
+  const torecVariant = nearestTorecVariant(torecFrame.count);
+  if(!torecVariant.exact || torecFrame.floors !== 1){
+    warnings.push(`Щит торцевой: чертёж показывает ближайшую готовую схему (${torecVariant.count} стойки, 1 этаж) вместо расчётной (${torecFrame.count} стоек, ${torecFrame.floors} этаж(а)) — в таблице деталей ниже указано настоящее количество.`);
+  }
 
   // --- ЩИТ ТОРЦЕВОЙ (расчёт на 1 щит, далее удвоение) ---
   const t_raskosina = ov('tRaskosina', roundUpToAvailable(t_stojka*2/3), 'Толщина раскосины'), w_raskosina = 100;
@@ -652,7 +661,7 @@ function calculate(){
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Дно') + `</div>` + renderSection('', calc.dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит торцевой') + `</div>` + renderSection('', calc.endPanel) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(calc.torecFrame.count, calc.t_longbeam, calc.W + calc.t_stojka*2, calc.skin.value, 100*2 + calc.torecFrame.len) + `</div>` + renderSection('', calc.endPanel) + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит боковой') + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
