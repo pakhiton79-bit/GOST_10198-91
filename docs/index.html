@@ -721,21 +721,26 @@
   #printArea .spec-row-diagram .spec-table{flex:1;min-width:0;margin:0;}
   /* 310px / отступ 26px — измеренный максимальный вылет подписей вправо и влево
      для старых (маленьких) чертежей. У Дна (2008×1212, длинная подпись у левого
-     края) вылет больше — отступ увеличен до 44px; вертикальные вылеты по-прежнему
-     резервируются из JS (reserveDiagramOverflow). Правый край при необходимости
-     обрезается — по договорённости с пользователем. */
+     края) вылет больше — отступ увеличен до 44px; вертикальные вылеты, а также
+     правый вылет подписей (пропорциональным сжатием чертежа через --dk, а не
+     обрезкой) резервируются из JS (reserveDiagramOverflow). */
   #printArea .diagram-slot{flex:0 0 calc(var(--pk)*300px);width:calc(var(--pk)*300px);margin-left:calc(var(--pk)*44px);position:relative;overflow:visible;}
   /* ширина самих чертежей проставляется из JS (у них разный масштаб) */
   #printArea .diagram-wrap{position:relative;}
   #printArea .diagram-wrap img{display:block;width:100%;height:auto;}
   #printArea .diagram-arrows{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
-  /* Стрелки на чертежах — при печати заметно толще, чем на экране */
-  #printArea .diagram-arrows line{stroke-width:calc(var(--pk)*3px) !important;}
+  /* Стрелки на чертежах — при печати заметно толще, чем на экране. --dk (по
+     умолчанию 1, задаётся из .diagram-wrap{--dk:1} в общем блоке выше) -
+     дополнительный ПОДИАГРАММНЫЙ масштаб (в отличие от --pk, единого на всю
+     страницу): его выставляет reserveDiagramOverflow() в src/common-print.js,
+     когда конкретному чертежу требуется сжатие, чтобы вылетающие за картинку
+     подписи (см. reserveDiagramOverflow) не налезали на соседнюю таблицу. */
+  #printArea .diagram-arrows line{stroke-width:calc(var(--pk)*var(--dk)*3px) !important;}
   #printArea .diagram-labels{position:absolute;inset:0;pointer-events:none;}
   #printArea .diagram-label{
     position:absolute;transform:translate(-50%,-50%);background:#fff;
-    border:calc(var(--pk)*2px) solid #4E342E;color:#1F1B18;font-size:calc(var(--pk)*15px);font-weight:700;
-    padding:calc(var(--pk)*2px) calc(var(--pk)*6px);white-space:nowrap;line-height:1.3;
+    border:calc(var(--pk)*var(--dk)*2px) solid #4E342E;color:#1F1B18;font-size:calc(var(--pk)*var(--dk)*15px);font-weight:700;
+    padding:calc(var(--pk)*var(--dk)*2px) calc(var(--pk)*var(--dk)*6px);white-space:nowrap;line-height:1.3;
   }
   #printArea .diagram-label-vertical{
     transform:translate(-50%,-50%) rotate(-90deg);

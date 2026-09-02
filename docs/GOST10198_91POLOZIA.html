@@ -721,21 +721,26 @@
   #printArea .spec-row-diagram .spec-table{flex:1;min-width:0;margin:0;}
   /* 310px / отступ 26px — измеренный максимальный вылет подписей вправо и влево
      для старых (маленьких) чертежей. У Дна (2008×1212, длинная подпись у левого
-     края) вылет больше — отступ увеличен до 44px; вертикальные вылеты по-прежнему
-     резервируются из JS (reserveDiagramOverflow). Правый край при необходимости
-     обрезается — по договорённости с пользователем. */
+     края) вылет больше — отступ увеличен до 44px; вертикальные вылеты, а также
+     правый вылет подписей (пропорциональным сжатием чертежа через --dk, а не
+     обрезкой) резервируются из JS (reserveDiagramOverflow). */
   #printArea .diagram-slot{flex:0 0 calc(var(--pk)*300px);width:calc(var(--pk)*300px);margin-left:calc(var(--pk)*44px);position:relative;overflow:visible;}
   /* ширина самих чертежей проставляется из JS (у них разный масштаб) */
   #printArea .diagram-wrap{position:relative;}
   #printArea .diagram-wrap img{display:block;width:100%;height:auto;}
   #printArea .diagram-arrows{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
-  /* Стрелки на чертежах — при печати заметно толще, чем на экране */
-  #printArea .diagram-arrows line{stroke-width:calc(var(--pk)*3px) !important;}
+  /* Стрелки на чертежах — при печати заметно толще, чем на экране. --dk (по
+     умолчанию 1, задаётся из .diagram-wrap{--dk:1} в общем блоке выше) -
+     дополнительный ПОДИАГРАММНЫЙ масштаб (в отличие от --pk, единого на всю
+     страницу): его выставляет reserveDiagramOverflow() в src/common-print.js,
+     когда конкретному чертежу требуется сжатие, чтобы вылетающие за картинку
+     подписи (см. reserveDiagramOverflow) не налезали на соседнюю таблицу. */
+  #printArea .diagram-arrows line{stroke-width:calc(var(--pk)*var(--dk)*3px) !important;}
   #printArea .diagram-labels{position:absolute;inset:0;pointer-events:none;}
   #printArea .diagram-label{
     position:absolute;transform:translate(-50%,-50%);background:#fff;
-    border:calc(var(--pk)*2px) solid #4E342E;color:#1F1B18;font-size:calc(var(--pk)*15px);font-weight:700;
-    padding:calc(var(--pk)*2px) calc(var(--pk)*6px);white-space:nowrap;line-height:1.3;
+    border:calc(var(--pk)*var(--dk)*2px) solid #4E342E;color:#1F1B18;font-size:calc(var(--pk)*var(--dk)*15px);font-weight:700;
+    padding:calc(var(--pk)*var(--dk)*2px) calc(var(--pk)*var(--dk)*6px);white-space:nowrap;line-height:1.3;
   }
   #printArea .diagram-label-vertical{
     transform:translate(-50%,-50%) rotate(-90deg);
@@ -2196,16 +2201,30 @@ function reserveDiagramOverflow(printArea){
     const leftGap0 = Math.max(0, Math.ceil(m0.box.left - m0.left));
     wrap.style.marginLeft = leftGap0 + 'px';
 
-    // Подстраховка: если отступ + сама картинка не помещаются в фиксированную
+    // Подстраховка: если отступ + сама картинка + вылет подписей/стрелок
+    // ВПРАВО (за пределы самой картинки - как у widthVal-подписи чертежа
+    // «Крышка» типа II-1, которая размещена почти у самого правого края
+    // фото и потому торчит за его границу) не помещаются в фиксированную
     // ширину слота, чертёж наложился бы на таблицу (слот - overflow:visible,
     // это не ловится проверкой fits() в fitPrintAreaToOnePage, т.к. не меняет
-    // scrollWidth). Пропорционально уменьшаем ширину картинки, чтобы отступ +
-    // картинка гарантированно остались внутри слота.
+    // scrollWidth). Раньше здесь проверялась только ширина САМОЙ картинки без
+    // учёта вылета подписей вправо - тот же приём, что и в экранной версии
+    // (reserveDiagramOverflowScreen в этом же файле): пропорционально
+    // уменьшаем чертёж (картинку + подписи + стрелки, через --dk) в
+    // несколько итераций, пока правый край (с учётом вылета) не впишется в
+    // оставшуюся ширину слота.
     const slotWidth = slot.getBoundingClientRect().width;
-    const wrapWidth0 = wrap.getBoundingClientRect().width;
-    const available = slotWidth - leftGap0;
-    if(available > 0 && wrapWidth0 > available){
-      wrap.style.width = available + 'px';
+    const fullWidth = wrap.getBoundingClientRect().width;
+    wrap.style.setProperty('--dk', '1');
+    let scale = 1;
+    for(let i = 0; i < 8; i++){
+      const mi = measure();
+      const rightGap = Math.max(0, Math.ceil(mi.right - mi.box.right));
+      const usedWidth = leftGap0 + mi.box.width + rightGap;
+      if(usedWidth <= slotWidth || scale <= 0.3) break;
+      scale = Math.max(0.3, scale * (slotWidth - 4 - leftGap0) / (mi.box.width + rightGap));
+      wrap.style.width = Math.round(fullWidth * scale) + 'px';
+      wrap.style.setProperty('--dk', scale.toFixed(3));
     }
 
     // Центрируем САМУ КАРТИНКУ (а не весь охват вместе с вылетающими подписями)

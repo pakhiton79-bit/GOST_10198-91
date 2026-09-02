@@ -151,16 +151,30 @@ function reserveDiagramOverflow(printArea){
     const leftGap0 = Math.max(0, Math.ceil(m0.box.left - m0.left));
     wrap.style.marginLeft = leftGap0 + 'px';
 
-    // Подстраховка: если отступ + сама картинка не помещаются в фиксированную
+    // Подстраховка: если отступ + сама картинка + вылет подписей/стрелок
+    // ВПРАВО (за пределы самой картинки - как у widthVal-подписи чертежа
+    // «Крышка» типа II-1, которая размещена почти у самого правого края
+    // фото и потому торчит за его границу) не помещаются в фиксированную
     // ширину слота, чертёж наложился бы на таблицу (слот - overflow:visible,
     // это не ловится проверкой fits() в fitPrintAreaToOnePage, т.к. не меняет
-    // scrollWidth). Пропорционально уменьшаем ширину картинки, чтобы отступ +
-    // картинка гарантированно остались внутри слота.
+    // scrollWidth). Раньше здесь проверялась только ширина САМОЙ картинки без
+    // учёта вылета подписей вправо - тот же приём, что и в экранной версии
+    // (reserveDiagramOverflowScreen в этом же файле): пропорционально
+    // уменьшаем чертёж (картинку + подписи + стрелки, через --dk) в
+    // несколько итераций, пока правый край (с учётом вылета) не впишется в
+    // оставшуюся ширину слота.
     const slotWidth = slot.getBoundingClientRect().width;
-    const wrapWidth0 = wrap.getBoundingClientRect().width;
-    const available = slotWidth - leftGap0;
-    if(available > 0 && wrapWidth0 > available){
-      wrap.style.width = available + 'px';
+    const fullWidth = wrap.getBoundingClientRect().width;
+    wrap.style.setProperty('--dk', '1');
+    let scale = 1;
+    for(let i = 0; i < 8; i++){
+      const mi = measure();
+      const rightGap = Math.max(0, Math.ceil(mi.right - mi.box.right));
+      const usedWidth = leftGap0 + mi.box.width + rightGap;
+      if(usedWidth <= slotWidth || scale <= 0.3) break;
+      scale = Math.max(0.3, scale * (slotWidth - 4 - leftGap0) / (mi.box.width + rightGap));
+      wrap.style.width = Math.round(fullWidth * scale) + 'px';
+      wrap.style.setProperty('--dk', scale.toFixed(3));
     }
 
     // Центрируем САМУ КАРТИНКУ (а не весь охват вместе с вылетающими подписями)
