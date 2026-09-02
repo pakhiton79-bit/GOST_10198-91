@@ -44,7 +44,7 @@ function findNegativeField(value, path){
 function computeGost10198II1(input){
   const {L, W, H, MASS, fasteningType, solidRigidBase, removeFloorBoards,
          removeSkidBoards, forkliftLoading, roundBoardWidths, lidLayout,
-         manualOverrides} = input;
+         optimizeSizes, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -216,6 +216,19 @@ function computeGost10198II1(input){
   if(longbeamExceeded){
     warnings.push('Расстояние между осями поперечных брусьев крышки вне табл. продольных брусьев — сечение принято по крайнему значению.');
   }
+  // Чертёж крышки (src/ii1/diagrams.js) показывает готовые фото только для
+  // 9 конкретных сочетаний число_продольных×число_поперечных брусьев (по
+  // именам файлов - 0/2/3/4 продольных, 2/3/4 поперечных, не любое их
+  // сочетание). Если расчётное сочетание не входит в этот список - берём
+  // ближайшее (продольное - в приоритете, точнее совпадение; поперечное -
+  // максимально близкое из доступных именно для этого продольного, по
+  // уточнению пользователя) и предупреждаем, что чертёж приблизительный -
+  // таблица деталей ниже при этом всегда показывает настоящее количество
+  // (тот же приём, что и у torecSections>3 в типе I-3, src/app.js).
+  const kryshkaVariant = nearestKryshkaVariant(longbeamCount, crossBeamCount);
+  if(!kryshkaVariant.exact){
+    warnings.push(`Крышка: чертёж показывает ближайшее готовое сочетание брусьев (${kryshkaVariant.longbeamCount} продольных, ${kryshkaVariant.crossBeamCount} поперечных) вместо расчётного (${longbeamCount} продольных, ${crossBeamCount} поперечных) — в таблице деталей ниже указано настоящее количество.`);
+  }
   if(floorBoardExceeded){
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 — толщина доски дна принята по крайнему значению.');
   }
@@ -269,9 +282,13 @@ function computeGost10198II1(input){
     + (removeFloorBoards ? 0 : (vol(t12,w12,k12,l12) + fbDno.extra.reduce((s,e)=>s+vol(t12,e.width,k12,e.qty),0)));
 
   // --- КРЫШКА ---
+  // «Оптимизировать размеры» (по образцу той же опции в типе I-3, src/app.js):
+  // реально укорачивает длину внутреннего поперечного бруса на 4мм (только
+  // его - продольного бруса не касается, по уточнению пользователя).
+  const k21 = W - (optimizeSizes ? 4 : 0);
   const kryshka = [];
-  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:W, qty:crossBeamCount, overrideKey:'t21'});
-  let volKryshka = vol(t21,w21,W,crossBeamCount);
+  kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:crossBeamCount, overrideKey:'t21'});
+  let volKryshka = vol(t21,w21,k21,crossBeamCount);
 
   let lidBoardLen, lidFillspace;
   if(lidLayout === 'transverse'){
@@ -411,6 +428,11 @@ function computeGost10198II1(input){
   // этаже - подтверждено пользователем). При 2 этажах нужен 2-й, отдельный
   // слой таких досок - количество удваивается.
   const t32 = skin.value, k32 = 100*2 + torecFrame.len + t_longbeam;
+  // t32Display - косметическая подпись толщины доски торца на чертеже
+  // крышки при включённой «Оптимизировать размеры» (+2мм без округлений,
+  // по образцу t40Display в типе I-3, src/app.js) - на реальную толщину
+  // материала (t32, идёт в таблицу и расход пиломатериала) не влияет.
+  const t32Display = optimizeSizes ? t32 + 2 : t32;
   // Пространство для досок торца (по ширине, кол-во) - то же самое, что и у
   // досок крышки при продольном расположении (по уточнению пользователя):
   // ширина груза + (ТОЛЩИНА стойки + толщина обшивки)*2 = outerW.
@@ -510,9 +532,11 @@ function computeGost10198II1(input){
   const result = {
     warnings, dno, kryshka, endPanel, bokovoy,
     outerL, outerW, outerH, totalVolume, normaVremeni,
-    // Параметры для чертежей (пока заглушки - см. src/ii1/diagrams.js).
+    // Параметры для чертежей (Дно/Щит торцевой/Щит боковой - пока заглушки,
+    // Крышка - готова, см. src/ii1/diagrams.js).
     k9Base, W, L, H, t_stojka, skin, t21, t_longbeam, lidLayout,
-    torecFrame, bokFrame, panelHeightFull
+    torecFrame, bokFrame, panelHeightFull,
+    crossBeamCount, longbeamCount, t32Display
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -562,6 +586,7 @@ function calculate(){
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
+    optimizeSizes: document.getElementById('optimizeSizes').checked,
     manualOverrides,
   };
 
@@ -596,7 +621,7 @@ function calculate(){
 
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Дно') + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Крышка') + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.t_stojka + calc.skin.value, calc.outerW, calc.k9Base) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит торцевой') + `</div>` + renderSection('', calc.endPanel) + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит боковой') + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
@@ -621,7 +646,7 @@ function calculate(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','roundBoardWidths','removeFloorBoards'].forEach(id=>{
+['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });
