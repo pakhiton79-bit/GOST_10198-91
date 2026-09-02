@@ -232,7 +232,9 @@ function nearestKryshkaVariant(longbeamCount, crossBeamCount){
 // «Оптимизировать размеры» - см. src/ii1/calc.js); отсутствует на чертеже при
 // продольных=0 (см. KRYSHKA_VARIANTS - в этих 3 схемах доска торца не
 // подписывается вовсе, по самой инструкции). sideFrameVal - толщина стойки +
-// толщина доски обшивки бока. widthVal/lengthVal - наружные ширина/длина
+// толщина доски обшивки бока (sideFrameDisplay - та же косметическая +2мм
+// надбавка при «Оптимизировать размеры», по аналогии с torecBoardVal, по
+// уточнению пользователя). widthVal/lengthVal - наружные ширина/длина
 // ящика (outerW/k9Base). edgeDistVal - расстояние от края крышки до края
 // крайнего поперечного бруса (calc.edgeDistCross) - по методике I-3 (см.
 // diagramKryshkaDefault/diagramKryshka2Beams в src/diagrams.js): брусья
