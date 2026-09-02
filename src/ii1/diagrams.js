@@ -300,22 +300,24 @@ function torecRecords(L, R, T, B, u){
 }
 
 const TOREC_IMG_2POSTS_B64 = "data:image/jpeg;base64,__IMG:torec_ii1_1floor_2posts.jpg__"; // 1 раскосина
-const TOREC_IMG_3POSTS_B64 = "data:image/jpeg;base64,__IMG:torec_ii1_1floor_3posts.jpg__"; // 2 раскосины
-const TOREC_IMG_4POSTS_B64 = "data:image/jpeg;base64,__IMG:torec_ii1_1floor_4posts.jpg__"; // 3 раскосины
 
 // Натуральные размеры фото и измеренные границы каркаса (L/R/T/B/u) - см.
-// комментарий у torecRecords выше.
+// комментарий у torecRecords выше. Готова разметка (L/R/T/B/u) только для
+// схемы «2 стойки» (1 раскосина) - это единственная, где пользователь сам
+// нарисовал разметку и подтвердил геометрию; для «3/4 стойки» (2/3
+// раскосины) моя собственная разметка "получилась криво" (по прямому
+// репорту пользователя) - схемы временно убраны, пользователь пришлёт
+// исправленную разметку сам. До этого момента nearestTorecVariant всегда
+// приводит к «2 стойки» (единственный вариант в TOREC_POST_OPTIONS).
 const TOREC_VARIANTS = {
   2: { img: TOREC_IMG_2POSTS_B64, IW: 1116, IH: 796, records: torecRecords(107.5, 1009.5, 79.5, 696.5, 89) },
-  3: { img: TOREC_IMG_3POSTS_B64, IW: 1460, IH: 605, records: torecRecords(81.5, 1377.5, 63.5, 596.5, 67) },
-  4: { img: TOREC_IMG_4POSTS_B64, IW: 2222, IH: 644, records: torecRecords(77.5, 2135.5, 63.5, 635.5, 71) },
 };
-const TOREC_POST_OPTIONS = [2, 3, 4];
+const TOREC_POST_OPTIONS = [2];
 
-// Готовых фото только для 1 этажа и 2/3/4 стоек (1/2/3 раскосины) - при
-// другом числе стоек (5+) или 2 этажах берётся ближайшая доступная схема по
-// числу стоек (этажность не учитывается вовсе, доступных фото для 2 этажей
-// ещё нет) - тот же приём, что и у Крышки (nearestKryshkaVariant выше).
+// Готового фото пока только для 1 этажа и 2 стоек (1 раскосина, см.
+// комментарий у TOREC_VARIANTS выше) - при другом числе стоек или 2 этажах
+// берётся эта же схема (единственная доступная), с предупреждением - тот же
+// приём, что и у Крышки (nearestKryshkaVariant выше).
 function nearestTorecVariant(count){
   const best = TOREC_POST_OPTIONS.reduce((a,b)=> Math.abs(b-count)<Math.abs(a-count) ? b : a);
   return {count: best, exact: best===count};

@@ -2155,12 +2155,22 @@ function printBox(){
 // fitPrintAreaToOnePage - страница «влезала» при замере, а печатала обрезанной.
 function reserveDiagramOverflow(printArea){
   printArea.querySelectorAll('.diagram-slot').forEach(slot=>{
+    // margin-left сбрасываем ДО проверки на wrap - иначе у пустого слота
+    // (напр. «Общий вид ящика» у типа II-1, где фото ещё нет - см.
+    // buildPrintHtml в src/ii1/calc.js) остаётся CSS-отступ по умолчанию
+    // (#printArea .diagram-slot{margin-left:calc(var(--pk)*44px)}), а у
+    // остальных слотов (где wrap есть) он явно обнулён ниже - из-за этого
+    // левый край таблицы сразу после ТАКОГО слота (напр. сводная таблица
+    // «Внутренние размеры груза»/«Итог») не совпадал с левым краем таблиц
+    // деталей у остальных узлов, и вдобавок разъезжался на разную величину
+    // от расчёта к расчёту (отступ масштабируется через --pk) - по репорту
+    // пользователя.
+    slot.style.marginLeft = '0px';
     const wrap = slot.querySelector('.diagram-wrap');
     if(!wrap) return;
 
     slot.style.paddingTop = '0px';
     slot.style.paddingBottom = '0px';
-    slot.style.marginLeft = '0px';
     wrap.style.marginLeft = '0px';
 
     function measure(){
