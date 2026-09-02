@@ -1695,12 +1695,14 @@ function nearestKryshkaVariant(longbeamCount, crossBeamCount){
 // подписывается вовсе, по самой инструкции). sideFrameVal - толщина стойки +
 // толщина доски обшивки бока. widthVal/lengthVal - наружные ширина/длина
 // ящика (outerW/k9Base). edgeDistVal - расстояние от края крышки до края
-// крайнего бруса: 0 (брусья размещены так же, как стойки каркаса - крайний
-// брус наружным краем ровно у края крышки, см. уточнение пользователя).
-function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride){
+// крайнего поперечного бруса (calc.edgeDistCross) - по методике I-3 (см.
+// diagramKryshkaDefault/diagramKryshka2Beams в src/diagrams.js): брусья
+// делят длину крышки на (count+1) равных промежутков, а не flush-edge, как у
+// стоек каркаса (подтверждено пользователем).
+function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal){
   const variant = nearestKryshkaVariant(longbeamCount, crossBeamCount);
   const v = KRYSHKA_VARIANTS[variant.longbeamCount + '_' + variant.crossBeamCount];
-  const records = v.records(Math.round(torecBoardVal), Math.round(sideFrameVal), Math.round(widthVal), Math.round(lengthVal), 0);
+  const records = v.records(Math.round(torecBoardVal), Math.round(sideFrameVal), Math.round(widthVal), Math.round(lengthVal), Math.round(edgeDistVal));
   return renderDiagram(v.img, 'Крышка - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW));
 }
 
@@ -2476,6 +2478,13 @@ function computeGost10198II1(input){
   if(!kryshkaVariant.exact){
     warnings.push(`Крышка: чертёж показывает ближайшее готовое сочетание брусьев (${kryshkaVariant.longbeamCount} продольных, ${kryshkaVariant.crossBeamCount} поперечных) вместо расчётного (${longbeamCount} продольных, ${crossBeamCount} поперечных) — в таблице деталей ниже указано настоящее количество.`);
   }
+  // Отступ от края крышки до края крайнего поперечного бруса - по методике
+  // I-3 (см. diagramKryshkaDefault/diagramKryshka2Beams в src/diagrams.js):
+  // брусья делят длину крышки на (count+1) РАВНЫХ промежутков (равномерное
+  // распределение с одинаковыми отступами по краям), а не flush-edge, как у
+  // стоек каркаса - подтверждено пользователем ("используй методику из
+  // I-3... внутренние поперечные брусья").
+  const edgeDistCross = crossBeamCount > 0 ? Math.round((L - crossBeamCount*w21) / (crossBeamCount + 1)) : Math.round(L/2);
   if(floorBoardExceeded){
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 — толщина доски дна принята по крайнему значению.');
   }
@@ -2783,7 +2792,7 @@ function computeGost10198II1(input){
     // Крышка - готова, см. src/ii1/diagrams.js).
     k9Base, W, L, H, t_stojka, skin, t21, t_longbeam, lidLayout,
     torecFrame, bokFrame, panelHeightFull,
-    crossBeamCount, longbeamCount, t32Display
+    crossBeamCount, longbeamCount, t32Display, edgeDistCross
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -2868,7 +2877,7 @@ function calculate(){
 
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Дно') + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.t_stojka + calc.skin.value, calc.outerW, calc.k9Base) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.t_stojka + calc.skin.value, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит торцевой') + `</div>` + renderSection('', calc.endPanel) + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит боковой') + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');

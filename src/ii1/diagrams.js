@@ -234,11 +234,13 @@ function nearestKryshkaVariant(longbeamCount, crossBeamCount){
 // подписывается вовсе, по самой инструкции). sideFrameVal - толщина стойки +
 // толщина доски обшивки бока. widthVal/lengthVal - наружные ширина/длина
 // ящика (outerW/k9Base). edgeDistVal - расстояние от края крышки до края
-// крайнего бруса: 0 (брусья размещены так же, как стойки каркаса - крайний
-// брус наружным краем ровно у края крышки, см. уточнение пользователя).
-function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride){
+// крайнего поперечного бруса (calc.edgeDistCross) - по методике I-3 (см.
+// diagramKryshkaDefault/diagramKryshka2Beams в src/diagrams.js): брусья
+// делят длину крышки на (count+1) равных промежутков, а не flush-edge, как у
+// стоек каркаса (подтверждено пользователем).
+function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal){
   const variant = nearestKryshkaVariant(longbeamCount, crossBeamCount);
   const v = KRYSHKA_VARIANTS[variant.longbeamCount + '_' + variant.crossBeamCount];
-  const records = v.records(Math.round(torecBoardVal), Math.round(sideFrameVal), Math.round(widthVal), Math.round(lengthVal), 0);
+  const records = v.records(Math.round(torecBoardVal), Math.round(sideFrameVal), Math.round(widthVal), Math.round(lengthVal), Math.round(edgeDistVal));
   return renderDiagram(v.img, 'Крышка - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW));
 }
