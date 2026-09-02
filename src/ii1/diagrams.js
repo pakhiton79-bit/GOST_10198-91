@@ -251,78 +251,126 @@ function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameV
 }
 
 // --- Щит торцевой ---
-// Геометрия подписей выведена из фото «1 этаж 2 укосины» (более полная и
-// точная разметка, присланная пользователем следующей - см. историю
-// чата: первая разметка по фото «1 укосина» была неполной, в ней не
-// хватало второй засечки у скобки высоты (группа D ниже) и чётких засечек
-// у скобки толщины продольного бруса (группа A), из-за чего чертёж
-// "получился криво") как ДОЛИ от размеров самой рамки щита на фото
-// (Wp=R-L, Hp=B-T; L/R/T/B - наружные левый/правый/верхний/нижний края
-// щита) - не как абсолютные пиксели и не как множители ширины стойки
-// (у разных фото ширина стойки относительно всего кадра сильно
-// отличается - подробнее см. предыдущую версию этого комментария в
-// истории git). Формула одна для всех схем (2/3/4 стойки = 1/2/3
-// раскосины) - меняются только сами L/R/T/B конкретного фото (измерены
-// отдельно по каждому файлу).
-function torecRecords(L, R, T, B){
-  const Wp = R - L, Hp = B - T;
-  function px(fx){ return L + fx*Wp; }
-  function py(fy){ return T + fy*Hp; }
-  return function(longbeamVal, widthVal, skinVal, heightVal){
-    const records = [];
-    // Группа A - толщина внутреннего продольного бруса крышки (сидит НАД
-    // торцевым щитом) - показываем, только если брус есть (режим
-    // "поперечное" расположение досок крышки, longbeamVal>0); при
-    // "продольном" расположении бруса нет (0мм), и эта группа не рисуется -
-    // по прямому указанию пользователя.
-    if(longbeamVal > 0){
-      records.push(
-        {type:'line', x1:px(0.950), y1:py(-0.097), x2:px(1.174), y2:py(-0.097)},
-        {type:'line', x1:px(1.118), y1:py(-0.097), x2:px(1.118), y2:py(0)},
-        {type:'single', x1:px(0.872), y1:py(-0.344), x2:px(1.119), y2:py(-0.044), lx:px(0.849), ly:py(-0.374), text:longbeamVal+' мм'}
-      );
-    }
-    // Группа B - ширина щита (наружный край левой стойки до наружного края
-    // правой стойки) = W + толщина стойки*2 (k31 - длина "Горизонтального
-    // бруса" в таблице деталей).
-    records.push(
-      {type:'line', x1:px(1.0), y1:py(0.875), x2:px(1.0), y2:py(1.258)},
-      {type:'double', x1:px(1.0), y1:py(1.217), x2:px(-0.054), y2:py(1.217), lx:px(0.473), ly:py(1.260), text:widthVal+' мм'}
-    );
-    // Группа C - толщина досок обшивки бока (skin.value) - небольшой
-    // отступ слева от щита.
-    records.push(
-      {type:'line', x1:px(-0.055), y1:py(0.875), x2:px(-0.055), y2:py(1.252)},
-      {type:'line', x1:px(0), y1:py(0.871), x2:px(0), y2:py(1.123)},
-      {type:'line', x1:px(-0.055), y1:py(1.043), x2:px(0), y2:py(1.043)},
-      {type:'single', x1:px(-0.122), y1:py(1.225), x2:px(-0.027), y2:py(1.044), lx:px(-0.127), ly:py(1.277), text:skinVal+' мм'}
-    );
-    // Группа D - высота щита БЕЗ продольного бруса крышки (ширина
-    // стойки*2 + длина стойки) = 100*2 + torecFrame.len.
-    records.push(
-      {type:'line', x1:px(0.948), y1:py(1.0), x2:px(1.174), y2:py(1.0)},
-      {type:'line', x1:px(1.174), y1:py(0), x2:px(0.950), y2:py(0)},
-      {type:'double', x1:px(1.142), y1:py(0), x2:px(1.142), y2:py(1.0), lx:px(1.150), ly:py(0.502), text:heightVal+' мм', vertical:true}
-    );
-    return records;
-  };
+// Геометрия подписей - НЕ единая формула на все схемы (более ранняя
+// версия, выводившая координаты 3/4-стоечных схем как доли от размеров
+// рамки щита по разметке 2-стоечной схемы, давала на некоторых схемах
+// заметный перекос - см. историю git), а собственная разметка КАЖДОЙ
+// схемы, присланная пользователем отдельно для каждого фото (тот же
+// принцип, что и у KRYSHKA_VARIANTS выше - независимые записи per-схема,
+// в натуральных пикселях именно этого фото). Во всех 3 схемах одна и та
+// же структура из 4 групп подписей:
+// - A (только если longbeamVal>0 - режим "поперечное" расположение досок
+//   крышки; при "продольном" бруса нет, группа не рисуется): толщина
+//   внутреннего продольного бруса крышки (сидит НАД щитом).
+// - B: ширина щита (наружный край левой стойки до наружного края правой) =
+//   W + толщина стойки*2 (k31 - длина "Горизонтального бруса" в таблице).
+// - C: толщина досок обшивки бока (skin.value) - отступ слева от щита.
+// - D: высота щита БЕЗ бруса крышки (ширина стойки*2 + длина стойки) =
+//   100*2 + torecFrame.len.
+function diagramTorec(count, longbeamVal, widthVal, skinVal, heightVal, widthPxOverride){
+  const variant = nearestTorecVariant(count);
+  const v = TOREC_VARIANTS[variant.count];
+  const records = v.records(Math.round(longbeamVal), Math.round(widthVal), Math.round(skinVal), Math.round(heightVal));
+  return renderDiagram(v.img, 'Щит торцевой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW));
 }
 
 const TOREC_IMG_2POSTS_B64 = "data:image/jpeg;base64,__IMG:torec_ii1_1floor_2posts.jpg__"; // 1 раскосина
 const TOREC_IMG_3POSTS_B64 = "data:image/jpeg;base64,__IMG:torec_ii1_1floor_3posts.jpg__"; // 2 раскосины
 const TOREC_IMG_4POSTS_B64 = "data:image/jpeg;base64,__IMG:torec_ii1_1floor_4posts.jpg__"; // 3 раскосины
 
-// Натуральные размеры фото и измеренные границы каркаса (L/R/T/B) - см.
-// комментарий у torecRecords выше. Разметка для «2 стойки» - по фото,
-// прямо размеченному пользователем; для «3/4 стойки» - границы рамки щита
-// (L/R/T/B) измерены тем же способом (сетка координат по фото), а сами
-// подписи вычисляются той же функцией torecRecords (доли от Wp/Hp) -
-// первая попытка (доли от ширины стойки u) дала на этих фото "кривой"
-// результат, см. комментарий у torecRecords выше.
 const TOREC_VARIANTS = {
-  2: { img: TOREC_IMG_2POSTS_B64, IW: 1116, IH: 796, records: torecRecords(107.5, 1009.5, 79.5, 696.5) },
-  3: { img: TOREC_IMG_3POSTS_B64, IW: 1460, IH: 605, records: torecRecords(81.5, 1377.5, 63.5, 596.5) },
-  4: { img: TOREC_IMG_4POSTS_B64, IW: 2222, IH: 644, records: torecRecords(77.5, 2135.5, 63.5, 635.5) },
+  // «2 стойки» (1 раскосина) - по исходной разметке пользователя. Группа D
+  // (нижняя засечка/стрелка) в исходных данных заканчивалась чуть ниже
+  // фактического края щита (y≈784 вместо B=696.5 - видимо, неточность в
+  // самой первой, ещё не выверенной разметке) - выровнено по чистому B/T,
+  // по образцу уже уточнённых схем «3/4 стойки» ниже (там обе засечки
+  // группы D ровно на T и на B).
+  2: { img: TOREC_IMG_2POSTS_B64, IW: 1116, IH: 796,
+    records: function(longbeamVal, widthVal, skinVal, heightVal) {
+      const records = [];
+      if(longbeamVal > 0){
+        records.push(
+          {type:'line', x1:877, y1:12, x2:1193, y2:12},
+          {type:'line', x1:1153, y1:12, x2:1153, y2:80},
+          {type:'single', x1:1008, y1:-124, x2:1153, y2:44, lx:973, ly:-145, text:longbeamVal+' мм'}
+        );
+      }
+      records.push(
+        {type:'line', x1:109, y1:698, x2:108, y2:920},
+        {type:'line', x1:1011, y1:697, x2:1011, y2:932},
+        {type:'double', x1:1011, y1:886, x2:107, y2:886, lx:562, ly:906, text:widthVal+' мм'}
+      );
+      records.push(
+        {type:'line', x1:12, y1:700, x2:11, y2:863},
+        {type:'line', x1:12, y1:824, x2:109, y2:824},
+        {type:'single', x1:-90, y1:924, x2:62, y2:824, lx:-93, ly:945, text:skinVal+' мм'}
+      );
+      records.push(
+        {type:'line', x1:879, y1:80, x2:1285, y2:80},
+        {type:'line', x1:879, y1:696, x2:1285, y2:696},
+        {type:'double', x1:1225, y1:80, x2:1225, y2:696, lx:1236, ly:388, text:heightVal+' мм', vertical:true}
+      );
+      return records;
+    }
+  },
+  // «3 стойки» (2 раскосины) - по разметке пользователя.
+  3: { img: TOREC_IMG_3POSTS_B64, IW: 1460, IH: 605,
+    records: function(longbeamVal, widthVal, skinVal, heightVal) {
+      const records = [];
+      if(longbeamVal > 0){
+        records.push(
+          {type:'line', x1:1313, y1:13, x2:1603, y2:11},
+          {type:'line', x1:1530, y1:12, x2:1530, y2:62},
+          {type:'single', x1:1211, y1:-120, x2:1531, y2:40, lx:1182, ly:-136, text:longbeamVal+' мм'}
+        );
+      }
+      records.push(
+        {type:'line', x1:1379, y1:734, x2:1377, y2:530},
+        {type:'double', x1:11, y1:712, x2:1377, y2:712, lx:694, ly:735, text:widthVal+' мм'}
+      );
+      records.push(
+        {type:'line', x1:82, y1:528, x2:82, y2:662},
+        {type:'line', x1:10, y1:530, x2:10, y2:731},
+        {type:'line', x1:10, y1:620, x2:82, y2:619},
+        {type:'single', x1:-77, y1:716, x2:46, y2:620, lx:-83, ly:744, text:skinVal+' мм'}
+      );
+      records.push(
+        {type:'line', x1:1311, y1:598, x2:1603, y2:596},
+        {type:'line', x1:1603, y1:62, x2:1312, y2:64},
+        {type:'double', x1:1561, y1:64, x2:1562, y2:597, lx:1572, ly:331, text:heightVal+' мм', vertical:true}
+      );
+      return records;
+    }
+  },
+  // «4 стойки» (3 раскосины) - по разметке пользователя.
+  4: { img: TOREC_IMG_4POSTS_B64, IW: 2222, IH: 644,
+    records: function(longbeamVal, widthVal, skinVal, heightVal) {
+      const records = [];
+      if(longbeamVal > 0){
+        records.push(
+          {type:'line', x1:2062, y1:10, x2:2364, y2:6},
+          {type:'line', x1:2275, y1:7, x2:2277, y2:65},
+          {type:'single', x1:2022, y1:-120, x2:2278, y2:36, lx:2008, ly:-132, text:longbeamVal+' мм'}
+        );
+      }
+      records.push(
+        {type:'line', x1:2212, y1:564, x2:2214, y2:797},
+        {type:'double', x1:7, y1:744, x2:2215, y2:744, lx:1112, ly:801, text:widthVal+' мм'}
+      );
+      records.push(
+        {type:'line', x1:78, y1:565, x2:78, y2:729},
+        {type:'line', x1:8, y1:564, x2:8, y2:788},
+        {type:'line', x1:9, y1:679, x2:78, y2:678},
+        {type:'single', x1:-108, y1:532, x2:44, y2:679, lx:-109, ly:499, text:skinVal+' мм'}
+      );
+      records.push(
+        {type:'line', x1:2069, y1:636, x2:2369, y2:635},
+        {type:'line', x1:2063, y1:66, x2:2365, y2:64},
+        {type:'double', x1:2316, y1:64, x2:2317, y2:636, lx:2324, ly:346, text:heightVal+' мм', vertical:true}
+      );
+      return records;
+    }
+  },
 };
 const TOREC_POST_OPTIONS = [2, 3, 4];
 
@@ -333,16 +381,4 @@ const TOREC_POST_OPTIONS = [2, 3, 4];
 function nearestTorecVariant(count){
   const best = TOREC_POST_OPTIONS.reduce((a,b)=> Math.abs(b-count)<Math.abs(a-count) ? b : a);
   return {count: best, exact: best===count};
-}
-
-// longbeamVal - толщина внутреннего продольного бруса крышки (t_longbeam,
-// 0 при продольном расположении досок крышки - тогда группа A на чертеже не
-// рисуется). widthVal - ширина щита, W+t_stojka*2 (k31). skinVal - толщина
-// досок обшивки бока (skin.value). heightVal - высота щита без бруса
-// крышки, 100*2+torecFrame.len.
-function diagramTorec(count, longbeamVal, widthVal, skinVal, heightVal, widthPxOverride){
-  const variant = nearestTorecVariant(count);
-  const v = TOREC_VARIANTS[variant.count];
-  const records = v.records(Math.round(longbeamVal), Math.round(widthVal), Math.round(skinVal), Math.round(heightVal));
-  return renderDiagram(v.img, 'Щит торцевой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW));
 }
