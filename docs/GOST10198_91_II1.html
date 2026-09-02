@@ -2355,7 +2355,7 @@ function computeGost10198II1(input){
   // стойкой, а не один раз до цикла.
   let t_stojka = skin.value, stojkaExceeded = false;
   let k9Base = L, outerW = W, skidCalcWidth = W, t9=0, w9=0, l9=0, lastSkidInfo=null;
-  let t21=0, crossBeamExceeded=false, crossBeamCount=0;
+  let t21=0, crossBeamExceeded=false, crossBeamCount=0, crossBeamMarginBelowMin=false;
   let t_longbeam=0, w_longbeam=100, longbeamCount=0, longbeamExceeded=false;
   let floorBoardT=0, floorBoardExceeded=false, floorBoardUdel=null;
   let t10=0, w10=0, k10=0, l10=0;
@@ -2375,13 +2375,24 @@ function computeGost10198II1(input){
     const crossBeamRaw = crossBeamThickness(MASS, outerW); // Табл. 14
     crossBeamExceeded = crossBeamRaw.exceeded;
     t21 = ov('t21', roundUpToAvailable(crossBeamRaw.value), 'Толщина поперечного бруса крышки');
-    // Поперечные брусья крышки - на расстоянии осей не более 700мм (по
-    // уточнению пользователя). Брус - тело шириной 100мм (w21), а не точка -
-    // тот же принцип, что и у стоек каркаса (см. minCountBySpan в
-    // src/ii1/logic.js): крайний брус не должен выступать за пределы крышки
-    // по длине, значит пролёт между осями крайних брусьев - L минус ширина
-    // одного бруса, а не L целиком.
-    crossBeamCount = minCountBySpan(L, w21, 700);
+    // Поперечные брусья крышки - расстояние МЕЖДУ ОСЯМИ (с учётом ширины
+    // крайнего бруса) не более 700мм; расположены РАВНОМЕРНО по всей длине
+    // крышки - включая отступы от краёв, которые равны промежуткам между
+    // соседними брусьями (а не flush-edge, как у стоек каркаса) - по прямому
+    // уточнению пользователя. При n брусьях промежутков (n+1) штук, значит
+    // шаг осей = (L+w21)/(n+1) (вывод: см. комментарий у edgeDistCross ниже) -
+    // отсюда минимальное n, при котором шаг осей ещё ≤700мм.
+    crossBeamCount = Math.max(2, Math.ceil((L + w21) / 700 - 1));
+    // Отступ от края крышки до края крайнего бруса при таком n не должен
+    // быть меньше толщины обшивки + толщины стойки + 10мм зазора (по
+    // уточнению пользователя) - иначе брус упрётся в каркас торцевого щита.
+    // Меньше брусьев -> больше отступ, поэтому минимальное n (выбранное выше
+    // из условия шага осей) даёт МАКСИМАЛЬНО возможный отступ - если даже он
+    // не проходит по минимуму, снизить его больше нельзя (меньше n нарушит
+    // шаг осей ≤700мм) - остаётся только предупредить.
+    const crossMinMargin = skin.value + t_stojka + 10;
+    const crossMarginCheck = (L - crossBeamCount*w21) / (crossBeamCount + 1);
+    crossBeamMarginBelowMin = crossMarginCheck < crossMinMargin;
 
     if(solidRigidBase){
       const l9_default = (W>1100) ? 3 : 2;
@@ -2433,7 +2444,11 @@ function computeGost10198II1(input){
       const fillspaceLong = W;
       longbeamCount = minCountBySpan(fillspaceLong, 100, 800);
       const longbeamAxis = clearGapBySpan(fillspaceLong, 100, longbeamCount) + 100; // ось-в-ось (просвет + ширина 1 бруса)
-      const crossBeamAxis = clearGapBySpan(L, w21, crossBeamCount) + w21;
+      // Шаг осей поперечного бруса - той же формулой, что и crossBeamCount
+      // выше (равномерное распределение, включая отступы от краёв), а не
+      // clearGapBySpan (flush-edge, как у стоек) - чтобы сечение продольного
+      // бруса (longBeamSection) считалось по РЕАЛЬНОМУ шагу осей.
+      const crossBeamAxis = (L + w21) / (crossBeamCount + 1);
       const lb = longBeamSection(crossBeamAxis, roundBoardWidths, longbeamAxis);
       t_longbeam = ov('tLongbeam', roundUpToAvailable(lb.t), 'Толщина продольного бруса крышки');
       w_longbeam = lb.w; longbeamExceeded = lb.exceeded;
@@ -2444,6 +2459,9 @@ function computeGost10198II1(input){
 
   if(crossBeamExceeded){
     warnings.push('Масса или наружная ширина ящика вне Табл. 14 — поперечный брус крышки принят по крайнему значению.');
+  }
+  if(crossBeamMarginBelowMin){
+    warnings.push('Отступ от края крышки до крайнего поперечного бруса меньше минимально допустимого (толщина обшивки + толщина стойки + 10мм) даже при минимальном количестве брусьев (2 шт.) — уменьшить его без нарушения шага осей ≤700мм нельзя.');
   }
   if(polozSimpleExceeded){
     warnings.push('Масса вне диапазона таблицы полозьев со сплошным жёстким основанием (500–20000 кг) — сечение принято по крайнему значению.');
@@ -2478,13 +2496,11 @@ function computeGost10198II1(input){
   if(!kryshkaVariant.exact){
     warnings.push(`Крышка: чертёж показывает ближайшее готовое сочетание брусьев (${kryshkaVariant.longbeamCount} продольных, ${kryshkaVariant.crossBeamCount} поперечных) вместо расчётного (${longbeamCount} продольных, ${crossBeamCount} поперечных) — в таблице деталей ниже указано настоящее количество.`);
   }
-  // Отступ от края крышки до края крайнего поперечного бруса - по методике
-  // I-3 (см. diagramKryshkaDefault/diagramKryshka2Beams в src/diagrams.js):
-  // брусья делят длину крышки на (count+1) РАВНЫХ промежутков (равномерное
-  // распределение с одинаковыми отступами по краям), а не flush-edge, как у
-  // стоек каркаса - подтверждено пользователем ("используй методику из
-  // I-3... внутренние поперечные брусья").
-  const edgeDistCross = crossBeamCount > 0 ? Math.round((L - crossBeamCount*w21) / (crossBeamCount + 1)) : Math.round(L/2);
+  // Отступ от края крышки до края крайнего поперечного бруса - та же формула
+  // (count+1 равных промежутков), которой уже задан сам crossBeamCount выше
+  // (см. комментарий там) - по методике I-3 (diagramKryshkaDefault/
+  // diagramKryshka2Beams, src/diagrams.js), подтверждено пользователем.
+  const edgeDistCross = Math.round((L - crossBeamCount*w21) / (crossBeamCount + 1));
   if(floorBoardExceeded){
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 — толщина доски дна принята по крайнему значению.');
   }
