@@ -780,7 +780,7 @@ function buildPrintHtml(){
 
     <div class="part-title">Общий вид ящика</div>
     <div class="spec-row-diagram">
-      <div class="diagram-slot"></div>
+      <div class="diagram-slot"><div class="diagram-wrap"><img src="${BOX_II1_IMG_B64}" alt=""></div></div>
       <div class="print-summary-col">
         <div class="print-summary-block">
           <h2>Внутренние размеры груза, мм</h2>
@@ -806,3 +806,6 @@ function buildPrintHtml(){
     ${commentHtml}
   `;
 }
+
+// Общий вид ящика показываем и на самом сайте, не только в печати.
+document.getElementById('boxView').src = BOX_II1_IMG_B64;

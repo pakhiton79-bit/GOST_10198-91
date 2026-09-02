@@ -1,4 +1,7 @@
 // ГОСТ 10198-91, тип II-1: чертежи расположения деталей.
+// Общий вид ящика (BOX_II1_IMG_B64) - готов, используется как есть (без
+// расчётных подписей), по аналогии с типами I-1/I-3 (см.
+// BOX_I1_IMG_B64/BOX_IMG_B64).
 // Дно/Щит боковой - фото ещё не присланы, используется diagramPlaceholder()
 // (см. src/common-diagrams.js). Крышка и Щит торцевой - готовы (см.
 // diagramKryshka()/diagramTorec() ниже): геометрия (координаты стрелок и
@@ -13,6 +16,8 @@
 // Подписи размеров подставляются расчётными значениями при вызове
 // diagramKryshka()/diagramTorec() - в присланных схемах вместо них было
 // текстовое описание, что показывать.
+
+const BOX_II1_IMG_B64 = "data:image/png;base64,__IMG:box_ii1.png__";
 
 const KRYSHKA_0L_2P_IMG_B64 = "data:image/jpeg;base64,__IMG:kryshka_0l_2p.jpg__";
 const KRYSHKA_0L_3P_IMG_B64 = "data:image/jpeg;base64,__IMG:kryshka_0l_3p.jpg__";
