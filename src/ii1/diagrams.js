@@ -2,10 +2,11 @@
 // Общий вид ящика (BOX_II1_IMG_B64) - готов, используется как есть (без
 // расчётных подписей), по аналогии с типами I-1/I-3 (см.
 // BOX_I1_IMG_B64/BOX_IMG_B64).
-// Дно/Щит боковой - фото ещё не присланы, используется diagramPlaceholder()
-// (см. src/common-diagrams.js). Крышка и Щит торцевой - готовы (см.
-// diagramKryshka()/diagramTorec() ниже): геометрия (координаты стрелок и
-// подписей в натуральных пикселях фото) - из присланных заказчиком схем.
+// Щит боковой - фото ещё не прислано, используется diagramPlaceholder()
+// (см. src/common-diagrams.js). Крышка, Щит торцевой и Дно - готовы (см.
+// diagramKryshka()/diagramTorec()/diagramDno() ниже): геометрия (координаты
+// стрелок и подписей в натуральных пикселях фото) - из присланных заказчиком
+// схем.
 // Крышка - 9 готовых схем по числу продольных/поперечных брусьев (0/2/3/4
 // продольных, 2/3/4 поперечных, не любое сочетание, см.
 // KRYSHKA_LONG_OPTIONS/KRYSHKA_CROSS_BY_LONG/nearestKryshkaVariant ниже).
@@ -18,6 +19,8 @@
 // текстовое описание, что показывать.
 
 const BOX_II1_IMG_B64 = "data:image/png;base64,__IMG:box_ii1.png__";
+const DNO_IMG_B64 = "data:image/jpeg;base64,__IMG:dno_ii1.jpg__";
+const DNO_IW = 2008, DNO_IH = 1212;
 
 const KRYSHKA_0L_2P_IMG_B64 = "data:image/jpeg;base64,__IMG:kryshka_0l_2p.jpg__";
 const KRYSHKA_0L_3P_IMG_B64 = "data:image/jpeg;base64,__IMG:kryshka_0l_3p.jpg__";
@@ -386,4 +389,36 @@ const TOREC_POST_OPTIONS = [2, 3, 4];
 function nearestTorecVariant(count){
   const best = TOREC_POST_OPTIONS.reduce((a,b)=> Math.abs(b-count)<Math.abs(a-count) ? b : a);
   return {count: best, exact: best===count};
+}
+
+// Дно - одна схема (не зависит от количества полозьев, в отличие от Крышки/
+// Щита торцевого) - координаты из присланной пользователем разметки фото
+// dno_ii1.jpg (2008x1212).
+function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal){
+  const stojka = Math.round(stojkaVal), skin = Math.round(skinVal);
+  const skidWidth = Math.round(skidWidthVal), outerLen = Math.round(outerLenVal);
+  const records = [];
+  records.push(
+    {type:'line', x1:102, y1:676, x2:-85, y2:794},
+    {type:'line', x1:813, y1:1092, x2:623, y2:1195},
+    {type:'double', x1:-57, y1:784, x2:643, y2:1183, lx:260, ly:979, text:skidWidth+' мм'}
+  );
+  records.push(
+    {type:'line', x1:666, y1:1080, x2:990, y2:1258},
+    {type:'line', x1:1903, y1:434, x2:2160, y2:588},
+    {type:'double', x1:2158, y1:581, x2:983, y2:1254, lx:1610, ly:924, text:outerLen+' мм'}
+  );
+  records.push(
+    {type:'line', x1:152, y1:746, x2:-29, y2:639},
+    {type:'line', x1:118, y1:771, x2:-70, y2:658},
+    {type:'line', x1:-22, y1:685, x2:14, y2:665},
+    {type:'single', x1:-7, y1:422, x2:-6, y2:676, lx:-8, ly:375, text:(stojka+skin)+' мм'}
+  );
+  records.push(
+    {type:'line', x1:1870, y1:522, x2:2046, y2:422},
+    {type:'line', x1:1839, y1:495, x2:2009, y2:399},
+    {type:'line', x1:1983, y1:414, x2:2025, y2:433},
+    {type:'single', x1:2007, y1:223, x2:2007, y2:424, lx:2006, ly:183, text:stojka+' мм'}
+  );
+  return renderDiagram(DNO_IMG_B64, 'Дно - схема расположения деталей', DNO_IW, DNO_IH, records, undefined, photoStrokeScale(DNO_IW));
 }
