@@ -43,7 +43,7 @@ const TYPES = [
     // нейтральная SVG-заглушка вместо чертежа, без отдельного файла картинки.
     name: 'Тип II-1',
     file: 'GOST10198_91_II1.html',
-    image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="%23FAF8F5"/><text x="80" y="64" font-family="sans-serif" font-size="13" fill="%236B625D" text-anchor="middle">Чертёж скоро</text></svg>',
+    image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="%23F6F0E6"/><text x="80" y="64" font-family="sans-serif" font-size="13" fill="%2336394A" text-anchor="middle">Чертёж скоро</text></svg>',
     badge: NOT_READY_BADGE,
     badgeDanger: true
   }

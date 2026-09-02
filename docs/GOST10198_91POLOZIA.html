@@ -10,26 +10,37 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* Палитра и токены — см. design.md (WOODCALC UI DESIGN SPEC v1.0) */
-    --bg: #F7F5F2;
+    /* Палитра и токены — "бумажная обсерватория" (см. превью-артефакт,
+       одобренный пользователем): почти ахроматичный холст + два оттенка
+       коричневого вместо синих акцентов референса. --accent (Umber) -
+       ТОЛЬКО заливка основной кнопки/CTA; --accent2 (Amber) - все остальные
+       акцентные касания (фокус, ссылки, чекбоксы, hover-обводки, eyebrow) -
+       та же роль, что у Cobalt Surface/Electric Blue в референсе. Тени
+       убраны везде (--shadow-sm/--shadow-lg = none) - элевация через
+       обводки-волоски и тонировку фона, не через box-shadow.
+       Text/border palette (Midnight Ink/Slate/Frost Border) - как в самом
+       референсе, без изменений (правки пользователя касались только фонов и
+       синих акцентов, не текста/обводок). */
+    --bg: #FFFFFF;
     --panel: #FFFFFF;
-    --panel-hover: #FBFAF8;
-    --table-header-bg: #FAF8F5;
-    --ink: #1F1B18;
-    --ink-soft: #6B625D;
-    --rule: #E8E3DD;
-    --border-input: #E8E3DD;
-    --border-btn: #D7D0C8;
-    --secondary-hover: #F5F3F0;
-    --accent: #4E342E;
-    --accent-hover: #5D4037;
-    --accent-wash: #EFE9E6;
+    --panel-hover: #FAF6EF;
+    --table-header-bg: #F6F0E6;
+    --ink: #091135;
+    --ink-soft: #36394A;
+    --rule: #E1E9F0;
+    --border-input: #E1E9F0;
+    --border-btn: #E1E9F0;
+    --secondary-hover: #F6F0E6;
+    --accent: #8A4B26;
+    --accent-hover: #6E3B1C;
+    --accent2: #C97E3B;
+    --accent-wash: #F1E4D8;
     --ok: #2E7D32;
     --warn: #B7791F;
     --warn-wash: #FBF3E4;
     --error: #c23b2c;
-    --shadow-sm: 0 1px 2px rgba(31,27,24,.06);
-    --shadow-lg: 0 8px 24px rgba(31,27,24,.10);
+    --shadow-sm: none;
+    --shadow-lg: none;
   }
   *{box-sizing:border-box;}
   html{overflow-x:hidden;}
@@ -58,7 +69,7 @@
     color:var(--ink-soft);
     text-decoration:none;
   }
-  .top-nav a:hover{color:var(--accent);}
+  .top-nav a:hover{color:var(--accent2);}
 
   header{
     border-bottom:1px solid var(--rule);
@@ -71,7 +82,7 @@
     font-weight:600;
     letter-spacing:.1em;
     text-transform:uppercase;
-    color:var(--accent);
+    color:var(--accent2);
     margin-bottom:8px;
   }
   h1{
@@ -136,7 +147,7 @@
     width:100%;
     padding:12px 14px;
     border:1px solid var(--border-input);
-    border-radius:10px;
+    border-radius:8px;
     font-family:inherit;
     font-size:16px;
     background:#ffffff;
@@ -149,24 +160,24 @@
     margin:0;
   }
   input[type=number]:focus{
-    outline:2px solid var(--accent);
+    outline:2px solid var(--accent2);
     outline-offset:2px;
-    border-color:var(--accent);
+    border-color:var(--accent2);
   }
   select{
     width:100%;
     padding:12px 14px;
     border:1px solid var(--border-input);
-    border-radius:10px;
+    border-radius:8px;
     font-family:inherit;
     font-size:16px;
     background:#ffffff;
     color:var(--ink);
   }
   select:focus{
-    outline:2px solid var(--accent);
+    outline:2px solid var(--accent2);
     outline-offset:2px;
-    border-color:var(--accent);
+    border-color:var(--accent2);
   }
 
   .comment-field{
@@ -174,7 +185,7 @@
     min-height:110px;
     padding:14px 16px;
     border:1px solid var(--border-input);
-    border-radius:10px;
+    border-radius:8px;
     font-family:inherit;
     font-size:15px;
     line-height:1.5;
@@ -184,9 +195,9 @@
     box-sizing:border-box;
   }
   .comment-field:focus{
-    outline:2px solid var(--accent);
+    outline:2px solid var(--accent2);
     outline-offset:2px;
-    border-color:var(--accent);
+    border-color:var(--accent2);
   }
   .comment-field::placeholder{
     color:var(--ink-soft);
@@ -203,7 +214,7 @@
     font-weight:600;
     letter-spacing:.015em;
     cursor:pointer;
-    border-radius:10px;
+    border-radius:8px;
     box-shadow:var(--shadow-sm);
     transition:background-color .15s ease;
   }
@@ -347,14 +358,14 @@
   .spec-table:last-child{margin-bottom:0;}
   .editable-cell{
     cursor:text;
-    border-bottom:1px dashed var(--accent);
+    border-bottom:1px dashed var(--accent2);
     border-radius:4px;
   }
   .editable-cell:hover{background:var(--accent-wash);}
   .editable-cell:focus{
     outline:none;
     background:var(--accent-wash);
-    border-bottom:1px solid var(--accent);
+    border-bottom:1px solid var(--accent2);
   }
 
   .part-title{
@@ -519,7 +530,7 @@
     gap:12px;
     padding:12px 14px;
     border:1px solid var(--border-input);
-    border-radius:10px;
+    border-radius:8px;
     background:#ffffff;
     color:var(--ink);
     font-family:inherit;
@@ -527,7 +538,7 @@
     cursor:pointer;
     text-align:left;
   }
-  .thickness-dropdown-btn:hover{background:#ffffff;border-color:var(--accent);}
+  .thickness-dropdown-btn:hover{background:#ffffff;border-color:var(--accent2);}
   .thickness-dropdown-btn span:first-child{
     overflow:hidden;
     text-overflow:ellipsis;
@@ -583,7 +594,7 @@
     margin:0;
     cursor:pointer;
   }
-  .thickness-checkbox-list input{margin:0;accent-color:var(--accent);}
+  .thickness-checkbox-list input{margin:0;accent-color:var(--accent2);}
   @media screen and (max-width:640px){
     .thickness-checkbox-list{grid-template-rows:repeat(14,auto);}
   }
@@ -604,7 +615,7 @@
     margin:0;
     cursor:pointer;
   }
-  .fastening-option-list input{margin-top:3px;flex:0 0 auto;accent-color:var(--accent);}
+  .fastening-option-list input{margin-top:3px;flex:0 0 auto;accent-color:var(--accent2);}
   .fastening-option-disabled{opacity:.45;cursor:not-allowed !important;}
   .fastening-option-disabled input{cursor:not-allowed !important;}
   .fastening-option-list .option-hint{
@@ -674,20 +685,20 @@
   #printArea{
     background:#fff;
     font-family:'Courier New', monospace;
-    color:#1F1B18;
+    color:#091135;
     font-size:16px;
     font-weight:700;
     line-height:1.4;
   }
-  #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#4E342E;font-weight:700;}
-  #printArea .print-subtitle{color:#6B625D;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
+  #printArea h1{font-size:calc(var(--pk)*24px);margin:0 0 6px;font-family:Georgia, serif;color:#8A4B26;font-weight:700;}
+  #printArea .print-subtitle{color:#36394A;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
 
   /* Внутренние размеры груза + Итог — в колонке справа от чертежа ящика (см. .print-summary-col) */
   #printArea .print-summary-block{flex:0 0 auto;}
-  #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#4E342E;margin:0 0 6px;font-weight:700;}
+  #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#8A4B26;margin:0 0 6px;font-weight:700;}
   #printArea .print-plain-table{border-collapse:collapse;width:100%;}
   #printArea .print-plain-table td{padding:calc(var(--pk)*2px) 0;text-align:left;font-size:calc(var(--pk)*13px);font-weight:700;white-space:nowrap;}
-  #printArea .print-plain-table td.k{color:#6B625D;}
+  #printArea .print-plain-table td.k{color:#36394A;}
   #printArea .print-plain-table td:not(.k){width:100%;text-align:right;}
 
   /* Таблицы конфигурации досок.
@@ -697,12 +708,12 @@
   #printArea .spec-table th:first-child, #printArea .spec-table td:first-child{width:48%;}
   #printArea .spec-table th:not(:first-child), #printArea .spec-table td:not(:first-child){width:13%;}
   #printArea .spec-table th, #printArea .spec-table td{
-    text-align:left;padding:calc(var(--pk)*6px) calc(var(--pk)*4px);font-size:calc(var(--pk)*19px);font-weight:700;border-bottom:1px solid #E8E3DD;white-space:nowrap;overflow:hidden;
+    text-align:left;padding:calc(var(--pk)*6px) calc(var(--pk)*4px);font-size:calc(var(--pk)*19px);font-weight:700;border-bottom:1px solid #E1E9F0;white-space:nowrap;overflow:hidden;
   }
-  #printArea .spec-table th{color:#6B625D;text-transform:uppercase;font-size:calc(var(--pk)*10px);letter-spacing:0;font-weight:700;}
+  #printArea .spec-table th{color:#36394A;text-transform:uppercase;font-size:calc(var(--pk)*10px);letter-spacing:0;font-weight:700;}
   #printArea .spec-table td.num, #printArea .spec-table th.num{text-align:right;}
 
-  #printArea .part-title{font-size:calc(var(--pk)*20px);font-weight:700;color:#4E342E;margin:0 0 calc(var(--pk)*6px);}
+  #printArea .part-title{font-size:calc(var(--pk)*20px);font-weight:700;color:#8A4B26;margin:0 0 calc(var(--pk)*6px);}
 
   /* Секция = заголовок узла + (чертёж | таблица). Обычный блочный контейнер:
      на нём браузер надёжно соблюдает «не разрывать между листами». */
@@ -713,7 +724,7 @@
     line-height:1.5;
     white-space:pre-wrap;
     word-break:break-word;
-    border:1px solid #E8E3DD;
+    border:1px solid #E1E9F0;
     border-radius:2px;
     padding:calc(var(--pk)*10px) calc(var(--pk)*12px);
   }
@@ -739,7 +750,7 @@
   #printArea .diagram-labels{position:absolute;inset:0;pointer-events:none;}
   #printArea .diagram-label{
     position:absolute;transform:translate(-50%,-50%);background:#fff;
-    border:calc(var(--pk)*var(--dk)*2px) solid #4E342E;color:#1F1B18;font-size:calc(var(--pk)*var(--dk)*15px);font-weight:700;
+    border:calc(var(--pk)*var(--dk)*2px) solid #8A4B26;color:#091135;font-size:calc(var(--pk)*var(--dk)*15px);font-weight:700;
     padding:calc(var(--pk)*var(--dk)*2px) calc(var(--pk)*var(--dk)*6px);white-space:nowrap;line-height:1.3;
   }
   #printArea .diagram-label-vertical{
@@ -1344,17 +1355,17 @@ function renderDiagram(imgB64, altText, IW, IH, records, widthPx, strokeScale){
     const hasLabel = ('lx' in r);
     if(hasLine){
       if(r.type==='line'){
-        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" stroke="#4E342E" stroke-width="${lineWidth}"/>`;
+        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" stroke="#8A4B26" stroke-width="${lineWidth}"/>`;
       } else if(r.type==='double'){
         const headStart = headTriangle(r.x2,r.y2,r.x1,r.y1,scale);
         const headEnd   = headTriangle(r.x1,r.y1,r.x2,r.y2,scale);
-        shapes += `<line x1="${headStart.bx.toFixed(1)}" y1="${headStart.by.toFixed(1)}" x2="${headEnd.bx.toFixed(1)}" y2="${headEnd.by.toFixed(1)}" stroke="#4E342E" stroke-width="${lineWidth}"/>`;
-        shapes += `<polygon points="${headStart.poly}" fill="#4E342E"/>`;
-        shapes += `<polygon points="${headEnd.poly}" fill="#4E342E"/>`;
+        shapes += `<line x1="${headStart.bx.toFixed(1)}" y1="${headStart.by.toFixed(1)}" x2="${headEnd.bx.toFixed(1)}" y2="${headEnd.by.toFixed(1)}" stroke="#8A4B26" stroke-width="${lineWidth}"/>`;
+        shapes += `<polygon points="${headStart.poly}" fill="#8A4B26"/>`;
+        shapes += `<polygon points="${headEnd.poly}" fill="#8A4B26"/>`;
       } else if(r.type==='single'){
         const head = headTriangle(r.x1,r.y1,r.x2,r.y2,scale);
-        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${head.bx.toFixed(1)}" y2="${head.by.toFixed(1)}" stroke="#4E342E" stroke-width="${lineWidth}"/>`;
-        shapes += `<polygon points="${head.poly}" fill="#4E342E"/>`;
+        shapes += `<line x1="${r.x1}" y1="${r.y1}" x2="${head.bx.toFixed(1)}" y2="${head.by.toFixed(1)}" stroke="#8A4B26" stroke-width="${lineWidth}"/>`;
+        shapes += `<polygon points="${head.poly}" fill="#8A4B26"/>`;
       }
     }
     if(hasLabel){
