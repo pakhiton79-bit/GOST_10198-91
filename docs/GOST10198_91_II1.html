@@ -3230,6 +3230,9 @@ function computeGost10198II1(input){
     });
   }
   const endBeam = endBeamSection(MASS);
+  if(endBeam.exceeded){
+    warnings.push('Масса вне диапазона п.1.6.8 (≤20000 кг) — сечение торцового бруса дна принято по крайнему значению.');
+  }
   const t11 = roundUpToAvailable(endBeam.h), w11 = endBeam.w, k11 = W, l11 = 2;
   // t11Display - тот же изолированный override, что и у t9 выше: t11 сам по
   // себе не переопределяется (используется дальше в volDno).
