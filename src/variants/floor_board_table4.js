@@ -12,7 +12,7 @@
       warnings.push(`Удельная нагрузка на дно ${floor.udel.toFixed(2)} кг/см² вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
     }
     if(distExceeded){
-      warnings.push(`Расстояние между полозьями ${Math.round(floorSkidDistance)} мм вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
+      warnings.push(`Шаг полозьев ${Math.round(floorSkidDistance)} мм вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
     }
   }
   const t12 = removeFloorBoards ? 0 : ov('t12Value', roundUpToAvailable(floor.value), 'Толщина доски дна'), k12=W;
