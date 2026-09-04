@@ -432,14 +432,21 @@ function computeGost10198II1(input){
   if(bokFrame.len <= 0){
     return {error: `Внутренняя высота груза ${H} мм слишком мала для каркаса бокового щита — расчёт не выполняется.`};
   }
-  // Чертёж торцевого щита (src/ii1/diagrams.js) готов для 1 этажа (2/3/4
-  // стойки) и пока только начала 2-этажных схем (2 стойки) - при другом
-  // числе стоек/этажности берётся ближайшая доступная схема (сначала по
-  // этажности, затем по числу стоек внутри неё, см. nearestTorecVariant) -
-  // таблица деталей всегда показывает настоящее количество.
+  // Чертёж торцевого щита (src/ii1/diagrams.js) готов для 1 и 2 этажей (2/3/4
+  // стойки на каждую этажность) - при другом числе стоек/этажности берётся
+  // ближайшая доступная схема (сначала по этажности, затем по числу стоек
+  // внутри неё, см. nearestTorecVariant) - таблица деталей всегда показывает
+  // настоящее количество.
   const torecVariant = nearestTorecVariant(torecFrame.count, torecFrame.floors);
   if(!torecVariant.exact){
     warnings.push(`Щит торцевой: чертёж — ближайшая готовая схема (${torecVariant.count} стойки/${torecVariant.floors} эт.) вместо расчётной (${torecFrame.count} стоек/${torecFrame.floors} эт.); точное количество см. в таблице ниже.`);
+  }
+  // Чертёж бокового щита - пока готов только для 1 этажа/2 стоек (1 раскосина,
+  // см. BOK_VARIANTS в src/ii1/diagrams.js) - остальные комбинации берут эту же
+  // схему (nearestBokVariant), с тем же предупреждением, что и у торца.
+  const bokVariant = nearestBokVariant(bokFrame.count, bokFrame.floors);
+  if(!bokVariant.exact){
+    warnings.push(`Щит боковой: чертёж — ближайшая готовая схема (${bokVariant.count} стойки/${bokVariant.floors} эт.) вместо расчётной (${bokFrame.count} стоек/${bokFrame.floors} эт.); точное количество см. в таблице ниже.`);
   }
 
   // --- ЩИТ ТОРЦЕВОЙ (расчёт на 1 щит, далее удвоение) ---
@@ -560,8 +567,8 @@ function computeGost10198II1(input){
 
   // Только на экране - в печать warnings не попадают (buildPrintHtml() их не
   // использует), поэтому отдельно скрывать это уведомление для печати не
-  // нужно (тот же приём, что и в типах I-1/I-3). Чертежи (пока заглушки, см.
-  // diagramPlaceholder ниже) - не параметрический рендер под конкретную
+  // нужно (тот же приём, что и в типах I-1/I-3). Чертежи - готовые
+  // иллюстративные фото/схемы, а не параметрический рендер под конкретную
   // введённую толщину, поэтому при override (в т.ч. изолированном - t9/t11
   // выше) могут не точно её отражать.
   if(overridesApplied > 0){
@@ -571,8 +578,8 @@ function computeGost10198II1(input){
   const result = {
     warnings, dno, kryshka, endPanel, bokovoy,
     outerL, outerW, outerH, totalVolume, normaVremeni,
-    // Параметры для чертежей (Дно/Щит торцевой/Щит боковой - пока заглушки,
-    // Крышка - готова, см. src/ii1/diagrams.js).
+    // Параметры для чертежей (Дно/Крышка/Щит торцевой/Щит боковой - см.
+    // src/ii1/diagrams.js).
     k9Base, W, L, H, t_stojka, skin, t21, t_longbeam, lidLayout,
     torecFrame, bokFrame, panelHeightFull,
     crossBeamCount, longbeamCount, t32Display, edgeDistCross, sideFrameDisplay
@@ -662,7 +669,7 @@ function calculate(){
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.t_stojka, calc.skin.value, calc.W + calc.t_stojka*2, calc.k9Base) + `</div>` + renderSection('', calc.dno) + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, calc.W + calc.t_stojka*2, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len) + `</div>` + renderSection('', calc.endPanel) + `</div>`;
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramPlaceholder('Щит боковой') + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam, calc.L, calc.skin.value, calc.panelHeightFull, 100 + calc.bokFrame.len) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
