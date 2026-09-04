@@ -2779,6 +2779,31 @@ function onSkidForkliftExclusive(el){
   invalidateCalc();
 }
 
+// ============ Запоминание галочек «Дополнительные опции» ============
+// Тот же принцип, что и у THICKNESS_STORAGE_KEY/FASTENING_STORAGE_KEY выше -
+// свой набор ключей localStorage для этой комплектации ящика (t1-k3), чтобы
+// выбор не «утекал» между калькуляторами разных типов. По просьбе
+// пользователя: все чекбоксы опций должны запоминаться между заходами, как
+// уже давно работает для толщин "в наличии" и способа крепления. Общий и для
+// GOST10198_91POLOZIA.html, и для GOST10198_91DOSKI_DNA.html (обе собраны из
+// этого же app.js) - у них уже общий FASTENING_STORAGE_KEY, поэтому здесь
+// логично то же самое: переключение "за полозья"/"к доскам дна" не должно
+// сбрасывать остальные опции.
+const OPTIONS_STORAGE_PREFIX = 'silvan-gost10198-t1-k3-opt-';
+function persistCheckbox(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const key = OPTIONS_STORAGE_PREFIX + id;
+  try{
+    const saved = localStorage.getItem(key);
+    if(saved !== null) el.checked = (saved === '1');
+  }catch(e){}
+  el.addEventListener('change', ()=>{
+    try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
+  });
+}
+['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards'].forEach(persistCheckbox);
+
 // ============ Чистый расчёт (без обращений к DOM) - тип I-3 ============
 // Разделено на «посчитать» (эта функция) и «показать» (calculate() ниже) -
 // само разделение сделано только ради структуры (проще выделить в отдельный
