@@ -105,6 +105,7 @@
   }
   .stage{ position:relative; }
   .stage.tool-armed{ cursor:crosshair; }
+  .stage.placing-label{ cursor:crosshair; outline:2px dashed var(--accent); outline-offset:-2px; }
   .stage-image{ position:absolute; display:block; user-select:none; -webkit-user-drag:none; box-shadow:var(--shadow); }
   .svg-layer{ position:absolute; left:0; top:0; pointer-events:none; }
   .svg-layer .hitline{ pointer-events:none; }
@@ -311,6 +312,7 @@
   var currentTool = "double";
   var drawPending = null; // {x1,y1}
   var dragInfo = null; // {kind:'p1'|'p2'|'label', shapeId, }
+  var placingLabelFor = null; // id той фигуры, для которой ждём клика по фото (место подписи)
 
   var el = {};
   ["stageViewport","stage","stageImage","svgLayer","handlesLayer","labelsLayer",
@@ -429,6 +431,24 @@
     });
   }
 
+  function refreshLabelBadge(shapeId){
+    var badge = el.labelsLayer.querySelector('[data-shape-id="'+shapeId+'"]');
+    var s = shapes.filter(function(x){ return x.id === shapeId; })[0];
+    if (!badge || !s || !s.label) return;
+    badge.textContent = s.label.text || "(пусто)";
+    badge.className = "label-badge" + (s.label.vertical ? " vertical" : "");
+  }
+
+  function armLabelPlacement(shapeId, hint){
+    placingLabelFor = shapeId;
+    el.stage.classList.add("placing-label");
+    showToast(hint);
+  }
+  function disarmLabelPlacement(){
+    placingLabelFor = null;
+    el.stage.classList.remove("placing-label");
+  }
+
   function typeGlyph(t){ return t === "line" ? "—" : (t === "single" ? "→" : "↔"); }
 
   function renderList(){
@@ -487,16 +507,26 @@
       if (s.label) {
         var lrow = document.createElement("div");
         lrow.className = "label-row";
+
+        var moveBtn = document.createElement("button");
+        moveBtn.className = "btn btn-ghost btn-icon btn-sm";
+        moveBtn.textContent = "📍"; moveBtn.title = "Кликнуть на фото, куда поместить подпись";
+        moveBtn.addEventListener("click", function(){ armLabelPlacement(s.id, "Кликните на фото, куда переместить подпись"); });
+        lrow.appendChild(moveBtn);
+
         var txt = document.createElement("input");
         txt.type = "text"; txt.value = s.label.text; txt.placeholder = "текст подписи";
-        txt.addEventListener("input", function(){ s.label.text = txt.value; render(); });
+        // Точечное обновление (только бейдж на холсте + код), а не полный render() -
+        // иначе перестройка списка на каждую клавишу убивает фокус поля (можно
+        // напечатать только 1 символ).
+        txt.addEventListener("input", function(){ s.label.text = txt.value; refreshLabelBadge(s.id); renderCode(); saveState(); });
         lrow.appendChild(txt);
 
         var vlabel = document.createElement("label");
         vlabel.className = "vert-toggle";
         var vcb = document.createElement("input");
         vcb.type = "checkbox"; vcb.checked = !!s.label.vertical;
-        vcb.addEventListener("change", function(){ s.label.vertical = vcb.checked; render(); });
+        vcb.addEventListener("change", function(){ s.label.vertical = vcb.checked; refreshLabelBadge(s.id); renderCode(); saveState(); });
         vlabel.appendChild(vcb);
         vlabel.appendChild(document.createTextNode("верт."));
         lrow.appendChild(vlabel);
@@ -520,6 +550,7 @@
           render();
           var input = row.querySelector(".label-row input[type=text]");
           if (input) input.focus();
+          armLabelPlacement(s.id, "Кликните на фото, куда поместить подпись (или продолжайте печатать текст)");
         });
         row.appendChild(addLink);
       }
@@ -561,6 +592,13 @@
     if (ev.target !== el.stage && ev.target !== el.stageImage && ev.target !== el.svgLayer) return;
     if (!IW) return;
     var n = toNatural(ev.clientX, ev.clientY);
+    if (placingLabelFor) {
+      var target = shapes.filter(function(x){ return x.id === placingLabelFor; })[0];
+      if (target && target.label) { target.label.lx = n.x; target.label.ly = n.y; }
+      disarmLabelPlacement();
+      render();
+      return;
+    }
     if (!drawPending) {
       drawPending = { x1: n.x, y1: n.y };
       render();
@@ -582,7 +620,9 @@
   });
 
   window.addEventListener("keydown", function(ev){
-    if (ev.key === "Escape" && drawPending) { drawPending = null; render(); }
+    if (ev.key !== "Escape") return;
+    if (placingLabelFor) { disarmLabelPlacement(); render(); }
+    else if (drawPending) { drawPending = null; render(); }
   });
 
   function onHandlePointerDown(ev){
