@@ -553,7 +553,7 @@ function computeGost10198II1(input){
 
   // --- Итоговый расход пиломатериала ---
   const totalVolume = volDno + volKryshka + 2*volTorPanel + 2*volBokPanel;
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
 
   const outerL = k9Base;
 
@@ -728,7 +728,7 @@ function recalcFromTable(){
     const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
     totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
   });
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
@@ -834,3 +834,4 @@ function buildPrintHtml(){
 
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_II1_IMG_B64;
+initTimeSettings(TIME_SETTINGS_STORAGE_KEY);

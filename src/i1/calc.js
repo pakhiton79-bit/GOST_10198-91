@@ -262,7 +262,7 @@ function computeGost10198I1(input){
   const volBok = bokovoy.reduce((s,r)=>s+vol(r.t,r.w,r.l,r.qty),0);
   const volTorec = torec.reduce((s,r)=>s+vol(r.t,r.w,r.l,r.qty),0);
   const totalVolume = volDno + volKryshka + 2*volBok + 2*volTorec;
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
 
   if(plankQty > 4){
     warnings.push(`Планки: чертёж — макс. 4 (расчётных ${plankQty}); точное количество см. в таблице ниже.`);
@@ -410,7 +410,7 @@ function recalcFromTable(){
     const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
     totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
   });
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
@@ -513,3 +513,4 @@ function buildPrintHtml(){
 
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_I1_IMG_B64;
+initTimeSettings(TIME_SETTINGS_STORAGE_KEY);

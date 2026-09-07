@@ -330,6 +330,97 @@
     .summary{grid-template-columns:1fr;}
   }
 
+  /* ============ Шестерёнка настроек нормы времени ============ */
+  .time-tile{position:relative;}
+  .time-settings-btn{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:26px;
+    height:26px;
+    padding:0;
+    margin:0;
+    border:1px solid var(--rule);
+    border-radius:8px;
+    background:#ffffff;
+    color:var(--ink-soft);
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .time-settings-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(9,17,53,.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+  .modal-overlay[hidden]{display:none;}
+  .modal-box{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:14px;
+    box-shadow:var(--shadow-lg);
+    padding:28px;
+    max-width:380px;
+    width:100%;
+  }
+  .modal-box h3{
+    margin:0 0 20px;
+    font-size:16px;
+    font-weight:600;
+    color:var(--ink);
+    padding-right:24px;
+  }
+  .modal-close{
+    position:absolute;
+    top:14px;
+    right:14px;
+    width:28px;
+    height:28px;
+    padding:0;
+    margin:0;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .modal-close:hover{color:var(--accent2);}
+  .modal-field{margin-bottom:20px;}
+  .modal-field:last-child{margin-bottom:0;}
+  .modal-field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .modal-slider-row{display:flex;align-items:center;gap:10px;}
+  .modal-slider-row input[type="range"]{flex:1;min-width:0;}
+  .modal-slider-row input[type="number"]{
+    width:64px;
+    flex:0 0 auto;
+    padding:6px 8px;
+    border:1px solid var(--border-input);
+    border-radius:6px;
+    font-family:inherit;
+    font-size:13px;
+    color:var(--ink);
+  }
+
   table{
     width:100%;
     table-layout:fixed;
@@ -941,8 +1032,9 @@
             <div class="label">Расход пиломатериала</div>
             <div class="value" id="outVolume">— <span>м³</span></div>
           </div>
-          <div>
+          <div class="time-tile">
             <div class="label">Норма времени</div>
+            <button type="button" class="time-settings-btn" id="timeSettingsBtn" onclick="onTimeSettingsOpen()" aria-label="Настройки нормы времени" title="Настройки нормы времени">⚙</button>
             <div class="value" id="outTime">— <span>ч</span></div>
           </div>
         </div>
@@ -960,6 +1052,27 @@
     </div>
 
     <div class="disclaimer" style="margin-top:20px;">Калькулятор может ошибаться. Проверяйте результаты перед использованием в производстве.</div>
+  </div>
+
+  <div class="modal-overlay" id="timeSettingsOverlay" onclick="onTimeSettingsOverlayClick(event)" hidden>
+    <div class="modal-box">
+      <button type="button" class="modal-close" onclick="onTimeSettingsClose()" aria-label="Закрыть">✕</button>
+      <h3>Настройки нормы времени</h3>
+      <div class="modal-field">
+        <label for="baseProductivityInput">Базовая производительность, м³/ч</label>
+        <div class="modal-slider-row">
+          <input type="range" id="baseProductivitySlider" min="0" max="6" step="1" oninput="onBaseProductivitySliderInput()">
+          <input type="number" id="baseProductivityInput" step="0.01" min="0.01" oninput="onBaseProductivityInputChange()">
+        </div>
+      </div>
+      <div class="modal-field">
+        <label for="timeCoeffInput">Коэффициент времени</label>
+        <div class="modal-slider-row">
+          <input type="range" id="timeCoeffSlider" min="0" max="6" step="1" oninput="onTimeCoeffSliderInput()">
+          <input type="number" id="timeCoeffInput" step="0.01" min="0.01" oninput="onTimeCoeffInputChange()">
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1926,6 +2039,123 @@ function applyDiagramWidths(scaleBox, pk){
   });
 }
 
+// Настройки нормы времени (шестерёнка у плитки "Норма времени" в ИТОГ) -
+// общие для всех 3 типов ящика, но сохраняются в localStorage отдельно
+// для каждого типа (ключ storageKey передаётся в initTimeSettings() из
+// ui.js/app.js/calc.js этого типа - тот же приём, что и у THICKNESS_STORAGE_KEY).
+// Норма времени = объём пиломатериала (м³) / базовая производительность
+// (м³/ч) * коэффициент времени. Оба параметра настраиваются двумя
+// ползунками с фиксированными остановками (плюс поле ручного ввода любого
+// значения) - по умолчанию 0.06 м³/ч и коэффициент 1.2 (середина списков
+// остановок обоих ползунков).
+const TIME_SETTINGS_PRODUCTIVITY_STEPS = [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09];
+const TIME_SETTINGS_COEFF_STEPS = [0.5, 0.7, 1.0, 1.2, 1.5, 2.0, 3.0];
+const TIME_SETTINGS_DEFAULTS = { baseProductivity: 0.06, timeCoeff: 1.2 };
+
+// totalVolume последнего расчёта - запоминается при каждом вызове
+// computeNormaVremeni() (единственное место, где объём и ключ хранения
+// оказываются вместе), чтобы при изменении ползунков в уже открытой
+// шестерёнке можно было сразу пересчитать и обновить плитку, не заставляя
+// пользователя заново нажимать «Рассчитать».
+let _timeSettingsLastVolume = null;
+
+function loadTimeSettings(storageKey){
+  try{
+    const raw = localStorage.getItem(storageKey);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      const bp = Number(parsed.baseProductivity);
+      const tc = Number(parsed.timeCoeff);
+      return {
+        baseProductivity: bp > 0 ? bp : TIME_SETTINGS_DEFAULTS.baseProductivity,
+        timeCoeff: tc > 0 ? tc : TIME_SETTINGS_DEFAULTS.timeCoeff,
+      };
+    }
+  }catch(e){}
+  return Object.assign({}, TIME_SETTINGS_DEFAULTS);
+}
+
+function saveTimeSettings(storageKey, settings){
+  try{ localStorage.setItem(storageKey, JSON.stringify(settings)); }catch(e){}
+}
+
+function computeNormaVremeni(totalVolume, storageKey){
+  _timeSettingsLastVolume = totalVolume;
+  const s = loadTimeSettings(storageKey);
+  return roundup((totalVolume / s.baseProductivity) * s.timeCoeff, 1);
+}
+
+function timeSettingsNearestStepIndex(steps, value){
+  let bestIdx = 0, bestDiff = Infinity;
+  steps.forEach((v, i)=>{
+    const diff = Math.abs(v - value);
+    if(diff < bestDiff){ bestDiff = diff; bestIdx = i; }
+  });
+  return bestIdx;
+}
+
+function initTimeSettings(storageKey){
+  const btn = document.getElementById('timeSettingsBtn');
+  const overlay = document.getElementById('timeSettingsOverlay');
+  if(!btn || !overlay) return;
+
+  const bpSlider = document.getElementById('baseProductivitySlider');
+  const bpInput = document.getElementById('baseProductivityInput');
+  const tcSlider = document.getElementById('timeCoeffSlider');
+  const tcInput = document.getElementById('timeCoeffInput');
+
+  function syncFieldsFromSettings(){
+    const s = loadTimeSettings(storageKey);
+    bpSlider.value = timeSettingsNearestStepIndex(TIME_SETTINGS_PRODUCTIVITY_STEPS, s.baseProductivity);
+    bpInput.value = s.baseProductivity;
+    tcSlider.value = timeSettingsNearestStepIndex(TIME_SETTINGS_COEFF_STEPS, s.timeCoeff);
+    tcInput.value = s.timeCoeff;
+  }
+
+  function applySettings(next){
+    saveTimeSettings(storageKey, next);
+    if(_timeSettingsLastVolume != null){
+      const val = computeNormaVremeni(_timeSettingsLastVolume, storageKey);
+      const el = document.getElementById('outTime');
+      if(el) el.innerHTML = `${val} <span>ч</span>`;
+    }
+  }
+
+  window.onTimeSettingsOpen = function(){
+    syncFieldsFromSettings();
+    overlay.hidden = false;
+  };
+  window.onTimeSettingsClose = function(){
+    overlay.hidden = true;
+  };
+  window.onTimeSettingsOverlayClick = function(event){
+    if(event.target === overlay) overlay.hidden = true;
+  };
+
+  window.onBaseProductivitySliderInput = function(){
+    const v = TIME_SETTINGS_PRODUCTIVITY_STEPS[parseInt(bpSlider.value, 10)];
+    bpInput.value = v;
+    applySettings({ baseProductivity: v, timeCoeff: loadTimeSettings(storageKey).timeCoeff });
+  };
+  window.onBaseProductivityInputChange = function(){
+    const v = parseFloat(String(bpInput.value).replace(',', '.'));
+    if(!(v > 0)) return;
+    bpSlider.value = timeSettingsNearestStepIndex(TIME_SETTINGS_PRODUCTIVITY_STEPS, v);
+    applySettings({ baseProductivity: v, timeCoeff: loadTimeSettings(storageKey).timeCoeff });
+  };
+  window.onTimeCoeffSliderInput = function(){
+    const v = TIME_SETTINGS_COEFF_STEPS[parseInt(tcSlider.value, 10)];
+    tcInput.value = v;
+    applySettings({ baseProductivity: loadTimeSettings(storageKey).baseProductivity, timeCoeff: v });
+  };
+  window.onTimeCoeffInputChange = function(){
+    const v = parseFloat(String(tcInput.value).replace(',', '.'));
+    if(!(v > 0)) return;
+    tcSlider.value = timeSettingsNearestStepIndex(TIME_SETTINGS_COEFF_STEPS, v);
+    applySettings({ baseProductivity: loadTimeSettings(storageKey).baseProductivity, timeCoeff: v });
+  };
+}
+
 
 // ============ Фильтр толщин пиломатериала "в наличии" ============
 // Тот же механизм, что и в GOST10198_91POLOZIA.html/GOST10198_91DOSKI_DNA.html
@@ -1933,6 +2163,9 @@ function applyDiagramWidths(scaleBox, pk){
 // не пересекается с типом I-3.
 const THICKNESS_STORAGE_KEY = 'silvan-gost10198-i1-available-thickness';
 const AVAILABLE_THICKNESS_OPTIONS = [16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 125, 150, 175, 200];
+// Настройки шестерёнки у плитки "Норма времени" - свой ключ localStorage
+// для этого типа ящика (см. src/common-timesettings.js).
+const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-i1-time-settings';
 
 function loadAvailableThicknesses(){
   try{
@@ -2363,7 +2596,7 @@ function computeGost10198I1(input){
   const volBok = bokovoy.reduce((s,r)=>s+vol(r.t,r.w,r.l,r.qty),0);
   const volTorec = torec.reduce((s,r)=>s+vol(r.t,r.w,r.l,r.qty),0);
   const totalVolume = volDno + volKryshka + 2*volBok + 2*volTorec;
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
 
   if(plankQty > 4){
     warnings.push(`Планки: чертёж — макс. 4 (расчётных ${plankQty}); точное количество см. в таблице ниже.`);
@@ -2511,7 +2744,7 @@ function recalcFromTable(){
     const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
     totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
   });
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
@@ -2614,6 +2847,7 @@ function buildPrintHtml(){
 
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_I1_IMG_B64;
+initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
 
 </script>
 </body>

@@ -8,16 +8,20 @@
 кроме содержимого buildPrintHtml(), которое остаётся в каждом типе своё)
 и общий src/common-diagrams.js (рендер чертежей-фото renderDiagram() и
 общие для обоих типов чертёж торца без раскосины/с 1 раскосиной - у
-типа I-1 раскосин на торце не бывает больше одной):
+типа I-1 раскосин на торце не бывает больше одной), а также общий
+src/common-timesettings.js (шестерёнка настроек нормы времени у плитки
+"Норма времени" - базовая производительность и коэффициент времени,
+сохраняются в localStorage отдельно для каждого типа ящика):
 
 == Тип I-3 (крепление за полозья / к доскам дна) ==
 src/calc.src.html - HTML-каркас с плейсхолдерами:
-  /*__STYLE_CSS__*/          -> src/style.css
-  /*__LOGIC_JS__*/           -> src/logic.js (расчётные формулы ГОСТ)
-  /*__COMMON_DIAGRAMS_JS__*/ -> src/common-diagrams.js (общий рендер чертежей)
-  /*__DIAGRAMS_JS__*/        -> src/diagrams.js (чертежи деталей)
-  /*__COMMON_PRINT_JS__*/    -> src/common-print.js (общая механика печати)
-  /*__APP_JS__*/             -> src/app.js (UI, calculate(), buildPrintHtml())
+  /*__STYLE_CSS__*/             -> src/style.css
+  /*__LOGIC_JS__*/              -> src/logic.js (расчётные формулы ГОСТ)
+  /*__COMMON_DIAGRAMS_JS__*/    -> src/common-diagrams.js (общий рендер чертежей)
+  /*__DIAGRAMS_JS__*/           -> src/diagrams.js (чертежи деталей)
+  /*__COMMON_PRINT_JS__*/       -> src/common-print.js (общая механика печати)
+  /*__COMMON_TIMESETTINGS_JS__*/ -> src/common-timesettings.js (шестерёнка нормы времени)
+  /*__APP_JS__*/                -> src/app.js (UI, calculate(), buildPrintHtml())
 Плюс три плейсхолдера - единственные места, где расходятся два файла этого
 типа (иначе всё общее): /*__FLOOR_BOARD_CALC__*/ и /*__FASTENING_DEFAULT__*/
 (в src/app.js), <!--__FASTENING_OPTIONS__--> (в src/calc.src.html).
@@ -71,6 +75,7 @@ IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
 COMMON_DIAGRAMS_JS = SRC_DIR / "common-diagrams.js"
+COMMON_TIMESETTINGS_JS = SRC_DIR / "common-timesettings.js"
 
 I3_SHELL = SRC_DIR / "calc.src.html"
 I3_PARTS = {
@@ -79,6 +84,7 @@ I3_PARTS = {
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__APP_JS__*/": SRC_DIR / "app.js",
 }
 I3_VARIANTS = [
@@ -106,6 +112,7 @@ I1_PARTS = {
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": I1_DIR / "diagrams.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__UI_JS__*/": I1_DIR / "ui.js",
     "/*__CALC_JS__*/": I1_DIR / "calc.js",
 }
@@ -121,6 +128,7 @@ II1_PARTS = {
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": II1_DIR / "diagrams.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__UI_JS__*/": II1_DIR / "ui.js",
     "/*__CALC_JS__*/": II1_DIR / "calc.js",
 }

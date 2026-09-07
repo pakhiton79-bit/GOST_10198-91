@@ -6,6 +6,10 @@
 // Если ничего не выбрано - округление до складских номиналов не применяется,
 // расчёт идёт строго по значениям, которые даёт сам ГОСТ 10198-91.
 const THICKNESS_STORAGE_KEY = 'silvan-gost10198-t1-k3-available-thickness';
+// Настройки шестерёнки у плитки "Норма времени" (базовая производительность
+// и коэффициент времени, см. src/common-timesettings.js) - свой ключ
+// localStorage для этого типа ящика, как и у THICKNESS_STORAGE_KEY выше.
+const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-t1-k3-time-settings';
 // Стандартный ряд толщин пиломатериала (сортаментный ряд) - округление "в наличии"
 // возможно только до одного из этих значений, не до произвольного мм. 225 и 250 -
 // добавлены по замечанию пользователя: Табл. 19 (подбор сечения полоза, см.
@@ -735,7 +739,7 @@ function computeGost10198I3(input){
 
   // --- Итоговый расход пиломатериала ---
   const totalVolume = volDno + volKryshka + 2*volTorPanel + 2*volBokPanel;
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${outerL} × ${outerW} × ${outerH} <span>мм</span>`;
@@ -936,7 +940,7 @@ function recalcFromTable(){
     const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
     totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
   });
-  const normaVremeni = roundup(totalVolume*800/60*1.2, 1);
+  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
@@ -1063,3 +1067,4 @@ function buildPrintHtml(){
 document.getElementById('boxView').src = BOX_IMG_B64;
 
 applyStateFromUrl();
+initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
