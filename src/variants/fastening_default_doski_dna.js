@@ -1,1 +1,0 @@
-  return 'floor_boards';

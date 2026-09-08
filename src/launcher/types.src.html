@@ -103,26 +103,12 @@
 /*__TYPES_JS__*/
 
 (function(){
-  // Тип, у которого способ крепления груза переключается внутри калькулятора
-  // (см. switchFastening/applyStateFromUrl в src/app.js), должен вести на тот
-  // файл, что был выбран в последний раз - иначе после переключения там
-  // человек снова попадал бы на файл по умолчанию при следующем заходе через
-  // список типов. Ключ localStorage - тот же FASTENING_STORAGE_KEY, что и в
-  // самом калькуляторе, значения оттуда же (fasteningFiles).
-  const FASTENING_STORAGE_KEY = 'silvan-gost10198-t1-k3-fastening-type';
-  function resolveFile(t){
-    if(!t.fasteningFiles) return t.file;
-    let saved = null;
-    try{ saved = localStorage.getItem(FASTENING_STORAGE_KEY); }catch(e){}
-    return (saved && t.fasteningFiles[saved]) || t.file;
-  }
-
   const root = document.getElementById('types');
   let html = '';
   TYPES.forEach(t => {
     const badgeClass = 'type-badge' + (t.badgeDanger ? ' type-badge-danger' : t.badgeOk ? ' type-badge-ok' : '');
     const badge = t.badge ? `<span class="${badgeClass}">${t.badge}</span>` : '';
-    html += `<a class="type-card" href="${resolveFile(t)}">
+    html += `<a class="type-card" href="${t.file}">
       ${badge}
       <div class="type-info"><h3>${t.name}</h3></div>
       <div class="type-image"><img src="${t.image}" alt="${t.name}"></div>

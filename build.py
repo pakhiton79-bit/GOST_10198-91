@@ -22,14 +22,12 @@ src/calc.src.html - HTML-каркас с плейсхолдерами:
   /*__COMMON_PRINT_JS__*/       -> src/common-print.js (общая механика печати)
   /*__COMMON_TIMESETTINGS_JS__*/ -> src/common-timesettings.js (шестерёнка нормы времени)
   /*__APP_JS__*/                -> src/app.js (UI, calculate(), buildPrintHtml())
-Плюс три плейсхолдера - единственные места, где расходятся два файла этого
-типа (иначе всё общее): /*__FLOOR_BOARD_CALC__*/ и /*__FASTENING_DEFAULT__*/
-(в src/app.js), <!--__FASTENING_OPTIONS__--> (в src/calc.src.html).
-Значения - из src/variants/ (см. I3_VARIANTS ниже):
-  - GOST10198_91POLOZIA.html   - крепление за полозья, толщина доски дна
-    по новому правилу
-  - GOST10198_91DOSKI_DNA.html - крепление к доскам дна, толщина доски дна
-    по Таблице 4 п.1.6.9, как было раньше
+Способ крепления груза (за полозья / к доскам дна) - runtime-переключатель
+внутри одного файла (параметр fasteningType в computeGost10198I3(), см.
+src/app.js), тем же приёмом, что и в типе II-1 - НЕ отдельные build-варианты
+(раньше было 2 отдельных собранных файла с разной толщиной доски дна,
+см. src/variants/ и git-историю).
+  - GOST10198_91POLOZIA.html
 
 == Тип I-1 ==
 src/i1/shell.html - свой HTML-каркас с плейсхолдерами STYLE_CSS/LOGIC_JS/
@@ -46,10 +44,8 @@ gosts.js) -> уровень 2 - список типов тары внутри в
 ГОСТ, с чертежом общего вида ящика у каждого типа справа) -> сам калькулятор.
 Способ крепления груза внутри типа I-3 (за полозья / к доскам дна) - НЕ
 отдельный пункт на странице типов, а выпадающий список уже внутри калькулятора
-(см. onFasteningTypeChange в src/app.js) - переключает между двумя файлами
-(GOST10198_91POLOZIA.html/GOST10198_91DOSKI_DNA.html), но передаёт текущие
-введённые значения через URL, чтобы это не выглядело переходом на «другой
-калькулятор». Стиль - общий src/style.css (design.md) на всех страницах.
+(см. onFasteningTypeChange в src/app.js), пересчитывается на лету без
+перезагрузки страницы. Стиль - общий src/style.css (design.md) на всех страницах.
 Чтобы добавить новый ГОСТ - дописать запись в gosts.js и завести его типы в
 новом types-<гост>.js + TYPES_VARIANTS ниже, разметку менять не надо.
   - index.html, gost-10198-91.html (лежат в docs/ рядом с калькуляторами -
@@ -68,7 +64,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 SRC_DIR = ROOT / "src"
 IMAGES_DIR = SRC_DIR / "images"
-VARIANTS_DIR = SRC_DIR / "variants"
 OUT_DIR = ROOT / "docs"  # "docs" (не "dist") - так папку можно напрямую указать источником в GitHub Pages
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
@@ -99,20 +94,7 @@ I3_PARTS = {
     "/*__APP_JS__*/": SRC_DIR / "app.js",
 }
 I3_VARIANTS = [
-    {
-        "out_name": "GOST10198_91POLOZIA.html",
-        "/*__FLOOR_BOARD_CALC__*/": VARIANTS_DIR / "floor_board_new.js",
-        "/*__FASTENING_DEFAULT__*/": VARIANTS_DIR / "fastening_default_polozia.js",
-        "<!--__FASTENING_OPTIONS__-->": VARIANTS_DIR / "fastening_options_polozia.html",
-        "<!--__REMOVE_FLOOR_BOARDS_OPTION__-->": VARIANTS_DIR / "remove_floor_boards_polozia.html",
-    },
-    {
-        "out_name": "GOST10198_91DOSKI_DNA.html",
-        "/*__FLOOR_BOARD_CALC__*/": VARIANTS_DIR / "floor_board_table4.js",
-        "/*__FASTENING_DEFAULT__*/": VARIANTS_DIR / "fastening_default_doski_dna.js",
-        "<!--__FASTENING_OPTIONS__-->": VARIANTS_DIR / "fastening_options_doski_dna.html",
-        "<!--__REMOVE_FLOOR_BOARDS_OPTION__-->": VARIANTS_DIR / "remove_floor_boards_doski_dna.html",
-    },
+    {"out_name": "GOST10198_91POLOZIA.html"},
 ]
 
 I1_DIR = SRC_DIR / "i1"

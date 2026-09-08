@@ -125,10 +125,15 @@ document.addEventListener('click', e=>{
 buildThicknessCheckboxList();
 updateThicknessSummary();
 
-// ============ Тип крепления груза (сечение полоза) ============
-// Выбор хранится в localStorage отдельно для этой комплектации ящика, как и
-// фильтр толщин. Реализовано пока только «за полозья» - остальные варианты
-// показаны в списке, но отключены.
+// ============ Тип крепления груза (за полозья / к доскам дна) ============
+// Раньше это было переключение между двумя СОБРАННЫМИ файлами (разная
+// толщина доски дна - GOST10198_91POLOZIA.html/GOST10198_91DOSKI_DNA.html,
+// см. src/variants/ в истории), с передачей введённых значений через URL,
+// чтобы переход между ними не выглядел как переход на другой калькулятор.
+// Объединено в один файл - тот же приём, что и в типе II-1 (см. fasteningType
+// в src/ii1/ui.js/calc.js): простой переключатель на одной странице, доска
+// дна пересчитывается на лету через параметр fasteningType в
+// computeGost10198I3() ниже, без перезагрузки/URL-трюка.
 const FASTENING_STORAGE_KEY = 'silvan-gost10198-t1-k3-fastening-type';
 const FASTENING_LABELS = {
   skid:           'Крепление за полозья',
@@ -137,23 +142,22 @@ const FASTENING_LABELS = {
   frame:          'Крепление на металлической или деревянной раме'
 };
 
-function loadFasteningType(){
-  // Тип крепления зафиксирован на конкретный файл (см. src/variants/) -
-  // остальные типы, кроме своего и переключаемого на другой файл, отключены
-  // в интерфейсе, поэтому даже если в localStorage с прошлых сессий сохранён
-  // другой тип, он игнорируется.
-  /*__FASTENING_DEFAULT__*/
-}
-function saveFasteningType(){
-  try{ localStorage.setItem(FASTENING_STORAGE_KEY, fasteningType); }catch(e){}
-}
-
-let fasteningType = loadFasteningType();
+let fasteningType = 'skid';
+try{
+  const saved = localStorage.getItem(FASTENING_STORAGE_KEY);
+  if(saved === 'skid' || saved === 'floor_boards') fasteningType = saved;
+}catch(e){}
 
 function onFasteningTypeChange(el){
   fasteningType = el.value;
-  saveFasteningType();
+  try{ localStorage.setItem(FASTENING_STORAGE_KEY, fasteningType); }catch(e){}
   updateFasteningSummary();
+  // «Убрать доски дна» есть только у варианта «за полозья» - при креплении
+  // к доскам дна убирать их нельзя (они и есть точка крепления).
+  document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
+  if(fasteningType !== 'skid'){
+    document.getElementById('removeFloorBoards').checked = false;
+  }
   invalidateCalc();
 }
 
@@ -166,54 +170,8 @@ function toggleFasteningDropdown(){
   document.getElementById('fasteningDropdownPanel').classList.toggle('open');
 }
 
-// «За полозья» и «к доскам дна» - на самом деле два разных файла (разная
-// толщина доски дна и т.п., см. src/variants/), но для пользователя это
-// должно выглядеть как один калькулятор с выпадающим списком, а не переход
-// на другую страницу - поэтому при выборе типа, реализованного в ДРУГОМ
-// файле, вместе с переходом передаём через URL всё, что человек уже ввёл
-// (размеры, галочки), а на другой стороне (см. applyStateFromUrl ниже) это
-// сразу подставляется в поля и пересчитывается.
-function switchFastening(targetFile, targetType){
-  // Запоминаем выбор — чтобы при следующем заходе через список типов
-  // (см. src/launcher/types.src.html) сразу открывался тот же способ
-  // крепления, а не вариант по умолчанию для этого ГОСТа.
-  try{ localStorage.setItem(FASTENING_STORAGE_KEY, targetType); }catch(e){}
-
-  const params = new URLSearchParams();
-  ['L','W','H','M'].forEach(id=>{
-    const v = document.getElementById(id).value;
-    if(v) params.set(id, v);
-  });
-  ['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el && el.checked) params.set(id, '1');
-  });
-  const qs = params.toString();
-  window.location.href = targetFile + (qs ? '?' + qs : '');
-}
-
-// Если открыты по ссылке из switchFastening (см. выше) - подставляем
-// переданные значения и сразу считаем, чтобы переход между «за полозья» и
-// «к доскам дна» не выглядел как открытие пустого калькулятора с нуля.
-function applyStateFromUrl(){
-  const params = new URLSearchParams(window.location.search);
-  if(![...params.keys()].length) return;
-  ['L','W','H','M'].forEach(id=>{
-    const v = params.get(id);
-    if(v !== null) document.getElementById(id).value = v;
-  });
-  ['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el && params.get(id) === '1') el.checked = true;
-  });
-  // Чистим URL - иначе параметры остаются в адресной строке и при обновлении
-  // страницы пересчёт запускался бы заново с тем же (возможно, уже неверным
-  // после ручных правок) состоянием.
-  history.replaceState(null, '', window.location.pathname);
-  calculate();
-}
-
 updateFasteningSummary();
+document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
 
 // «Убрать подполозные доски» и «Погрузка авто/электропогрузчиком» взаимоисключающие:
 // требование ≥300мм для погрузчика (п.1.6.11) проверяется именно по подполозным
@@ -232,11 +190,9 @@ function onSkidForkliftExclusive(el){
 // свой набор ключей localStorage для этой комплектации ящика (t1-k3), чтобы
 // выбор не «утекал» между калькуляторами разных типов. По просьбе
 // пользователя: все чекбоксы опций должны запоминаться между заходами, как
-// уже давно работает для толщин "в наличии" и способа крепления. Общий и для
-// GOST10198_91POLOZIA.html, и для GOST10198_91DOSKI_DNA.html (обе собраны из
-// этого же app.js) - у них уже общий FASTENING_STORAGE_KEY, поэтому здесь
-// логично то же самое: переключение "за полозья"/"к доскам дна" не должно
-// сбрасывать остальные опции.
+// уже давно работает для толщин "в наличии" и способа крепления -
+// переключение "за полозья"/"к доскам дна" не должно сбрасывать остальные
+// опции.
 const OPTIONS_STORAGE_PREFIX = 'silvan-gost10198-t1-k3-opt-';
 function persistCheckbox(id){
   const el = document.getElementById(id);
@@ -257,8 +213,8 @@ function persistCheckbox(id){
 // само разделение сделано только ради структуры (проще выделить в отдельный
 // бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
 // строчку по сравнению с тем, что было раньше в единой calculate().
-// input: {L,W,H,MASS,optimizeSizes,removeFloorBoards,removeSkidBoards,
-//         roundBoardWidths,solidRigidBase,forkliftLoading}.
+// input: {L,W,H,MASS,fasteningType,optimizeSizes,removeFloorBoards,
+//         removeSkidBoards,roundBoardWidths,solidRigidBase,forkliftLoading}.
 // Возвращает либо {error: '...'} (валидация не прошла - формулы дальше не
 // считаются), либо объект со всеми данными для рендера: таблицы деталей
 // (dno/kryshka/endPanel/bokovoy), предупреждения (warnings), итоговые
@@ -295,7 +251,7 @@ function findNegativeField(value, path){
 }
 
 function computeGost10198I3(input){
-  const {L, W, H, MASS, optimizeSizes, removeFloorBoards, removeSkidBoards,
+  const {L, W, H, MASS, fasteningType, optimizeSizes, removeFloorBoards, removeSkidBoards,
          roundBoardWidths, solidRigidBase, forkliftLoading, manualOverrides} = input;
   const mo = manualOverrides || {};
 
@@ -457,7 +413,35 @@ function computeGost10198I3(input){
   const t11Display = ov('t11Value', t11, 'Толщина торцового бруса дна');
   dno.push({name:'Торцовый брус дна', t:t11Display, w:w11, l:k11, qty:l11, overrideKey:'t11Value'});
 
-  /*__FLOOR_BOARD_CALC__*/
+  // Толщина доски дна зависит от способа крепления груза (fasteningType):
+  //   skid ("за полозья") - по новому правилу (действует всегда, независимо
+  //     от галочки «сплошное жёсткое основание груза»): масса ≤1000кг - не
+  //     менее 16мм, иначе - не менее 19мм;
+  //   floor_boards ("к доскам дна") - Таблица 4 (п.1.6.9): по удельной
+  //     нагрузке на дно и расстоянию между осями смежных полозьев. Берём
+  //     фактически посчитанный шаг между осями (l9/w9 уже выбраны выше), а не
+  //     худший случай "ровно 1200мм" - при 3+ полозьях реальный шаг почти
+  //     всегда меньше, и Табл.4 может дать меньшую (более точную) толщину
+  //     доски дна (уточнение пользователя).
+  let t12Raw;
+  if(fasteningType === 'floor_boards'){
+    const floorSkidDistance = l9 > 1 ? (skidCalcWidth - w9) / (l9 - 1) : skidCalcWidth;
+    const floor = floorBoardThickness(MASS, L, W, floorSkidDistance); // Таблица 4
+    if(floor.exceeded){
+      const loadExceeded = floor.udel > T4_LOADS[T4_LOADS.length-1];
+      const distExceeded = floorSkidDistance > T4_DISTANCES[T4_DISTANCES.length-1];
+      if(loadExceeded){
+        warnings.push(`Удельная нагрузка на дно ${floor.udel.toFixed(2)} кг/см² вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
+      }
+      if(distExceeded){
+        warnings.push(`Шаг полозьев ${Math.round(floorSkidDistance)} мм вне Табл. 4 — толщина доски дна принята по крайнему значению.`);
+      }
+    }
+    t12Raw = floor.value;
+  } else {
+    t12Raw = floorBoardThicknessNew(MASS);
+  }
+  const t12 = removeFloorBoards ? 0 : ov('t12Value', roundUpToAvailable(t12Raw), 'Толщина доски дна'), k12=W;
   // Доска дна: максимум досок 100мм + при необходимости 1-2 доски 75-99мм на остаток
   // (fillBoards), заполняем пространство (длина груза - 2×ширина торцового бруса дна).
   const fbDno = fillBoards(L - w11*2, roundBoardWidths);
@@ -833,16 +817,16 @@ function calculate(){
   const manualOverrides = readManualOverrides();
   setCalcStatus(null);
 
-  // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
-  // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
-  const removeFloorBoardsEl = document.getElementById('removeFloorBoards');
   const input = {
     L: parseFloat(document.getElementById('L').value),
     W: parseFloat(document.getElementById('W').value),
     H: parseFloat(document.getElementById('H').value),
     MASS: parseFloat(document.getElementById('M').value),
+    fasteningType: fasteningType,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
-    removeFloorBoards: removeFloorBoardsEl ? removeFloorBoardsEl.checked : false,
+    // «Убрать доски дна» скрыта (см. onFasteningTypeChange), когда крепление
+    // не «за полозья» - checked там уже сброшен в false, читаем как обычно.
+    removeFloorBoards: document.getElementById('removeFloorBoards').checked,
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     solidRigidBase: document.getElementById('solidRigidBase').checked,
@@ -1063,5 +1047,4 @@ function buildPrintHtml(){
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_IMG_B64;
 
-applyStateFromUrl();
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
