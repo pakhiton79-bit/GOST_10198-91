@@ -76,6 +76,15 @@ IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
 COMMON_DIAGRAMS_JS = SRC_DIR / "common-diagrams.js"
 COMMON_TIMESETTINGS_JS = SRC_DIR / "common-timesettings.js"
+# Сторонние библиотеки для «Скачать PDF» (downloadPdf() в common-print.js) -
+# html2canvas рендерит #printArea в канвас, jsPDF упаковывает его в
+# настоящий PDF-файл и сохраняет через doc.save() (реальная отдача файла
+# браузером, без диалога печати) - по просьбе пользователя вместо printBox()/
+# window.print() для этой кнопки. Вендорятся как обычные файлы (не CDN) -
+# тем же принципом, что и остальной проект (самодостаточные страницы без
+# внешних зависимостей на этапе показа пользователю).
+VENDOR_JSPDF_JS = SRC_DIR / "vendor" / "jspdf.umd.min.js"
+VENDOR_HTML2CANVAS_JS = SRC_DIR / "vendor" / "html2canvas.min.js"
 
 I3_SHELL = SRC_DIR / "calc.src.html"
 I3_PARTS = {
@@ -83,6 +92,8 @@ I3_PARTS = {
     "/*__LOGIC_JS__*/": SRC_DIR / "logic.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__APP_JS__*/": SRC_DIR / "app.js",
@@ -111,6 +122,8 @@ I1_PARTS = {
     "/*__LOGIC_JS__*/": I1_DIR / "logic.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": I1_DIR / "diagrams.js",
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__UI_JS__*/": I1_DIR / "ui.js",
@@ -127,6 +140,8 @@ II1_PARTS = {
     "/*__LOGIC_JS__*/": II1_DIR / "logic.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__DIAGRAMS_JS__*/": II1_DIR / "diagrams.js",
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__UI_JS__*/": II1_DIR / "ui.js",
