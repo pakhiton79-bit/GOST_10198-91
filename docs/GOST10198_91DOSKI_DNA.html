@@ -231,38 +231,50 @@
   }
   .btn-secondary:hover{background:var(--secondary-hover);}
 
-  .calc-outdated{
-    display:none;
-    align-items:center;
+  /* Обёртка вокруг трёх взаимоисключающих статусов расчёта (calcCheck/
+     calcOutdated/calcError - JS переключает между ними класс .active, см.
+     setCalcStatus() в common-print.js). Все три - в одной grid-ячейке
+     (stacking) и visibility:hidden вместо display:none, когда не активны -
+     в отличие от display:none, visibility:hidden всё равно занимает место
+     в раскладке, поэтому ширина обёртки всегда равна ширине САМОГО
+     широкого из трёх текстов, даже когда ни один не показан (до первого
+     расчёта) - кнопка «Печать» не «прыгает» вправо после первого расчёта,
+     то же расстояние зарезервировано с самого начала - по замечанию
+     пользователя. */
+  .calc-status{
+    position:relative;
+    display:inline-grid;
     margin-left:14px;
-    color:var(--warn);
+    vertical-align:middle;
+  }
+  .calc-status > span{
+    grid-column:1;
+    grid-row:1;
+    display:inline-flex;
+    align-items:center;
     font-family:inherit;
     font-size:14px;
     font-weight:600;
-    vertical-align:middle;
+    white-space:nowrap;
+    visibility:hidden;
   }
+  .calc-status > span.active{visibility:visible;}
 
-  .calc-check{
-    display:none;
-    align-items:center;
-    margin-left:14px;
-    color:var(--ok);
-    font-family:inherit;
-    font-size:14px;
-    font-weight:600;
-    vertical-align:middle;
-  }
-  .calc-check .mark{
+  .calc-outdated{color:var(--warn);}
+  .calc-check{color:var(--ok);}
+  .calc-error{color:var(--error);}
+  .calc-check .mark, .calc-error .mark{
     display:inline-block;
     width:20px;height:20px;
     line-height:20px;
     text-align:center;
     border-radius:50%;
-    background:var(--ok);
     color:#fff;
     font-weight:700;
     margin-right:6px;
   }
+  .calc-check .mark{background:var(--ok);}
+  .calc-error .mark{background:var(--error);}
 
   .print-btn{
     margin-top:20px;
@@ -1131,9 +1143,13 @@
 
   <div class="card action-card">
     <button onclick="calculate()">Рассчитать</button>
-    <span class="calc-check" id="calcCheck"><span class="mark">&#10003;</span>Расчёт выполнен</span>
-    <span class="calc-outdated" id="calcOutdated">⚠ Нажмите «Рассчитать»</span>
+    <span class="calc-status">
+      <span class="calc-check" id="calcCheck"><span class="mark">&#10003;</span>Расчёт выполнен</span>
+      <span class="calc-outdated" id="calcOutdated">⚠ Нажмите «Рассчитать»</span>
+      <span class="calc-error" id="calcError"><span class="mark mark-error">&#10007;</span>Расчёт не проведён</span>
+    </span>
     <button class="print-btn btn-secondary" onclick="printBox()">🖨 Печать</button>
+    <button class="print-btn btn-secondary" onclick="printBox()">⬇ Скачать PDF</button>
     <div class="error" id="err"></div>
   </div>
 
@@ -2372,6 +2388,22 @@ const PRINT_PAGE = { wMM:210, hMM:297, marginMM:8, pxPerMM:96/25.4 };
 // и их шрифт удаётся поднять до 20px.
 const PRINT_DIAGRAM_FACTOR = 0.885;
 
+// Три взаимоисключающих статуса расчёта рядом с кнопками «Рассчитать»/
+// «Печать» (#calcCheck/#calcOutdated/#calcError в разметке, см. calc-status
+// в style.css) - .active переключает видимость (visibility, не display,
+// чтобы ширина обёртки не менялась - см. .calc-status в style.css).
+// state: 'check' (успешно посчитано), 'outdated' (результаты на экране
+// устарели - вход поменялся после расчёта), 'error' (расчёт заблокирован -
+// computeGost... вернул calc.error) или null/любое другое значение - все
+// три скрыты (до первого расчёта, либо только что открытая пустая форма).
+function setCalcStatus(state){
+  const ids = {check:'calcCheck', outdated:'calcOutdated', error:'calcError'};
+  Object.keys(ids).forEach(key=>{
+    const el = document.getElementById(ids[key]);
+    if(el) el.classList.toggle('active', key === state);
+  });
+}
+
 function printBox(){
   if(document.getElementById('results').style.display !== 'block'){
     alert('Сначала выполните расчёт — нажмите «Рассчитать».');
@@ -3126,10 +3158,8 @@ function buildThicknessCheckboxList(){
 // (см. #calcOutdated в src/calc.src.html) - до первого расчёта её показывать
 // нечего, поле ещё пустое, а не "устаревшее".
 function invalidateCalc(){
-  document.getElementById('calcCheck').style.display = 'none';
-  const outdated = document.getElementById('calcOutdated');
   const results = document.getElementById('results');
-  if(outdated) outdated.style.display = (results && results.style.display === 'block') ? 'inline-flex' : 'none';
+  setCalcStatus(results && results.style.display === 'block' ? 'outdated' : null);
 }
 
 function onThicknessCheckboxChange(el){
@@ -3914,8 +3944,7 @@ function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
   const manualOverrides = readManualOverrides();
-  document.getElementById('calcCheck').style.display = 'none';
-  document.getElementById('calcOutdated').style.display = 'none';
+  setCalcStatus(null);
 
   // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
   // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
@@ -3935,7 +3964,7 @@ function calculate(){
   };
 
   const calc = computeGost10198I3(input);
-  if(calc.error){ errEl.textContent = calc.error; return; }
+  if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${calc.outerL} × ${calc.outerW} × ${calc.outerH} <span>мм</span>`;
@@ -3987,7 +4016,7 @@ function calculate(){
   warningsEl.style.display = calc.warnings.length ? 'block' : 'none';
 
   document.getElementById('results').style.display = 'block';
-  document.getElementById('calcCheck').style.display = 'inline-flex';
+  setCalcStatus('check');
 }
 
 

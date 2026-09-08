@@ -64,10 +64,8 @@ function buildThicknessCheckboxList(){
 // (см. #calcOutdated в src/calc.src.html) - до первого расчёта её показывать
 // нечего, поле ещё пустое, а не "устаревшее".
 function invalidateCalc(){
-  document.getElementById('calcCheck').style.display = 'none';
-  const outdated = document.getElementById('calcOutdated');
   const results = document.getElementById('results');
-  if(outdated) outdated.style.display = (results && results.style.display === 'block') ? 'inline-flex' : 'none';
+  setCalcStatus(results && results.style.display === 'block' ? 'outdated' : null);
 }
 
 function onThicknessCheckboxChange(el){
@@ -833,8 +831,7 @@ function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
   const manualOverrides = readManualOverrides();
-  document.getElementById('calcCheck').style.display = 'none';
-  document.getElementById('calcOutdated').style.display = 'none';
+  setCalcStatus(null);
 
   // Чекбокс есть только у варианта "за полозья" - при креплении к доскам дна
   // убирать их нельзя (они и есть точка крепления), опция скрыта в HTML.
@@ -854,7 +851,7 @@ function calculate(){
   };
 
   const calc = computeGost10198I3(input);
-  if(calc.error){ errEl.textContent = calc.error; return; }
+  if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${calc.outerL} × ${calc.outerW} × ${calc.outerH} <span>мм</span>`;
@@ -906,7 +903,7 @@ function calculate(){
   warningsEl.style.display = calc.warnings.length ? 'block' : 'none';
 
   document.getElementById('results').style.display = 'block';
-  document.getElementById('calcCheck').style.display = 'inline-flex';
+  setCalcStatus('check');
 }
 
 
