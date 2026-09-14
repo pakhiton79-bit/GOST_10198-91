@@ -249,9 +249,15 @@ function selectSkid19(mass, workingLengthMm, widthMm){
       const diff = Math.abs(T19_LENGTHS[i]-workingLengthMm);
       if(diff<bestDiff || (diff===bestDiff && T19_LENGTHS[i]>T19_LENGTHS[bestI])){ bestDiff=diff; bestI=i; }
     });
+    // Толщина (h) и ширина (w) полоза - строго позиционно, как в исходной
+    // таблице «Новые стандарты полозьев.docx» (первое число ячейки - высота/
+    // толщина, второе - ширина). Раньше принудительно переставлялись
+    // (меньшее=толщина, большее=ширина, см. историю в src/logic.js) - по
+    // новому уточнению пользователя таблицу нужно читать максимально точно,
+    // без перестановки.
     const nums = row.dims[bestI].split('x').map(Number);
-    const h = Math.min(nums[0], nums[1]);
-    const w = Math.max(nums[0], nums[1]);
+    const h = nums[0];
+    const w = nums[1];
     return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 
@@ -276,10 +282,8 @@ function selectSkid19(mass, workingLengthMm, widthMm){
   if(!chosen){
     chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
   }
-  const finalH = Math.min(chosen.h, chosen.w);
-  const finalW = Math.max(chosen.h, chosen.w);
   return {
-    h: finalH, w: finalW, count: chosen.count,
+    h: chosen.h, w: chosen.w, count: chosen.count,
     massUsed: massRow.mass, massSnapped,
     lengthUsed: chosen.lengthUsed, lengthSnapped: chosen.lengthSnapped,
     extrapolatedBeyondOne
