@@ -444,9 +444,10 @@ function computeGost10198II1(input){
   if(!torecVariant.exact){
     warnings.push(`Щит торцевой: чертёж — ближайшая готовая схема (${torecVariant.count} стойки/${torecVariant.floors} эт.) вместо расчётной (${torecFrame.count} стоек/${torecFrame.floors} эт.); точное количество см. в таблице ниже.`);
   }
-  // Чертёж бокового щита - пока готов только для 1 этажа/2 стоек (1 раскосина,
-  // см. BOK_VARIANTS в src/ii1/diagrams.js) - остальные комбинации берут эту же
-  // схему (nearestBokVariant), с тем же предупреждением, что и у торца.
+  // Чертёж бокового щита переиспользует те же фото/схемы, что и торец (см.
+  // diagramBok в src/ii1/diagrams.js) - у бока своих фото больше нет, подбор
+  // (nearestBokVariant) ищет ближайшую схему среди TOREC_VARIANTS, с тем же
+  // предупреждением, что и у торца.
   const bokVariant = nearestBokVariant(bokFrame.count, bokFrame.floors);
   if(!bokVariant.exact){
     warnings.push(`Щит боковой: чертёж — ближайшая готовая схема (${bokVariant.count} стойки/${bokVariant.floors} эт.) вместо расчётной (${bokFrame.count} стоек/${bokFrame.floors} эт.); точное количество см. в таблице ниже.`);
