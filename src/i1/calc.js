@@ -3,7 +3,7 @@
 // само разделение сделано только ради структуры (проще выделить в отдельный
 // бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
 // строчку по сравнению с тем, что было раньше в единой calculate().
-// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina,plankLayoutMode,plankLayoutValue}.
+// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina,addRaskosina,plankLayoutMode,plankLayoutValue}.
 // Возвращает либо {error: '...'} (валидация не прошла), либо объект со
 // всеми данными для рендера: таблицы деталей (dno/kryshka/bokovoy/torec),
 // предупреждения (warnings), итоговые размеры/объём/норма времени, и
@@ -39,7 +39,7 @@ function findNegativeField(value, path){
 }
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -84,8 +84,16 @@ function computeGost10198I1(input){
   // Раскосина (укосина) обязательна при высоте груза ≥1000мм, длине >5000мм
   // или плотности упаковывания >3кг/дм³ (на боковых, торцовых стенках, дне
   // и крышке) - геометрия ниже (п. "Раскосина") задана без проверки по
-  // чертежам (их пока нет), только по уточнению от пользователя.
-  const raskosinaNeeded = H>=1000 || L>5000 || density>3;
+  // чертежам (их пока нет), только по уточнению от пользователя. Галочка
+  // "Добавить раскосины" (addRaskosina, по запросу пользователя) добавляет
+  // раскосины на все детали независимо от условий ГОСТ выше - реализовано
+  // как ещё один источник true в том же общем условии, поэтому ничего
+  // дальше по коду менять не нужно. Галочка "Убрать раскосины крышки и
+  // дна" (removeLidBottomRaskosina) не конфликтует: она снимает раскосины
+  // только с крышки/дна и применяется уже ПОСЛЕ raskosinaNeeded, независимо
+  // от того, что именно его включило (ГОСТ или эта галочка) - см.
+  // kryshkaDnoHasRaskosina ниже.
+  const raskosinaNeeded = addRaskosina || H>=1000 || L>5000 || density>3;
 
   // Горизонтальная планка торца: ширина груза - ширина вертикальной планки*2.
   // Не зависит от толщины досок - вынесена из цикла ниже.
@@ -369,6 +377,7 @@ function calculate(){
     skidThicknessRaw: skidThicknessValue,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     removeLidBottomRaskosina: document.getElementById('removeLidBottomRaskosina').checked,
+    addRaskosina: document.getElementById('addRaskosina').checked,
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,
