@@ -3,7 +3,7 @@
 // само разделение сделано только ради структуры (проще выделить в отдельный
 // бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
 // строчку по сравнению с тем, что было раньше в единой calculate().
-// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths}.
+// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina}.
 // Возвращает либо {error: '...'} (валидация не прошла), либо объект со
 // всеми данными для рендера: таблицы деталей (dno/kryshka/bokovoy/torec),
 // предупреждения (warnings), итоговые размеры/объём/норма времени, и
@@ -39,7 +39,7 @@ function findNegativeField(value, path){
 }
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -229,19 +229,30 @@ function computeGost10198I1(input){
     // Боковой щит, крышка, дно: раскосины между планками (планки по обе
     // стороны от каждой раскосины) - количество = кол-во планок минус 1.
     // Катеты - высота/ширина щита и фактическое расстояние между планками.
+    // Раскосины крышки и дна можно убрать отдельной галочкой
+    // (removeLidBottomRaskosina, по запросу пользователя) - раскосины торца
+    // и бокового щита эта галочка не затрагивает, они остаются как обычно.
     const raskosinaQty = plankQty - 1;
     if(raskosinaQty > 0){
       const bokRaskosinaLen = Math.sqrt(H*H + plankGap*plankGap);
       bokovoy.push({name:'Раскосина', t:wall.value, w:100, l:bokRaskosinaLen, qty:raskosinaQty});
 
-      const kryshkaRaskosinaLen = Math.sqrt(kPlankaKryshka*kPlankaKryshka + plankGap*plankGap);
-      kryshka.push({name:'Раскосина', t:wall.value, w:100, l:kryshkaRaskosinaLen, qty:raskosinaQty});
+      if(!removeLidBottomRaskosina){
+        const kryshkaRaskosinaLen = Math.sqrt(kPlankaKryshka*kPlankaKryshka + plankGap*plankGap);
+        kryshka.push({name:'Раскосина', t:wall.value, w:100, l:kryshkaRaskosinaLen, qty:raskosinaQty});
 
-      const dnoLegW = W + wall.value*2; // ширина груза + толщина доски бок.щита*2 (как у крышки)
-      const dnoRaskosinaLen = Math.sqrt(dnoLegW*dnoLegW + plankGap*plankGap);
-      dno.push({name:'Раскосина', t:wall.value, w:100, l:dnoRaskosinaLen, qty:raskosinaQty});
+        const dnoLegW = W + wall.value*2; // ширина груза + толщина доски бок.щита*2 (как у крышки)
+        const dnoRaskosinaLen = Math.sqrt(dnoLegW*dnoLegW + plankGap*plankGap);
+        dno.push({name:'Раскосина', t:wall.value, w:100, l:dnoRaskosinaLen, qty:raskosinaQty});
+      }
     }
   }
+  // Флаг для чертежей крышки/дна (диаграмма показывает раскосину только если
+  // она реально есть в этой конкретной таблице деталей) - в отличие от
+  // raskosinaNeeded (общее условие ГОСТа), учитывает ещё и галочку
+  // "Убрать раскосины крышки и дна". Чертежи торца/бокового щита по-прежнему
+  // используют raskosinaNeeded напрямую (см. calculate() ниже).
+  const kryshkaDnoHasRaskosina = raskosinaNeeded && !removeLidBottomRaskosina;
 
   // --- Наружные размеры ---
   // Формула по уточнению пользователя, проверена на контрольном примере
@@ -294,7 +305,7 @@ function computeGost10198I1(input){
     outerL, outerW, outerH, totalVolume, normaVremeni,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
-    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kPlankaKryshka, H, W, wall
+    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kryshkaDnoHasRaskosina, kPlankaKryshka, H, W, wall
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -334,6 +345,7 @@ function calculate(){
     skidEnabled: document.getElementById('skidEnabled').checked,
     skidThicknessRaw: skidThicknessValue,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+    removeLidBottomRaskosina: document.getElementById('removeLidBottomRaskosina').checked,
     manualOverrides,
   };
 
@@ -364,8 +376,8 @@ function calculate(){
   }
 
   let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.dnoWidth, calc.kLen, calc.plank.edgeDist, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.kPlankaKryshka, calc.kLen, calc.plank.edgeDist, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.dnoWidth, calc.kLen, calc.plank.edgeDist, calc.plankQty, calc.kryshkaDnoHasRaskosina) + `</div>` + renderSection('', calc.dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.kPlankaKryshka, calc.kLen, calc.plank.edgeDist, calc.plankQty, calc.kryshkaDnoHasRaskosina) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.torec) + `</div>`;
   tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
