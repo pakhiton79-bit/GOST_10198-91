@@ -38,6 +38,11 @@ function findNegativeField(value, path){
   return null;
 }
 
+// Плотность древесины для перевода объёма пиломатериала (м³) в массу
+// ящика (кг) - по уточнению пользователя, типовое значение для сухой
+// сосны/ели.
+const WOOD_DENSITY_KG_M3 = 500;
+
 function computeGost10198I1(input){
   const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
   const mo = manualOverrides || {};
@@ -306,6 +311,10 @@ function computeGost10198I1(input){
   const volTorec = torec.reduce((s,r)=>s+vol(r.t,r.w,r.l,r.qty),0);
   const totalVolume = volDno + volKryshka + 2*volBok + 2*volTorec;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
+  // Масса ящика (тары, без груза) - объём пиломатериала × плотность
+  // древесины (по уточнению пользователя: 500 кг/м³, типовое значение для
+  // сухой сосны/ели).
+  const crateMass = totalVolume * WOOD_DENSITY_KG_M3;
 
   if(plankQty > 4){
     warnings.push(`Планки: чертёж — макс. 4 (расчётных ${plankQty}); точное количество см. в таблице ниже.`);
@@ -332,7 +341,7 @@ function computeGost10198I1(input){
 
   const result = {
     warnings, dno, kryshka, bokovoy, torec,
-    outerL, outerW, outerH, totalVolume, normaVremeni,
+    outerL, outerW, outerH, totalVolume, normaVremeni, crateMass,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
     dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kryshkaDnoHasRaskosina, kPlankaKryshka, H, W, wall,
@@ -408,6 +417,7 @@ function calculate(){
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outMass').innerHTML = `${Math.round(calc.crateMass)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 
   function renderSection(title, rows){
@@ -478,6 +488,7 @@ function recalcFromTable(){
   });
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outMass').innerHTML = `${Math.round(totalVolume * WOOD_DENSITY_KG_M3)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
 
@@ -499,6 +510,7 @@ function buildPrintHtml(){
 
   const outDimsText = document.getElementById('outDims').textContent.trim();
   const volumeText  = document.getElementById('outVolume').textContent.trim();
+  const massText    = document.getElementById('outMass').textContent.trim();
   const timeText    = document.getElementById('outTime').textContent.trim();
 
   const clone = document.getElementById('boardTables').cloneNode(true);
@@ -566,6 +578,7 @@ function buildPrintHtml(){
           <table class="print-plain-table">
             <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
             <tr><td class="k">Расход пило&shy;материала</td><td>${volumeText}</td></tr>
+            <tr><td class="k">Масса ящика</td><td>${massText}</td></tr>
             <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
           </table>
         </div>
