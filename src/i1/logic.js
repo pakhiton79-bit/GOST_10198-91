@@ -98,7 +98,26 @@ function fillBoards(space, roundWidths){
 // планках зазоров (q-1), нужно q-1 >= middle/700, т.е. q = ceil(middle/700)+1.
 // Если отступ с двух сторон не умещается в длину доски - расчёт для этого
 // узла невозможен (см. calculate() - жёсткий блок).
-function plankCount(boardLen){
+//
+// override (галочки "Настроить число поясов планок"/"Настроить расстояние
+// между краями поясов планок" в UI, по запросу пользователя) - при активном
+// override отступ от края меняется на фиксированный: wallValue*2 (толщина
+// доски торца + толщина вертикальной планки торца, каждая = wallValue) -
+// вместо штатного boardLen/6. Само число поясов тогда либо берётся как есть
+// (override.mode==='count', обязательно целое, минимум 2), либо считается
+// так же, как штатное правило ≤700мм, но с заданным пользователем зазором
+// вместо 700 (override.mode==='gap', зазор может быть и больше 700мм -
+// сознательное отклонение от рекомендации ГОСТа, по указанию пользователя).
+function plankCount(boardLen, wallValue, override){
+  if(override){
+    const edgeDist = wallValue*2;
+    const middle = boardLen - edgeDist*2;
+    if(middle < 0) return {count:null, edgeDist, middle};
+    const count = override.mode === 'count'
+      ? Math.max(2, Math.round(override.value))
+      : Math.max(2, ceilInt(middle/override.value)+1);
+    return {count, edgeDist, middle};
+  }
   const edgeDist = boardLen/6;
   const middle = boardLen - edgeDist*2;
   if(middle < 0) return {count:null, edgeDist, middle};

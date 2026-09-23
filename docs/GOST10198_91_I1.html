@@ -1128,6 +1128,26 @@
         <input type="checkbox" id="removeLidBottomRaskosina">
         <span>Убрать раскосины крышки и дна<span class="option-hint">Раскосины торцевого и бокового щитов остаются как обычно</span></span>
       </label>
+      <label>
+        <input type="checkbox" id="customPlankCount" onchange="onPlankLayoutCheckboxChange('count')">
+        <span>Настроить число поясов планок<span class="option-hint">Штатно — минимум поясов с шагом между ними не более 700 мм</span></span>
+      </label>
+      <div id="plankCountRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="plankCountSlider"></div>
+          <input type="number" id="plankCountInput" step="1" min="2" oninput="onPlankCountInputChange()">
+        </div>
+      </div>
+      <label>
+        <input type="checkbox" id="customPlankGap" onchange="onPlankLayoutCheckboxChange('gap')">
+        <span>Настроить расстояние между краями поясов планок<span class="option-hint">Можно задать и больше 700 мм — осознанное отклонение от рекомендации ГОСТа</span></span>
+      </label>
+      <div id="plankGapRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="plankGapSlider"></div>
+          <input type="number" id="plankGapInput" step="1" min="1" oninput="onPlankGapInputChange()">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1727,7 +1747,26 @@ function fillBoards(space, roundWidths){
 // планках зазоров (q-1), нужно q-1 >= middle/700, т.е. q = ceil(middle/700)+1.
 // Если отступ с двух сторон не умещается в длину доски - расчёт для этого
 // узла невозможен (см. calculate() - жёсткий блок).
-function plankCount(boardLen){
+//
+// override (галочки "Настроить число поясов планок"/"Настроить расстояние
+// между краями поясов планок" в UI, по запросу пользователя) - при активном
+// override отступ от края меняется на фиксированный: wallValue*2 (толщина
+// доски торца + толщина вертикальной планки торца, каждая = wallValue) -
+// вместо штатного boardLen/6. Само число поясов тогда либо берётся как есть
+// (override.mode==='count', обязательно целое, минимум 2), либо считается
+// так же, как штатное правило ≤700мм, но с заданным пользователем зазором
+// вместо 700 (override.mode==='gap', зазор может быть и больше 700мм -
+// сознательное отклонение от рекомендации ГОСТа, по указанию пользователя).
+function plankCount(boardLen, wallValue, override){
+  if(override){
+    const edgeDist = wallValue*2;
+    const middle = boardLen - edgeDist*2;
+    if(middle < 0) return {count:null, edgeDist, middle};
+    const count = override.mode === 'count'
+      ? Math.max(2, Math.round(override.value))
+      : Math.max(2, ceilInt(middle/override.value)+1);
+    return {count, edgeDist, middle};
+  }
   const edgeDist = boardLen/6;
   const middle = boardLen - edgeDist*2;
   if(middle < 0) return {count:null, edgeDist, middle};
@@ -3222,12 +3261,144 @@ document.querySelectorAll('input[name="skidThickness"]').forEach(el=>{
 
 updateSkidThicknessSummary();
 
+// ============ Настройка раскладки поясов планок ============
+// Две взаимоисключающие галочки - "Настроить число поясов планок" и
+// "Настроить расстояние между краями поясов планок" (по запросу
+// пользователя). При включении одной из них под ней появляется ползунок -
+// тот же виджет createJumpSlider(), что и у нормы времени (см.
+// src/common-timesettings.js), плюс поле для ручного ввода любого значения
+// (в т.ч. вне диапазона ползунка - например, расстояние можно поставить и
+// больше 700мм, осознанно отклонившись от рекомендации ГОСТа). По центру
+// ползунка при открытии - "стандартное" (штатное автоматическое) значение
+// для текущих входных данных, с шагом 50мм (расстояние) или 1 (число
+// поясов) в каждую сторону; "стандартное" значение обновляется при каждом
+// успешном расчёте (см. calculate() в calc.js), но сам ползунок
+// перестраивается только в момент включения галочки - чтобы уже выбранное
+// пользователем значение не сбрасывалось само по себе при пересчёте.
+const PLANK_LAYOUT_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'plankLayout';
+let plankLayoutMode = null; // null | 'count' | 'gap'
+let plankLayoutValue = null;
+// "Стандартные" (штатные автоматические) значения для центра ползунков -
+// заполняются из calc.standardPlankCount/standardPlankGap при каждом
+// успешном расчёте (см. calculate() в calc.js). До первого расчёта - null,
+// используется запасной центр по умолчанию (см. ниже).
+let lastStandardPlankCount = null;
+let lastStandardPlankGap = null;
+let plankCountSlider = null, plankGapSlider = null;
+
+function plankCountSteps(center){
+  center = Math.max(2, Math.round(center));
+  const steps = [];
+  for(let i=-3;i<=3;i++) steps.push(Math.max(2, center+i));
+  return Array.from(new Set(steps)).sort((a,b)=>a-b);
+}
+function plankGapSteps(center){
+  center = Math.max(1, Math.round(center));
+  const steps = [];
+  for(let i=-3;i<=3;i++) steps.push(Math.max(1, center+i*50));
+  return Array.from(new Set(steps)).sort((a,b)=>a-b);
+}
+
+function savePlankLayout(){
+  try{ localStorage.setItem(PLANK_LAYOUT_STORAGE_KEY, JSON.stringify({mode: plankLayoutMode, value: plankLayoutValue})); }catch(e){}
+}
+function loadPlankLayout(){
+  try{
+    const raw = localStorage.getItem(PLANK_LAYOUT_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if((parsed.mode === 'count' || parsed.mode === 'gap') && parsed.value > 0) return parsed;
+    }
+  }catch(e){}
+  return {mode:null, value:null};
+}
+
+// Пересобирает нужный ползунок (createJumpSlider каждый раз строит разметку
+// заново - готового способа сменить набор шагов у уже созданного ползунка
+// нет) с шагами вокруг center и выставляет value как текущее положение.
+function rebuildPlankSlider(mode, center, value){
+  if(mode === 'count'){
+    plankCountSlider = createJumpSlider(document.getElementById('plankCountSlider'), plankCountSteps(center), v=>{
+      plankLayoutValue = v;
+      document.getElementById('plankCountInput').value = v;
+      savePlankLayout();
+      invalidateCalc();
+    });
+    plankCountSlider.setValue(value);
+  } else {
+    plankGapSlider = createJumpSlider(document.getElementById('plankGapSlider'), plankGapSteps(center), v=>{
+      plankLayoutValue = v;
+      document.getElementById('plankGapInput').value = v;
+      savePlankLayout();
+      invalidateCalc();
+    });
+    plankGapSlider.setValue(value);
+  }
+}
+
+function onPlankLayoutCheckboxChange(mode){
+  const countEl = document.getElementById('customPlankCount');
+  const gapEl = document.getElementById('customPlankGap');
+  if(mode === 'count' && countEl.checked) gapEl.checked = false;
+  if(mode === 'gap' && gapEl.checked) countEl.checked = false;
+
+  plankLayoutMode = countEl.checked ? 'count' : gapEl.checked ? 'gap' : null;
+  document.getElementById('plankCountRow').style.display = plankLayoutMode==='count' ? '' : 'none';
+  document.getElementById('plankGapRow').style.display = plankLayoutMode==='gap' ? '' : 'none';
+
+  if(plankLayoutMode === 'count'){
+    const center = lastStandardPlankCount || 4;
+    plankLayoutValue = center;
+    document.getElementById('plankCountInput').value = center;
+    rebuildPlankSlider('count', center, center);
+  } else if(plankLayoutMode === 'gap'){
+    const center = Math.round(lastStandardPlankGap || 400);
+    plankLayoutValue = center;
+    document.getElementById('plankGapInput').value = center;
+    rebuildPlankSlider('gap', center, center);
+  }
+  savePlankLayout();
+  invalidateCalc();
+}
+
+function onPlankCountInputChange(){
+  const v = parseInt(document.getElementById('plankCountInput').value, 10);
+  if(!(v>=2)) return;
+  plankLayoutValue = v;
+  if(plankCountSlider) plankCountSlider.setValue(v);
+  savePlankLayout();
+  invalidateCalc();
+}
+function onPlankGapInputChange(){
+  const v = parseFloat(String(document.getElementById('plankGapInput').value).replace(',','.'));
+  if(!(v>0)) return;
+  plankLayoutValue = v;
+  if(plankGapSlider) plankGapSlider.setValue(v);
+  savePlankLayout();
+  invalidateCalc();
+}
+
+// Восстановление сохранённого состояния при открытии страницы - "стандартное"
+// значение центра ещё неизвестно (расчёт не проводился), поэтому ползунок
+// строится вокруг самого сохранённого значения (см. комментарий у
+// PLANK_LAYOUT_STORAGE_KEY выше).
+(function initPlankLayoutFromStorage(){
+  const saved = loadPlankLayout();
+  if(!saved.mode) return;
+  document.getElementById(saved.mode === 'count' ? 'customPlankCount' : 'customPlankGap').checked = true;
+  plankLayoutMode = saved.mode;
+  plankLayoutValue = saved.value;
+  document.getElementById(saved.mode === 'count' ? 'plankCountRow' : 'plankGapRow').style.display = '';
+  document.getElementById(saved.mode === 'count' ? 'plankCountInput' : 'plankGapInput').value = saved.value;
+  rebuildPlankSlider(saved.mode, saved.value, saved.value);
+})();
+
 // ============ Чистый расчёт (без обращений к DOM) - тип I-1 ============
 // Разделено на «посчитать» (эта функция) и «показать» (calculate() ниже) -
 // само разделение сделано только ради структуры (проще выделить в отдельный
 // бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
 // строчку по сравнению с тем, что было раньше в единой calculate().
-// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina}.
+// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina,plankLayoutMode,plankLayoutValue}.
 // Возвращает либо {error: '...'} (валидация не прошла), либо объект со
 // всеми данными для рендера: таблицы деталей (dno/kryshka/bokovoy/torec),
 // предупреждения (warnings), итоговые размеры/объём/норма времени, и
@@ -3263,7 +3434,7 @@ function findNegativeField(value, path){
 }
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -3302,7 +3473,8 @@ function computeGost10198I1(input){
 
   // --- Толщина досок/планок/раскосов - по плотности упаковывания (масса/объём груза) ---
   const density = packingDensity(MASS, L, W, H);
-  let wallRaw = wallThicknessI1(density); // 22/25/32, до округления "в наличии"
+  // wallThicknessI1(density) - 22/25/32, до округления "в наличии" - берётся
+  // заново в stabilizePlankLayout() ниже (там же и используется).
 
   // Раскосина (укосина) обязательна при высоте груза ≥1000мм, длине >5000мм
   // или плотности упаковывания >3кг/дм³ (на боковых, торцовых стенках, дне
@@ -3323,35 +3495,56 @@ function computeGost10198I1(input){
   // (правило 400-500мм ниже) само зависит от расстояния между планками -
   // то есть от kLen. Пересчитываем в цикле, пока толщина не перестанет
   // меняться (снижение градации ограничено - максимум 2 шага 32→25→22).
-  let kLen, plank, plankQty, plankGap;
-  for(let i=0; i<4; i++){
-    // Равна длине груза + (толщина доски торца + толщина вертикальной планки
-    // торца)*2 - обе толщины равны wall.value (п.1.6.15-аналог для типа I-1).
-    kLen = L + wallRaw*4;
-
-    // 2 крайние планки на расстоянии kLen/6 от каждого края + промежуточные
-    // так, чтобы расстояние между соседними планками не превышало 700мм.
-    plank = plankCount(kLen);
-    if(plank.count === null){
-      return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок (по 1/6 с каждого края) — расчёт не выполняется.`};
+  //
+  // Раскладка поясов планок (plankCount) по умолчанию штатная - см. logic.js.
+  // По галочкам "Настроить число поясов"/"Настроить расстояние между краями
+  // поясов" (plankLayoutMode: 'count'|'gap', по запросу пользователя)
+  // пользователь может задать своё значение - тогда отступ от края тоже
+  // меняется (см. комментарий у plankCount в logic.js). Правило 400-500мм
+  // работает как обычно в обоих случаях - переопределяется только САМА
+  // раскладка (число/шаг), а не то, следим ли мы за попаданием зазора в
+  // 400-500мм.
+  function stabilizePlankLayout(override, wallStart){
+    let w = wallStart, kLen, plank, plankQty, plankGap;
+    for(let i=0; i<4; i++){
+      kLen = L + w*4;
+      plank = plankCount(kLen, w, override);
+      if(plank.count === null){
+        return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок — расчёт не выполняется.`};
+      }
+      plankQty = plank.count; // общее для боковых планок, планок крышки, полозьев/планки дна
+      plankGap = plank.middle / (plankQty-1); // фактическое расстояние между соседними планками
+      const beltGaps = [plankGap, horizPlankaLen, H-200];
+      const beltGapHit = beltGaps.find(g => g>=400 && g<=500);
+      if(beltGapHit === undefined) break;
+      const stepped = stepDownGrade(w);
+      if(stepped === w) break; // дальше снижать некуда (уже 22мм)
+      // Снижение градации по правилу 400-500мм - штатное поведение,
+      // предусмотренное самим ГОСТом (не отклонение/проблема) - предупреждение
+      // не выводим (по указанию пользователя).
+      w = stepped;
     }
-    plankQty = plank.count; // общее для боковых планок, планок крышки, полозьев/планки дна
-    plankGap = plank.middle / (plankQty-1); // фактическое расстояние между соседними планками
-
-    // При расстоянии между поясами планок 400-500мм толщина досок/планок/
-    // раскосов снижается на одну градацию (проверяем расстояние между
-    // планками бока/крышки и оба зазора внутри рамки торца).
-    const beltGaps = [plankGap, horizPlankaLen, H-200];
-    const beltGapHit = beltGaps.find(g => g>=400 && g<=500);
-    if(beltGapHit === undefined) break;
-    const stepped = stepDownGrade(wallRaw);
-    if(stepped === wallRaw) break; // дальше снижать некуда (уже 22мм)
-    // Снижение градации по правилу 400-500мм - штатное поведение,
-    // предусмотренное самим ГОСТом (не отклонение/проблема) - предупреждение
-    // не выводим (по указанию пользователя).
-    wallRaw = stepped;
-    // kLen/plank/plankGap считаны по старой толщине - пересчитываем со сниженной.
+    return {wallRaw: w, kLen, plank, plankQty, plankGap};
   }
+
+  const plankOverride = (plankLayoutMode === 'count' || plankLayoutMode === 'gap')
+    ? {mode: plankLayoutMode, value: plankLayoutValue}
+    : null;
+
+  // Стандартная (штатная, без ручных настроек) раскладка - считается всегда,
+  // независимо от галочек, только чтобы показать "текущее стандартное
+  // значение" в ползунках обеих новых галочек (см. calculate() ниже).
+  const standardPass = stabilizePlankLayout(null, wallThicknessI1(density));
+  if(standardPass.error) return {error: standardPass.error};
+  const standardWallValue = roundUpToAvailable(standardPass.wallRaw);
+  const standardFinalPlank = plankCount(L + standardWallValue*4, standardWallValue, null);
+  const standardPlankCount = standardFinalPlank.count;
+  const standardPlankGap = standardFinalPlank.count > 1 ? standardFinalPlank.middle/(standardFinalPlank.count-1) : 0;
+
+  const mainPass = plankOverride ? stabilizePlankLayout(plankOverride, wallThicknessI1(density)) : standardPass;
+  if(mainPass.error) return {error: mainPass.error};
+  let {wallRaw, kLen, plank, plankQty, plankGap} = mainPass;
+
   const wall = {value: ov('wallValue', roundUpToAvailable(wallRaw), 'Толщина досок/планок/раскосов')};
 
   // kLen/plank/plankQty/plankGap выше посчитаны по wallRaw (толщине ДО
@@ -3365,9 +3558,9 @@ function computeGost10198I1(input){
   // принято по расчётным (не округлённым) зазорам, здесь только синхронизируем
   // геометрию с итоговым материалом.
   kLen = L + wall.value*4;
-  plank = plankCount(kLen);
+  plank = plankCount(kLen, wall.value, plankOverride);
   if(plank.count === null){
-    return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок (по 1/6 с каждого края) — расчёт не выполняется.`};
+    return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок — расчёт не выполняется.`};
   }
   plankQty = plank.count;
   plankGap = plank.middle / (plankQty-1);
@@ -3529,7 +3722,8 @@ function computeGost10198I1(input){
     outerL, outerW, outerH, totalVolume, normaVremeni,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
-    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kryshkaDnoHasRaskosina, kPlankaKryshka, H, W, wall
+    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kryshkaDnoHasRaskosina, kPlankaKryshka, H, W, wall,
+    standardPlankCount, standardPlankGap
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -3570,11 +3764,18 @@ function calculate(){
     skidThicknessRaw: skidThicknessValue,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     removeLidBottomRaskosina: document.getElementById('removeLidBottomRaskosina').checked,
+    plankLayoutMode,
+    plankLayoutValue,
     manualOverrides,
   };
 
   const calc = computeGost10198I1(input);
   if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
+  // "Стандартные" (штатные) число/шаг поясов планок - центр ползунков у
+  // галочек "Настроить число поясов"/"Настроить расстояние между поясами"
+  // (см. src/i1/ui.js) - обновляются при каждом успешном расчёте.
+  lastStandardPlankCount = calc.standardPlankCount;
+  lastStandardPlankGap = calc.standardPlankGap;
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
