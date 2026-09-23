@@ -417,7 +417,7 @@ function calculate(){
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
-  document.getElementById('outMass').innerHTML = `${Math.round(calc.crateMass)} <span>кг</span>`;
+  document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 
   function renderSection(title, rows){
@@ -488,7 +488,7 @@ function recalcFromTable(){
   });
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
-  document.getElementById('outMass').innerHTML = `${Math.round(totalVolume * WOOD_DENSITY_KG_M3)} <span>кг</span>`;
+  document.getElementById('outMass').innerHTML = `${(totalVolume * WOOD_DENSITY_KG_M3).toFixed(1)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
 }
 
