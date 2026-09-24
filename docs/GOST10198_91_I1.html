@@ -597,7 +597,8 @@
      обработчик input у #boardTables и editedAttr в common-print.js) -
      тёмно-коричневым текстом, по указанию пользователя; только на сайте:
      скоуп #boardTables не пересекается с печатной областью (#printArea). */
-  #boardTables td[data-user-edited="true"]{color:var(--manual-ink);}
+  /* + светло-коричневая заливка всей ячейки (по указанию пользователя). */
+  #boardTables td[data-user-edited="true"]{color:var(--manual-ink);background:var(--accent-wash);}
   .editable-cell:focus{
     outline:none;
     background:var(--accent-wash);
@@ -614,6 +615,11 @@
   /* Лента обшивки торцов (I-1) - табличка 1×1 на всю ширину под всеми
      элементами, см. calculate() в src/i1/calc.js. */
   .spec-table.tape-table{margin-top:22px;}
+  /* Подписи вокруг числа - не редактируются и не входят в textContent
+     ячейки (там только длина - её читает readTableEdits). Действуют и в
+     печати (#printArea). */
+  .tape-table td::before{content:'Обшивочная лента ';}
+  .tape-table td::after{content:' мм × 2';}
 
   .note{
     font-size:13px;
@@ -4123,7 +4129,10 @@ function computeGost10198I1(input){
   // (выводится "… мм × 2" под всеми элементами, см. calculate()). В объём
   // пиломатериала, массу ящика и норму времени не входит - это не
   // пиломатериал. У типа I-1 доски бока и крышки - одной толщины wall.value.
-  const endTapeLength = addEndTape ? Math.ceil((W + wall.value*2) + (H + wall.value*2) - 1e-9) : null;
+  // Строка отдельного раздела endTape (а не одно число) - чтобы на неё
+  // распространялся общий механизм ручных правок таблицы (tableEdits,
+  // applyTableEdits с множителем раздела 0 - в объём не входит).
+  const endTape = addEndTape ? [{name:'Обшивочная лента', l: Math.ceil((W + wall.value*2) + (H + wall.value*2) - 1e-9), qty: 2}] : [];
 
   const result = {
     warnings, dno, kryshka, bokovoy, torec,
@@ -4131,7 +4140,7 @@ function computeGost10198I1(input){
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
     dnoWidth, kLen, plank, plankQty, plankGap, raskosinaNeeded, kryshkaDnoHasRaskosina, xRaskosina: !!xRaskosina, kPlankaKryshka, H, W, wall,
-    standardPlankCount, standardPlankGap, endTapeLength
+    standardPlankCount, standardPlankGap, endTape
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -4196,7 +4205,7 @@ function calculate(){
   }
   // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
-  if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2})){
+  if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0})){ // endTape - лента, в объём не входит
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
     calc.crateMass = calc.totalVolume * WOOD_DENSITY_KG_M3;
   }
@@ -4254,12 +4263,17 @@ function calculate(){
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.torec, 'torec') + `</div>`;
   tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   // Лента обшивки торцов - под всеми элементами и чертежами, отдельной
-  // табличкой 1×1 на всю ширину (под чертежами и под таблицами деталей),
-  // текст целиком в одной ячейке (по указанию пользователя). Попадает и в
-  // печать/PDF (buildPrintHtml берёт содержимое #boardTables целиком). Без
-  // data-section - в ручные правки таблицы (readTableEdits) не входит.
-  if(calc.endTapeLength){
-    tablesHtml += `<div class="spec-table tape-table"><table><tbody><tr><td>Обшивочная лента ${calc.endTapeLength} мм × 2</td></tr></tbody></table></div>`;
+  // табличкой 1×1 на всю ширину (под чертежами и под таблицами деталей), в
+  // стиле таблиц деталей, без заголовка (по указанию пользователя). Попадает
+  // и в печать/PDF (buildPrintHtml берёт содержимое #boardTables целиком).
+  // В ячейке - только само число (редактируется как остальные ячейки
+  // таблиц: пунктир, подсветка правки, учёт по «Рассчитать» через
+  // readTableEdits/applyTableEdits); подписи «Обшивочная лента» и «мм × 2»
+  // дорисовываются стилями (.tape-table td::before/::after в style.css) и
+  // в редактируемый текст не входят.
+  if(calc.endTape && calc.endTape.length){
+    const tr = calc.endTape[0], tapeKeys = tableRowKeys(calc.endTape);
+    tablesHtml += `<div class="spec-table tape-table"><table data-section="endTape"><tbody><tr data-row-key="${escapeAttr(tapeKeys[0])}"><td class="editable-cell" contenteditable="true" data-role="l"${editedAttr(tr, 'l')}>${Math.ceil(tr.l - 1e-9)}</td></tr></tbody></table></div>`;
   }
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
