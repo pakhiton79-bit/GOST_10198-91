@@ -38,8 +38,10 @@ function roundUpToAvailable(t){
 // галочки показываем краткую подсказку "устарело" (см. #calcOutdated в
 // src/i1/shell.html) - до первого расчёта её показывать нечего.
 function invalidateCalc(){
-  const results = document.getElementById('results');
-  setCalcStatus(results && results.style.display === 'block' ? 'outdated' : null);
+  // По указанию пользователя - при ЛЮБОМ изменении параметров (цифры,
+  // галочки, выпадающие списки...) сразу "Расчёт не проведён", в т.ч. и до
+  // первого расчёта (см. также общий слушатель в common-print.js).
+  setCalcStatus('outdated');
 }
 
 function buildThicknessCheckboxList(){

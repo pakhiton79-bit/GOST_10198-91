@@ -107,6 +107,16 @@ function computeGost10198I1(input){
     return {error: `Ширина груза ${W} мм недостаточна для двух вертикальных планок торца (по 100мм) — расчёт не выполняется.`};
   }
 
+  // Текст ошибки "планки не помещаются": при ручном зазоре (он ставится
+  // ровно, см. plankCount в logic.js) причина - сам зазор, пишем об этом
+  // прямо, а не только про длину доски.
+  function plankLayoutError(kLen, override){
+    if(override && override.mode === 'gap'){
+      return `Расстояние между планками ${override.value} мм не помещается на доске ${Math.round(kLen)} мм (2 планки и отступы от края) — расчёт не выполняется.`;
+    }
+    return `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок — расчёт не выполняется.`;
+  }
+
   // --- Общая длина досок вдоль длины груза (доска дна/крышки/бокового щита),
   // количество планок и расстояние между ними ---
   // kLen зависит от wallRaw (толщины досок), а снижение градации толщины
@@ -128,7 +138,7 @@ function computeGost10198I1(input){
       kLen = L + w*4;
       plank = plankCount(kLen, w, override);
       if(plank.count === null){
-        return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок — расчёт не выполняется.`};
+        return {error: plankLayoutError(kLen, override)};
       }
       plankQty = plank.count; // общее для боковых планок, планок крышки, полозьев/планки дна
       plankGap = plank.middle / (plankQty-1); // фактическое расстояние между соседними планками
@@ -178,7 +188,7 @@ function computeGost10198I1(input){
   kLen = L + wall.value*4;
   plank = plankCount(kLen, wall.value, plankOverride);
   if(plank.count === null){
-    return {error: `Длина доски ${Math.round(kLen)} мм недостаточна для отступа планок — расчёт не выполняется.`};
+    return {error: plankLayoutError(kLen, plankOverride)};
   }
   plankQty = plank.count;
   plankGap = plank.middle / (plankQty-1);
@@ -454,10 +464,13 @@ function calculate(){
   }
 
   let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramDno(calc.dnoWidth, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina) + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina) + `</div>` + renderSection('', calc.torec) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
+  // Общая (максимально возможная) высота рамки щита для всех 4 чертежей -
+  // см. i1PageFramePx в диаграммах I-1.
+  const i1FramePx = i1PageFramePx(calc.plankQty, calc.raskosinaNeeded, calc.kryshkaDnoHasRaskosina);
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramDno(calc.dnoWidth, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.torec) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));

@@ -1193,7 +1193,7 @@
     <button onclick="calculate()">Рассчитать</button>
     <span class="calc-status">
       <span class="calc-check" id="calcCheck"><span class="mark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><polyline points="3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Расчёт выполнен</span>
-      <span class="calc-outdated" id="calcOutdated"><span class="mark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><line x1="8" y1="4" x2="8" y2="8.7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="11.3" r="1.1" fill="#fff"/></svg></span>Нажмите «Рассчитать»</span>
+      <span class="calc-outdated" id="calcOutdated"><span class="mark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><line x1="8" y1="4" x2="8" y2="8.7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="11.3" r="1.1" fill="#fff"/></svg></span>Расчёт не проведён</span>
       <span class="calc-error" id="calcError"><span class="mark mark-error"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><line x1="4.5" y1="4.5" x2="11.5" y2="11.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="11.5" y1="4.5" x2="4.5" y2="11.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></span>Расчёт не проведён</span>
     </span>
     <button class="print-btn btn-secondary" onclick="printBox()"><svg class="btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5V2.5h7v3"/><rect x="3" y="5.5" width="10" height="5" rx="0.8"/><path d="M4.5 9.5v4h7v-4"/><line x1="6" y1="11.5" x2="10" y2="11.5"/></svg>Печать</button>
@@ -2873,6 +2873,27 @@ function setCalcStatus(state){
   });
 }
 
+// Общий слушатель "параметры изменились" (по указанию пользователя: при
+// изменении ЛЮБОГО параметра - цифры, галочки, радио, выпадающего списка
+// толщин и т.д. - должна появляться надпись "Расчёт не проведён"). Раньше
+// invalidateCalc() вызывался точечно из обработчиков отдельных полей, и
+// часть галочек (напр. "Добавить раскосины", "X-образные раскосины",
+// "Убрать раскосины крышки и дна") её не вызывала вовсе - после их
+// переключения старый результат выглядел актуальным. Исключения: поле
+// комментария (в расчёт не входит, только в печать), таблица деталей
+// (#boardTables - у неё свой обработчик с пересчётом итогов) и окно
+// настроек нормы времени (применяется к уже готовому результату сразу, без
+// пересчёта - см. applySettings в common-timesettings.js).
+function onAnyParamChange(e){
+  const t = e.target;
+  if(!t || !t.matches || !t.matches('input, select, textarea')) return;
+  if(t.id === 'userComment') return;
+  if(t.closest('#boardTables, #timeSettingsOverlay, #printArea')) return;
+  if(typeof invalidateCalc === 'function') invalidateCalc();
+}
+document.addEventListener('input', onAnyParamChange);
+document.addEventListener('change', onAnyParamChange);
+
 // Собирает содержимое #printArea из текущих результатов и проставляет
 // data-base-width у чертежей (см. комментарий ниже, откуда он был раньше) -
 // общая часть для printBox() (см. ниже) и для подстраховки на случай печати
@@ -3843,8 +3864,10 @@ function buildThicknessCheckboxList(){
 // (см. #calcOutdated в src/calc.src.html) - до первого расчёта её показывать
 // нечего, поле ещё пустое, а не "устаревшее".
 function invalidateCalc(){
-  const results = document.getElementById('results');
-  setCalcStatus(results && results.style.display === 'block' ? 'outdated' : null);
+  // По указанию пользователя - при ЛЮБОМ изменении параметров (цифры,
+  // галочки, выпадающие списки...) сразу "Расчёт не проведён", в т.ч. и до
+  // первого расчёта (см. также общий слушатель в common-print.js).
+  setCalcStatus('outdated');
 }
 
 function onThicknessCheckboxChange(el){
