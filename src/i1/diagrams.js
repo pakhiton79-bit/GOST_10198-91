@@ -6,13 +6,12 @@ const BOX_I1_IMG_B64 = "data:image/jpeg;base64,__IMG:box_i1.jpg__";
 // полностью совпадает по конструкции с торцом типа I-3 (вариант без
 // раскосины и с 1 раскосиной - у типа I-1 их бывает не больше одной),
 // поэтому переиспользует готовые чертежи типа I-3
-// (diagramPlaceholder/diagramEndPanel1Raskosina/diagramEndPanelNoRaskosina -
-// см. src/common-diagrams.js). Ширина торца передаётся своя (I1_TOREC_WIDTH),
-// меньше, чем у типа I-3 (210px) - у остальных чертежей I-1 (Дно/Крышка/Бок,
-// см. diagramBokPhoto ниже) фото широкие и
-// "приземистые", а у торца - почти квадратное, и при том же 210px оно на их
-// фоне выглядело непропорционально крупным.
-const I1_TOREC_WIDTH = 150;
+// (diagramEndPanel1Raskosina/diagramEndPanelNoRaskosina - см.
+// src/common-diagrams.js). Ширина торца подбирается так же, как у
+// остальных чертежей I-1 - по общей высоте рамки щита I1_FRAME_PX (см.
+// i1DiagramWidth ниже): высота рамки торца на фото - 1107px (с раскосиной,
+// 1352x1158) / 1103px (без раскосины, 1354x1134), по концам стрелки
+// вертикального размера.
 // X-образные раскосины (галочка xRaskosina): те же чертежи, где раскосина
 // отражена относительно оси промежутка, а отражение спрятано под исходной
 // доской (исходная целая, встречная - из двух кусков). Картинки *_x
@@ -20,9 +19,12 @@ const I1_TOREC_WIDTH = 150;
 // калибровка стрелок у них та же, что и у исходных.
 const TOREC_1_X_IMG_B64 = "data:image/png;base64,__IMG:torec_1_x.png__";
 function diagramTorec(heightVal, widthVal, hasRaskosinaVal, xRaskosinaVal){
-  return hasRaskosinaVal
-    ? diagramEndPanel1Raskosina(heightVal, widthVal, I1_TOREC_WIDTH, xRaskosinaVal ? TOREC_1_X_IMG_B64 : undefined)
-    : diagramEndPanelNoRaskosina(heightVal, widthVal, I1_TOREC_WIDTH);
+  if(hasRaskosinaVal){
+    const w = i1DiagramWidth(1352, 1107);
+    return diagramEndPanel1Raskosina(heightVal, widthVal, w, xRaskosinaVal ? TOREC_1_X_IMG_B64 : undefined, i1StrokeScale(1352, w));
+  }
+  const w = i1DiagramWidth(1354, 1103);
+  return diagramEndPanelNoRaskosina(heightVal, widthVal, w, i1StrokeScale(1354, w));
 }
 
 const BOK_I1_2_IMG_B64  = "data:image/jpeg;base64,__IMG:bok_i1_2planks.jpg__"; // натуральный размер 1178x876 (2 планки, без раскосины)
@@ -63,54 +65,90 @@ const BOK_I1_GEOM = {
   '1_4': {img: BOK_I1_4R_IMG_B64, IW:2212, IH:790, stubL:68.5, p1L:188.5, p1R:307,   p2L:762,   stubR:2148.5, topY:69.5, botY:707.5},
 };
 
+// Единый масштаб всех чертежей I-1 (по запросу пользователя: раньше ширина
+// у всех была одна - 260px (торец - 150px), а высота рамки щита на фото
+// разная, поэтому Бок/Крышка/Дно на 2 планки выходили почти вдвое крупнее,
+// чем на 4, а торец - то крупнее, то мельче бока). Теперь ширина каждого
+// фото подбирается так, чтобы ВЫСОТА РАМКИ щита (topY..botY) на экране была
+// одинаковой - I1_FRAME_PX - у всех вариантов (2/3/4 планки, с раскосиной и
+// без) и у торца. Ширина планок на исходных фото тоже одинаковая (~120-134px
+// при одинаковой высоте рамки), поэтому планки/доски на всех чертежах
+// выглядят одного размера, а длина щита - пропорционально числу поясов.
+// Слоты всех 4 чертежей объединены в data-size-group="i1-panels" (см.
+// calc.js): если какому-то чертежу не хватает места и он сжимается, так же
+// сжимаются и остальные - масштаб остаётся общим.
+const I1_FRAME_PX = 84;
+function i1DiagramWidth(IW, frameH){
+  return Math.round(I1_FRAME_PX * IW / frameH);
+}
+// Толщина линий/стрелок на экране - как у обычного чертежа шириной
+// DIAGRAM_DEFAULT_WIDTH, независимо от того, насколько узким/широким вышел
+// конкретный чертёж (photoStrokeScale рассчитан на ширину 260px).
+function i1StrokeScale(IW, widthPx){
+  return photoStrokeScale(IW) * DIAGRAM_DEFAULT_WIDTH / widthPx;
+}
+
+// Расстояние между соседними планками - до десятых мм (middle/(count-1) не
+// всегда целое: отступ от края округляется до целого мм, см. plankCount).
+function fmtGapMm(v){
+  return String(Math.round(v*10)/10);
+}
+
 // Чертёж по фото бокового щита - общий для Бока/Крышки/Дна (по уточнению
 // пользователя): dimVal - вертикальный размер на фото (у Бока - высота
 // груза H, у Крышки/Дна - ширина груза с учётом толщин стенок, см. вызовы
 // в src/i1/calc.js); plankTVal - толщина у выступающего верхнего левого
 // угла первой планки (одна и та же для всех трёх - calc.wall.value, у
-// типа I-1 единая толщина всех досок/планок/раскосов); partTitle -
-// заголовок чертежа ("Щит боковой"/"Крышка"/"Дно").
-function diagramBokPhoto(g, dimVal, plankTVal, edgeVal, boardLenVal, partTitle){
+// типа I-1 единая толщина всех досок/планок/раскосов); edgeVal - отступ от
+// края доски до кромки крайней планки; gapVal - расстояние между КРОМКАМИ
+// соседних планок (calc.plankGap = plank.middle/(plankQty-1), ширина самих
+// планок уже вычтена); partTitle - заголовок чертежа ("Щит боковой"/
+// "Крышка"/"Дно").
+//
+// Все отступы подписей от рамки заданы в экранных пикселях (px - сколько
+// единиц фото приходится на 1px при базовой ширине чертежа), а не в долях
+// IW/IH, как раньше: при общем масштабе (см. I1_FRAME_PX) фото разной
+// ширины рисуются с разным коэффициентом, и доли давали бы разные зазоры
+// между подписями на разных вариантах.
+function diagramBokPhoto(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, partTitle){
   const IW = g.IW, IH = g.IH, topY = g.topY, botY = g.botY;
   const stubL = g.stubL, p1L = g.p1L, p1R = g.p1R, p2L = g.p2L, stubR = g.stubR;
+  const widthPx = i1DiagramWidth(IW, botY - topY);
+  const px = IW / widthPx;
 
   // Стрелка вертикального размера - у правого внешнего края щита (stubR, а
   // не у последней планки - там она уходила бы слишком далеко вправо, через
   // весь правый торцевой обрез щита), с небольшим отступом за кадр.
-  const extOffset = 0.09*IW;
-  const dimFarX = stubR + extOffset;
-  const dblArrowX = stubR + extOffset*0.55;
+  const dimFarX = stubR + 20*px;
+  const dblArrowX = stubR + 11*px;
 
   // Стрелка длины доски - над фото, от края до края щита.
-  const topLineY = -0.10*IH;
+  const topLineY = topY - 24*px;
 
   // Стрелка толщины - указывает на выступающий верхний левый угол первой
-  // планки; идёт сверху, в той же зоне, что и стрелка длины доски (а не
-  // слева от кадра, как раньше) - иначе под неё резервируется большой
-  // отступ слева, и весь чертёж визуально уезжает вправо от заголовка
-  // секции.
+  // планки; подпись - в том же ряду, что и стрелка длины доски, слева.
+  // Подпись длины доски - по центру щита, но не ближе 80px к подписи
+  // толщины (на узких чертежах, напр. 2 планки, по центру они бы
+  // наложились друг на друга).
   const thickTargetY = topY*0.67;
-  const thickTailX = p1L - 0.03*IW, thickTailY = topLineY;
+  const thickTailX = p1L - 12*px, thickTailY = topLineY;
+  const lenLabelX = Math.max((stubL+stubR)/2, thickTailX + 80*px);
 
-  // Двойная стрелка "расстояние между соседними планками" (между кромками
-  // 1-го и 2-го пояса, по запросу пользователя) - в открытом поле между
-  // рамкой щита и стрелкой длины доски сверху (там ничего нет, кроме
-  // угловых засечек у stubL/stubR - см. records ниже). Значение численно
-  // равно edgeVal - при раскладке "максимально равномерно" (см. plankCount
-  // в logic.js) отступ от края и зазор между соседними планками совпадают
-  // по построению, но подписываются отдельно - для наглядности у самих
-  // планок на фото, а не только у крайнего отступа.
-  const gapSpan = topY - topLineY;
-  const gapArrowY = topY - 0.5*gapSpan;
-  const gapMidX = (p1R+p2L)/2;
-
-  // Скобка "отступ от края до крайней планки" - в поле под фото (снимки
-  // содержат запас по высоте под рамкой щита специально под эту скобку).
+  // Нижнее поле под рамкой щита (снимки содержат запас по высоте специально
+  // под скобки): на одном уровне bracketY - скобка "отступ от края до
+  // крайней планки" (stubL..p1L) и двойная стрелка "расстояние между
+  // соседними планками" (p1R..p2L, между кромками 1-го и 2-го пояса).
+  // Подписи - под фото в два ряда: 1-й ряд - зазор между планками (прямо под
+  // своей стрелкой), 2-й ряд - отступ от края (со сноской к своей скобке).
+  // Раньше стрелка зазора стояла сверху, между рамкой и стрелкой длины
+  // доски, и её подпись перекрывалась подписями толщины и длины доски - по
+  // репорту пользователя.
   const bracketYStart = botY - 0.085*IH, bracketYEnd = IH;
   const bracketY = botY + 0.44*(IH-botY);
   const bracketMidX = (stubL+p1L)/2;
-  const edgeTailX = 0.420*IW, edgeTailY = 1.17*IH;
-  const edgeLabelX = 0.497*IW, edgeLabelY = 1.194*IH;
+  const gapMidX = (p1R+p2L)/2;
+  const gapLabelY = IH + 14*px;
+  const edgeLabelX = stubL + 34*px, edgeLabelY = IH + 42*px;
 
   const dim = Math.round(dimVal);
   const plankT = Math.round(plankTVal);
@@ -120,25 +158,25 @@ function diagramBokPhoto(g, dimVal, plankTVal, edgeVal, boardLenVal, partTitle){
   const records = [
     {type:'line', x1:stubR, y1:topY, x2:dimFarX, y2:topY},
     {type:'line', x1:stubR, y1:botY, x2:dimFarX, y2:botY},
-    {type:'double', x1:dblArrowX, y1:topY, x2:dblArrowX, y2:botY, lx:dblArrowX+7, ly:(topY+botY)/2, text: dim+' мм', vertical:true},
+    {type:'double', x1:dblArrowX, y1:topY, x2:dblArrowX, y2:botY, lx:dblArrowX+2*px, ly:(topY+botY)/2, text: dim+' мм', vertical:true},
 
-    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX, ly:thickTailY+20, text: plankT+' мм'},
+    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX, ly:thickTailY, text: plankT+' мм'},
 
-    {type:'line', x1:p1R, y1:topY, x2:p1R, y2:gapArrowY},
-    {type:'line', x1:p2L, y1:topY, x2:p2L, y2:gapArrowY},
-    {type:'double', x1:p1R, y1:gapArrowY, x2:p2L, y2:gapArrowY, lx:gapMidX, ly:gapArrowY-14, text: edge+' мм'},
+    {type:'line', x1:stubL, y1:topY, x2:stubL, y2:topLineY},
+    {type:'line', x1:stubR, y1:topY, x2:stubR, y2:topLineY},
+    {type:'double', x1:stubL, y1:topLineY, x2:stubR, y2:topLineY, lx:lenLabelX, ly:topLineY, text: boardLen+' мм'},
+
+    {type:'line', x1:p1R, y1:bracketYStart, x2:p1R, y2:bracketYEnd},
+    {type:'line', x1:p2L, y1:bracketYStart, x2:p2L, y2:bracketYEnd},
+    {type:'double', x1:p1R, y1:bracketY, x2:p2L, y2:bracketY, lx:gapMidX, ly:gapLabelY, text: fmtGapMm(gapVal)+' мм'},
 
     {type:'line', x1:stubL, y1:bracketYStart, x2:stubL, y2:bracketYEnd},
     {type:'line', x1:p1L, y1:bracketYStart, x2:p1L, y2:bracketYEnd},
     {type:'line', x1:stubL, y1:bracketY, x2:p1L, y2:bracketY},
-    {type:'single', x1:edgeTailX, y1:edgeTailY, x2:bracketMidX, y2:bracketY, lx:edgeLabelX, ly:edgeLabelY, text: edge+' мм'},
-
-    {type:'line', x1:stubL, y1:topY, x2:stubL, y2:topLineY},
-    {type:'line', x1:stubR, y1:topY, x2:stubR, y2:topLineY},
-    {type:'double', x1:stubL, y1:topLineY, x2:stubR, y2:topLineY, lx:(stubL+stubR)/2, ly:topLineY-10, text: boardLen+' мм'}
+    {type:'single', x1:edgeLabelX, y1:edgeLabelY, x2:bracketMidX, y2:bracketY, lx:edgeLabelX, ly:edgeLabelY, text: edge+' мм'}
   ];
 
-  return renderDiagram(g.img, partTitle + ' - схема расположения деталей', IW, IH, records, null, photoStrokeScale(IW));
+  return renderDiagram(g.img, partTitle + ' - схема расположения деталей', IW, IH, records, widthPx, i1StrokeScale(IW, widthPx));
 }
 
 // Фото есть только для 2-4 планок; для большего числа планок показываем
@@ -159,12 +197,12 @@ function bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal){
   return (xRaskosinaVal && BOK_I1_X_IMG[key]) ? Object.assign({}, g, {img: BOK_I1_X_IMG[key]}) : g;
 }
 
-function diagramBokovoy(heightVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
-  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), heightVal, plankTVal, edgeVal, boardLenVal, 'Щит боковой');
+function diagramBokovoy(heightVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), heightVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Щит боковой');
 }
-function diagramKryshka(widthVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
-  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, boardLenVal, 'Крышка');
+function diagramKryshka(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Крышка');
 }
-function diagramDno(widthVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
-  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, boardLenVal, 'Дно');
+function diagramDno(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Дно');
 }
