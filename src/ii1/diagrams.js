@@ -253,7 +253,7 @@ function nearestKryshkaVariant(longbeamCount, crossBeamCount){
 function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal){
   const variant = nearestKryshkaVariant(longbeamCount, crossBeamCount);
   const v = KRYSHKA_VARIANTS[variant.longbeamCount + '_' + variant.crossBeamCount];
-  const records = v.records(Math.round(torecBoardVal), Math.round(sideFrameVal), Math.round(widthVal), Math.round(lengthVal), Math.round(edgeDistVal));
+  const records = v.records(dimLabel(torecBoardVal), dimLabel(sideFrameVal), dimLabel(widthVal), dimLabel(lengthVal), dimLabel(edgeDistVal));
   return renderDiagram(v.img, 'Крышка - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW));
 }
 
@@ -286,7 +286,7 @@ function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameV
 function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale){
   const variant = nearestTorecVariant(count, floors);
   const v = TOREC_VARIANTS[variant.floors][variant.count];
-  const records = v.records(Math.round(longbeamVal), Math.round(widthVal), Math.round(skinVal), Math.round(heightVal), Math.round(floorHeightVal));
+  const records = v.records(dimLabel(longbeamVal), dimLabel(widthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal));
   return renderDiagram(v.img, 'Щит торцевой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW), labelScale);
 }
 
@@ -536,8 +536,8 @@ function nearestTorecVariant(count, floors){
 // Щита торцевого) - координаты из присланной пользователем разметки фото
 // dno_ii1.jpg (2008x1212).
 function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal){
-  const stojka = Math.round(stojkaVal), skin = Math.round(skinVal);
-  const skidWidth = Math.round(skidWidthVal), outerLen = Math.round(outerLenVal);
+  const stojka = dimLabel(stojkaVal), skin = dimLabel(skinVal);
+  const skidWidth = dimLabel(skidWidthVal), outerLen = dimLabel(outerLenVal);
   const records = [];
   records.push(
     {type:'line', x1:102, y1:676, x2:-85, y2:794},
@@ -592,7 +592,7 @@ function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal){
 function diagramBok(count, floors, longbeamVal, lengthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale){
   const variant = nearestBokVariant(count, floors);
   const v = TOREC_VARIANTS[variant.floors][variant.count];
-  const records = v.records(Math.round(longbeamVal), Math.round(lengthVal), Math.round(skinVal), Math.round(heightVal), Math.round(floorHeightVal));
+  const records = v.records(dimLabel(longbeamVal), dimLabel(lengthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal));
   return renderDiagram(v.img, 'Щит боковой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW), labelScale);
 }
 

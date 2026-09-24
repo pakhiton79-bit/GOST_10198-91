@@ -36,6 +36,7 @@
     --accent: #8A4B26;
     --accent-hover: #6E3B1C;
     --accent-wash: #F1E4D8;
+    --manual-ink: #5A2A10; /* тёмно-коричневый - значения, введённые вручную (см. #boardTables td[data-user-edited]) */
     --ok: #2E7D32;
     --warn: #B7791F;
     --warn-wash: #FBF3E4;
@@ -592,6 +593,11 @@
     border-radius:4px;
   }
   .editable-cell:hover{background:var(--accent-wash);}
+  /* Значения, введённые вручную в таблице деталей (data-user-edited, см.
+     обработчик input у #boardTables и editedAttr в common-print.js) -
+     тёмно-коричневым текстом, по указанию пользователя; только на сайте:
+     скоуп #boardTables не пересекается с печатной областью (#printArea). */
+  #boardTables td[data-user-edited="true"]{color:var(--manual-ink);}
   .editable-cell:focus{
     outline:none;
     background:var(--accent-wash);
@@ -1179,11 +1185,11 @@
       </label>
       <label>
         <input type="checkbox" id="roundBoardWidths">
-        <span>Округлить ширину досок<span class="option-hint">Только доски шириной 100 мм, без узких дополнительных — даже если по факту это занимает больше места, чем есть</span></span>
+        <span>Округлить ширину досок<span class="option-hint">Все доски по 100 мм, без более узких на остаток — при таком расчёте они суммарно могут занять чуть больше места, чем есть: лишнее у последней доски подрежут на месте</span></span>
       </label>
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм; при поперечном расположении досок крышки — и продольного бруса тоже</span></span>
       </label>
     </div>
   </div>
@@ -2114,6 +2120,14 @@ function photoStrokeScale(imgNaturalWidth){
 const DIAGRAM_DEFAULT_WIDTH = 260;
 const DIAGRAM_MAX_HEIGHT = 240;
 
+// Подписи размеров на всех чертежах (все типы) - целые мм, с округлением
+// ВВЕРХ (по указанию пользователя: 697.4 -> 698). Допуск 1e-6 - чтобы
+// погрешность дробной арифметики (1000.0000000001) не превращала целое
+// значение в следующее.
+function dimLabel(v){
+  return Math.ceil(v - 1e-6);
+}
+
 // labelScale — необязательный доп. множитель размера подписей (шрифт, отступы,
 // белая плашка), НЕЗАВИСИМЫЙ от --dk (авто-сжатие чертежа под ширину слота,
 // см. reserveDiagramOverflow[Screen]() в src/common-print.js). --dk реагирует
@@ -2201,8 +2215,8 @@ function diagramPlaceholder(label){
 function diagramEndPanel1Raskosina(heightPlusT12Val, innerWidthVal, widthPxOverride, imgOverride, strokeScaleOverride){
   // Фото-чертёж для варианта с 1 раскосиной (натуральный размер 1352×1158).
   // Подпись высоты — полная высота рамы щита = высота груза + толщина доски дна.
-  const val = Math.round(heightPlusT12Val);
-  const innerWidth = Math.round(innerWidthVal);
+  const val = dimLabel(heightPlusT12Val);
+  const innerWidth = dimLabel(innerWidthVal);
 
   const records = [
     {type:'line', x1:1111, y1:36, x2:1541, y2:32},
@@ -2222,8 +2236,8 @@ function diagramEndPanelNoRaskosina(heightPlusT12Val, widthVal, widthPxOverride,
   // досок торца без диагоналей. Натуральный размер фото 1354×1134.
   // Высота = высота груза + толщина доски дна (то же значение, которым заполняется
   // доска торца, см. fbTorec); ширина = ширина груза (совпадает с k32).
-  const val = Math.round(heightPlusT12Val);
-  const width = Math.round(widthVal);
+  const val = dimLabel(heightPlusT12Val);
+  const width = dimLabel(widthVal);
 
   const records = [
     {type:'line', x1:1122, y1:21, x2:1562, y2:19},
@@ -2492,7 +2506,7 @@ function nearestKryshkaVariant(longbeamCount, crossBeamCount){
 function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal){
   const variant = nearestKryshkaVariant(longbeamCount, crossBeamCount);
   const v = KRYSHKA_VARIANTS[variant.longbeamCount + '_' + variant.crossBeamCount];
-  const records = v.records(Math.round(torecBoardVal), Math.round(sideFrameVal), Math.round(widthVal), Math.round(lengthVal), Math.round(edgeDistVal));
+  const records = v.records(dimLabel(torecBoardVal), dimLabel(sideFrameVal), dimLabel(widthVal), dimLabel(lengthVal), dimLabel(edgeDistVal));
   return renderDiagram(v.img, 'Крышка - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW));
 }
 
@@ -2525,7 +2539,7 @@ function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameV
 function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale){
   const variant = nearestTorecVariant(count, floors);
   const v = TOREC_VARIANTS[variant.floors][variant.count];
-  const records = v.records(Math.round(longbeamVal), Math.round(widthVal), Math.round(skinVal), Math.round(heightVal), Math.round(floorHeightVal));
+  const records = v.records(dimLabel(longbeamVal), dimLabel(widthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal));
   return renderDiagram(v.img, 'Щит торцевой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW), labelScale);
 }
 
@@ -2775,8 +2789,8 @@ function nearestTorecVariant(count, floors){
 // Щита торцевого) - координаты из присланной пользователем разметки фото
 // dno_ii1.jpg (2008x1212).
 function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal){
-  const stojka = Math.round(stojkaVal), skin = Math.round(skinVal);
-  const skidWidth = Math.round(skidWidthVal), outerLen = Math.round(outerLenVal);
+  const stojka = dimLabel(stojkaVal), skin = dimLabel(skinVal);
+  const skidWidth = dimLabel(skidWidthVal), outerLen = dimLabel(outerLenVal);
   const records = [];
   records.push(
     {type:'line', x1:102, y1:676, x2:-85, y2:794},
@@ -2831,7 +2845,7 @@ function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal){
 function diagramBok(count, floors, longbeamVal, lengthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale){
   const variant = nearestBokVariant(count, floors);
   const v = TOREC_VARIANTS[variant.floors][variant.count];
-  const records = v.records(Math.round(longbeamVal), Math.round(lengthVal), Math.round(skinVal), Math.round(heightVal), Math.round(floorHeightVal));
+  const records = v.records(dimLabel(longbeamVal), dimLabel(lengthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal));
   return renderDiagram(v.img, 'Щит боковой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW), labelScale);
 }
 
@@ -4208,6 +4222,11 @@ function computeGost10198II1(input){
   if(MASS > 20000){
     warnings.push('Масса груза вне диапазона типа II-1 (≤20000 кг) — расчёт продолжен по крайнему значению.');
   }
+  // ГОСТ 10198-91 в целом (п.1.1) распространяется на грузы массой от 200 до
+  // 20000 кг - нижняя граница раньше не проверялась.
+  if(MASS < 200){
+    warnings.push(`Масса груза ${MASS} кг менее 200 кг — вне области распространения ГОСТ 10198-91 в целом (200–20000 кг). Расчёт продолжен, но результат нужно перепроверить.`);
+  }
 
   // Толщина досок обшивки (масса груза) - черновая таблица, см. комментарий у
   // skinThickness() в src/ii1/logic.js.
@@ -4382,6 +4401,14 @@ function computeGost10198II1(input){
   if(subfloorForkliftFail){
     warnings.push(`Погрузка погрузчиком требует ≥300 мм у подполозной доски (сейчас ${Math.round(k10)} мм).`);
   }
+  // Толщина/ширина/количество всегда считаются и показываются как обычно -
+  // от длины они не зависят и сами по себе верны; в таблице ⚠ ставится
+  // ТОЛЬКО в колонке длины - либо когда k10<=0 (типичный признак того, что
+  // длина и ширина перепутаны местами; findNegativeField не ловит ровно 0,
+  // только отрицательные), либо когда включена "Погрузка
+  // авто/электропогрузчиком" и требование ≥300мм не выполняется.
+  const subfloorInvalidLength = k10 <= 0;
+  const subfloorLengthWarn = subfloorInvalidLength || subfloorForkliftFail;
 
   // --- ДНО ---
   const dno = [];
@@ -4392,11 +4419,11 @@ function computeGost10198II1(input){
   if(!removeSkidBoards){
     dno.push({
       name:'Подполозная доска',
-      t: subfloorForkliftFail ? '⚠' : t10,
-      w: subfloorForkliftFail ? '⚠' : w10,
-      l: subfloorForkliftFail ? '⚠' : k10,
-      qty: subfloorForkliftFail ? '⚠' : l10,
-      overrideKey: subfloorForkliftFail ? null : 't10'
+      t: t10,
+      w: w10,
+      l: subfloorLengthWarn ? '⚠' : k10,
+      qty: l10,
+      overrideKey: 't10'
     });
   }
   const endBeam = endBeamSection(MASS);
@@ -4414,7 +4441,8 @@ function computeGost10198II1(input){
   if(!removeFloorBoards){
     if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12, overrideKey:'floorBoardT'});
     fbDno.extra.forEach((e,i)=>{
-      dno.push({name:'Доска дна (дополнительная) '+(i+1), t:t12, w:e.width, l:k12, qty:e.qty});
+      const suffix = fbDno.extra.length > 1 ? ' ' + (i+1) : '';
+      dno.push({name:'Доска дна (дополнительная)'+suffix, t:t12, w:e.width, l:k12, qty:e.qty});
     });
     if(fbDno.warn){
       warnings.push('Доска дна: остаток — нестандартная ширина (вне 75–99 мм).');
@@ -4452,7 +4480,8 @@ function computeGost10198II1(input){
   const t20 = skin.value, w20 = 100, l20 = fbKryshka.mainQty, k20 = lidBoardLen;
   if(l20>0) kryshka.push({name:'Доска крышки', t:t20, w:w20, l:k20, qty:l20, overrideKey:'skinValue'});
   fbKryshka.extra.forEach((e,i)=>{
-    kryshka.push({name:'Доска крышки (дополнительная) '+(i+1), t:t20, w:e.width, l:k20, qty:e.qty});
+    const suffix = fbKryshka.extra.length > 1 ? ' ' + (i+1) : '';
+    kryshka.push({name:'Доска крышки (дополнительная)'+suffix, t:t20, w:e.width, l:k20, qty:e.qty});
   });
   if(fbKryshka.warn){
     warnings.push('Доска крышки: остаток — нестандартная ширина (вне 75–99 мм).');
@@ -4622,7 +4651,8 @@ function computeGost10198II1(input){
   if(torecFrame.hasRaskosina) endPanel.push({name:'Раскосина', t:t_raskosina, w:w_raskosina, l:k33, qty:l33, overrideKey:'tRaskosina'});
   if(l32>0) endPanel.push({name:'Доска', t:t32, w:w32, l:k32, qty:l32});
   fbTorec.extra.forEach((e,i)=>{
-    endPanel.push({name:'Доска (дополнительная) '+(i+1), t:t32, w:e.width, l:k32, qty:e.qty*torecFrame.floors});
+    const suffix = fbTorec.extra.length > 1 ? ' ' + (i+1) : '';
+    endPanel.push({name:'Доска (дополнительная)'+suffix, t:t32, w:e.width, l:k32, qty:e.qty*torecFrame.floors});
   });
 
   const volTorPanel = vol(t30,w30,k30,l30) + vol(t31,w31,k31,l31)
@@ -4669,7 +4699,8 @@ function computeGost10198II1(input){
   bokovoy.push({name:'Опорная планка', t:t_opora, w:w_opora, l:k_opora, qty:l_opora});
   if(l41>0) bokovoy.push({name:'Доска', t:t41, w:w41, l:k41, qty:l41});
   fbBok.extra.forEach((e,i)=>{
-    bokovoy.push({name:'Доска (дополнительная) '+(i+1), t:t41, w:e.width, l:k41, qty:e.qty*bokFrame.floors});
+    const suffix = fbBok.extra.length > 1 ? ' ' + (i+1) : '';
+    bokovoy.push({name:'Доска (дополнительная)'+suffix, t:t41, w:e.width, l:k41, qty:e.qty*bokFrame.floors});
   });
 
   const volBokPanel = vol(t40,w40,k40,l40) + vol(t43,w43,k43,l43)
@@ -4714,7 +4745,10 @@ function computeGost10198II1(input){
   };
   const negField = findNegativeField(result, '');
   if(negField){
-    return {error: `Расчёт дал отрицательное значение (${negField}) — результат недостоверен, проверьте входные данные.`};
+    // negField - внутренний путь до поля, только для отладки в консоли -
+    // пользователю техническое имя переменной не показываем.
+    console.warn('Расчёт дал отрицательное значение:', negField);
+    return {error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей — рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.'};
   }
   return result;
 }
@@ -4765,7 +4799,15 @@ function calculate(){
   };
 
   const calc = computeGost10198II1(input);
-  if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
+  if(calc.error){
+    errEl.textContent = calc.error;
+    setCalcStatus('error');
+    // Прячем «Итог» и спецификацию целиком - иначе на экране остаются
+    // цифры прошлого успешного расчёта рядом с текстом ошибки (по указанию
+    // пользователя).
+    document.getElementById('results').style.display = 'none';
+    return;
+  }
   // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, endPanel:2, bokovoy:2})){

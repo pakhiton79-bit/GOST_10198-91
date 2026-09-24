@@ -373,7 +373,10 @@ function computeGost10198I1(input){
   };
   const negField = findNegativeField(result, '');
   if(negField){
-    return {error: `Расчёт дал отрицательное значение (${negField}) — результат недостоверен, проверьте входные данные.`};
+    // negField - внутренний путь до поля, только для отладки в консоли -
+    // пользователю техническое имя переменной не показываем.
+    console.warn('Расчёт дал отрицательное значение:', negField);
+    return {error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей — рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.'};
   }
   return result;
 }
@@ -419,7 +422,15 @@ function calculate(){
   };
 
   const calc = computeGost10198I1(input);
-  if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
+  if(calc.error){
+    errEl.textContent = calc.error;
+    setCalcStatus('error');
+    // Прячем «Итог» и спецификацию целиком - иначе на экране остаются
+    // цифры прошлого успешного расчёта рядом с текстом ошибки (по указанию
+    // пользователя).
+    document.getElementById('results').style.display = 'none';
+    return;
+  }
   // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2})){

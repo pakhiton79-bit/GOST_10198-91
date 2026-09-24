@@ -271,6 +271,11 @@ function computeGost10198I3(input){
     // результат нужно перепроверять с его учётом.
     warnings.push(`Габариты ${L}×${W} мм ≤ 1200×800 — формально действует ГОСТ 21140. Расчёт по ГОСТ 10198-91 продолжен, но результат нужно сверить с ГОСТ 21140.`);
   }
+  // ГОСТ 10198-91 в целом (п.1.1) распространяется на грузы массой от 200 до
+  // 20000 кг - нижняя граница раньше не проверялась.
+  if(MASS < 200){
+    warnings.push(`Масса груза ${MASS} кг менее 200 кг — вне области распространения ГОСТ 10198-91 в целом (200–20000 кг). Расчёт продолжен, но результат нужно перепроверить.`);
+  }
 
   // Ручной ввод толщины в таблице (data-override="..." в renderSection в
   // calculate() ниже) - подставляется вместо расчётного по ГОСТ значения
@@ -393,14 +398,22 @@ function computeGost10198I3(input){
   if(subfloorForkliftFail){
     warnings.push(`Погрузка погрузчиком требует ≥300 мм у подполозной доски (сейчас ${Math.round(k10)} мм).`);
   }
+  // Толщина/ширина/количество всегда считаются и показываются как обычно -
+  // от длины они не зависят и сами по себе верны; в таблице ⚠ ставится
+  // ТОЛЬКО в колонке длины - либо когда k10<=0 (типичный признак того, что
+  // длина и ширина перепутаны местами; findNegativeField не ловит ровно 0,
+  // только отрицательные), либо когда включена "Погрузка
+  // авто/электропогрузчиком" и требование ≥300мм не выполняется.
+  const subfloorInvalidLength = k10 <= 0;
+  const subfloorLengthWarn = subfloorInvalidLength || subfloorForkliftFail;
   if(!removeSkidBoards){
     dno.push({
       name:'Подполозная доска',
-      t: subfloorForkliftFail ? '⚠' : t10,
-      w: subfloorForkliftFail ? '⚠' : w10,
-      l: subfloorForkliftFail ? '⚠' : k10,
-      qty: subfloorForkliftFail ? '⚠' : l10,
-      overrideKey: subfloorForkliftFail ? undefined : 't10Value'
+      t: t10,
+      w: w10,
+      l: subfloorLengthWarn ? '⚠' : k10,
+      qty: l10,
+      overrideKey: 't10Value'
     });
   }
 
@@ -451,7 +464,8 @@ function computeGost10198I3(input){
   if(!removeFloorBoards){
     if(l12>0) dno.push({name:'Доска дна', t:t12, w:w12, l:k12, qty:l12, overrideKey:'t12Value'});
     fbDno.extra.forEach((e,i)=>{
-      dno.push({name:'Доска дна (дополнительная) '+(i+1), t:t12, w:e.width, l:k12, qty:e.qty});
+      const suffix = fbDno.extra.length > 1 ? ' ' + (i+1) : '';
+      dno.push({name:'Доска дна (дополнительная)'+suffix, t:t12, w:e.width, l:k12, qty:e.qty});
     });
     if(fbDno.warn){
       warnings.push('Доска дна: остаток — нестандартная ширина (вне 75–99 мм).');
@@ -509,7 +523,8 @@ function computeGost10198I3(input){
   const w20 = 100, l20 = fbKryshka.mainQty;
   if(l20>0) kryshka.push({name:'Доска крышки', t:t20, w:w20, l:k20, qty:l20});
   fbKryshka.extra.forEach((e,i)=>{
-    kryshka.push({name:'Доска крышки (дополнительная) '+(i+1), t:t20, w:e.width, l:k20, qty:e.qty});
+    const suffix = fbKryshka.extra.length > 1 ? ' ' + (i+1) : '';
+    kryshka.push({name:'Доска крышки (дополнительная)'+suffix, t:t20, w:e.width, l:k20, qty:e.qty});
   });
   if(fbKryshka.warn){
     warnings.push('Доска крышки: остаток — нестандартная ширина (вне 75–99 мм).');
@@ -627,7 +642,8 @@ function computeGost10198I3(input){
   if(torecHasRaskosina) endPanel.push({name:'Раскосина', t:t33, w:w33, l:k33, qty:l33});
   if(l32>0) endPanel.push({name:'Доска торца', t:t32, w:w32, l:k32, qty:l32});
   fbTorec.extra.forEach((e,i)=>{
-    endPanel.push({name:'Доска торца (дополнительная) '+(i+1), t:t32, w:e.width, l:k32, qty:e.qty});
+    const suffix = fbTorec.extra.length > 1 ? ' ' + (i+1) : '';
+    endPanel.push({name:'Доска торца (дополнительная)'+suffix, t:t32, w:e.width, l:k32, qty:e.qty});
   });
 
   // --- ЩИТ БОКОВОЙ (расчёт на 1 щит, далее удвоение) ---
@@ -716,7 +732,8 @@ function computeGost10198I3(input){
   ];
   if(l41>0) bokovoy.push({name:'Доска бока', t:t41, w:w41, l:k41, qty:l41, overrideKey:'wallValue'});
   fbBok.extra.forEach((e,i)=>{
-    bokovoy.push({name:'Доска бока (дополнительная) '+(i+1), t:t41, w:e.width, l:k41, qty:e.qty});
+    const suffix = fbBok.extra.length > 1 ? ' ' + (i+1) : '';
+    bokovoy.push({name:'Доска бока (дополнительная)'+suffix, t:t41, w:e.width, l:k41, qty:e.qty});
   });
   if(l43>0) bokovoy.push({name:'Горизонтальная планка', t:t43, w:w43, l:k43, qty:l43});
   if(bokHasRaskosina) bokovoy.push({name:'Раскосина', t:t42, w:w42, l:k42, qty:l42});
@@ -792,7 +809,10 @@ function computeGost10198I3(input){
   };
   const negField = findNegativeField(result, '');
   if(negField){
-    return {error: `Расчёт дал отрицательное значение (${negField}) — результат недостоверен, проверьте входные данные.`};
+    // negField - внутренний путь до поля, только для отладки в консоли -
+    // пользователю техническое имя переменной не показываем.
+    console.warn('Расчёт дал отрицательное значение:', negField);
+    return {error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей — рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.'};
   }
   return result;
 }
@@ -838,7 +858,15 @@ function calculate(){
   };
 
   const calc = computeGost10198I3(input);
-  if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
+  if(calc.error){
+    errEl.textContent = calc.error;
+    setCalcStatus('error');
+    // Прячем «Итог» и спецификацию целиком - иначе на экране остаются
+    // цифры прошлого успешного расчёта рядом с текстом ошибки (по указанию
+    // пользователя).
+    document.getElementById('results').style.display = 'none';
+    return;
+  }
   // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, endPanel:2, bokovoy:2})){
