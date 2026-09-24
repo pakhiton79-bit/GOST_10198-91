@@ -624,6 +624,7 @@ function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
   const manualOverrides = readManualOverrides();
+  const tableEdits = readTableEdits(); // см. applyTableEdits в common-print.js
   setCalcStatus(null);
 
   const removeFloorBoardsEl = document.getElementById('removeFloorBoards');
@@ -645,6 +646,11 @@ function calculate(){
 
   const calc = computeGost10198II1(input);
   if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
+  // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
+  // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
+  if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, endPanel:2, bokovoy:2})){
+    calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
+  }
 
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
@@ -654,18 +660,19 @@ function calculate(){
   // размер/количество детали): толщина раскосины (t_stojka*2/3) и т.п. дают
   // дробные мм без этого округления.
   function displayVal(v){ return typeof v === 'number' ? ceilInt(v) : v; }
-  function renderSection(title, rows){
+  function renderSection(title, rows, sectionKey){
     let html = title ? `<div class="part-title">${title}</div>` : '';
-    html += `<div class="spec-table"><table>
+    html += `<div class="spec-table"><table data-section="${sectionKey}">
       <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
-    rows.forEach(r=>{
+    const rowKeys = tableRowKeys(rows);
+    rows.forEach((r, i)=>{
       const overrideAttr = r.overrideKey ? ` data-override="${r.overrideKey}"` : '';
-      html += `<tr>
+      html += `<tr data-row-key="${escapeAttr(rowKeys[i])}">
         <td>${r.name}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}>${displayVal(r.t)}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="w">${displayVal(r.w)}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="l">${displayVal(r.l)}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="qty">${displayVal(r.qty)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}${editedAttr(r, 't', manualOverrides)}>${displayVal(r.t)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="w"${editedAttr(r, 'w')}>${displayVal(r.w)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="l"${editedAttr(r, 'l')}>${displayVal(r.l)}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="qty"${editedAttr(r, 'qty')}>${displayVal(r.qty)}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
@@ -682,16 +689,16 @@ function calculate(){
   // --dk недостаточно, чтобы подписи не выглядели явно крупнее, чем на
   // остальных чертежах.
   let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.t_stojka, calc.skin.value, calc.W + calc.t_stojka*2, calc.k9Base) + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.t_stojka, calc.skin.value, calc.W + calc.t_stojka*2, calc.k9Base) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
   // data-size-group="ii1-panels" на обоих слотах ниже - синхронизирует их
   // итоговый масштаб (см. reserveScaleGroups в src/common-print.js): у
   // Щита торцевого и бокового собственный вылет подписей за рамку фото
   // отличается от случая к случаю (то у одного заметнее, то у другого),
   // поэтому без синхронизации они могли получаться заметно разного размера
   // при одинаковом входе - по репорту пользователя со скриншотом.
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="ii1-panels">` + diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, calc.W + calc.t_stojka*2, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, 260, 0.8) + `</div>` + renderSection('', calc.endPanel) + `</div>`;
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="ii1-panels">` + diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam, calc.L, calc.t_stojka, calc.panelHeightFull, 100 + calc.bokFrame.len, 260, 0.8) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="ii1-panels">` + diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, calc.W + calc.t_stojka*2, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, 260, 0.8) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="ii1-panels">` + diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam, calc.L, calc.t_stojka, calc.panelHeightFull, 100 + calc.bokFrame.len, 260, 0.8) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
@@ -722,31 +729,14 @@ document.querySelectorAll('input[name="lidLayout"]').forEach(el=>{
   el.addEventListener('change', invalidateCalc);
 });
 
-function recalcFromTable(){
-  const rows = document.querySelectorAll('#boardTables table tbody tr');
-  let totalVolume = 0;
-  rows.forEach(tr=>{
-    const t = parseFloat(tr.querySelector('[data-role="t"]').textContent.replace(',','.')) || 0;
-    const w = parseFloat(tr.querySelector('[data-role="w"]').textContent.replace(',','.')) || 0;
-    const l = parseFloat(tr.querySelector('[data-role="l"]').textContent.replace(',','.')) || 0;
-    const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
-    totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
-  });
-  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
-  document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
-  document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
-}
 document.getElementById('boardTables').addEventListener('input', e=>{
   if(e.target.classList.contains('editable-cell')){
-    if(e.target.hasAttribute('data-override')){
-      e.target.setAttribute('data-user-edited', 'true');
-    }
-    recalcFromTable();
-    // Ручная правка таблицы делает наружные размеры/чертежи потенциально
-    // устаревшими относительно того, что сейчас в таблице - прячем галочку
-    // расчёта и показываем краткую подсказку (см. invalidateCalc() в
-    // src/ii1/ui.js). При нажатии "Рассчитать" правки толщины (data-override,
-    // отмеченные data-user-edited) будут учтены - см. readManualOverrides().
+    // Правка ячейки НЕ пересчитывает итоги сразу (по указанию пользователя) -
+    // только помечает ячейку как исправленную и расчёт как устаревший
+    // ("Расчёт не проведён"); учтётся при нажатии "Рассчитать" (толщина с
+    // data-override - через readManualOverrides(), остальное - через
+    // readTableEdits(), см. common-print.js).
+    e.target.setAttribute('data-user-edited', 'true');
     invalidateCalc();
   }
 });

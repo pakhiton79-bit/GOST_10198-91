@@ -399,6 +399,7 @@ function calculate(){
   const errEl = document.getElementById('err');
   errEl.textContent = '';
   const manualOverrides = readManualOverrides();
+  const tableEdits = readTableEdits(); // см. applyTableEdits в common-print.js
   setCalcStatus(null);
 
   const input = {
@@ -419,6 +420,12 @@ function calculate(){
 
   const calc = computeGost10198I1(input);
   if(calc.error){ errEl.textContent = calc.error; setCalcStatus('error'); return; }
+  // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
+  // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
+  if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2})){
+    calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
+    calc.crateMass = calc.totalVolume * WOOD_DENSITY_KG_M3;
+  }
   // "Стандартные" (штатные) число/шаг поясов планок - центр ползунков у
   // галочек "Настроить число поясов"/"Настроить расстояние между поясами"
   // (см. src/i1/ui.js) - обновляются при каждом успешном расчёте.
@@ -445,18 +452,19 @@ function calculate(){
   document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 
-  function renderSection(title, rows){
+  function renderSection(title, rows, sectionKey){
     let html = title ? `<div class="part-title">${title}</div>` : '';
-    html += `<div class="spec-table"><table>
+    html += `<div class="spec-table"><table data-section="${sectionKey}">
       <thead><tr><th>Деталь</th><th class="num">Толщина</th><th class="num">Ширина</th><th class="num">Длина</th><th class="num">Кол-во</th></tr></thead><tbody>`;
-    rows.forEach(r=>{
+    const rowKeys = tableRowKeys(rows);
+    rows.forEach((r, i)=>{
       const overrideAttr = r.overrideKey ? ` data-override="${r.overrideKey}"` : '';
-      html += `<tr>
+      html += `<tr data-row-key="${escapeAttr(rowKeys[i])}">
         <td>${r.name}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}>${r.t}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="w">${r.w}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="l">${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
-        <td class="num editable-cell" contenteditable="true" data-role="qty">${r.qty}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="t"${overrideAttr}${editedAttr(r, 't', manualOverrides)}>${r.t}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="w"${editedAttr(r, 'w')}>${r.w}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="l"${editedAttr(r, 'l')}>${typeof r.l === 'number' ? Math.round(r.l) : r.l}</td>
+        <td class="num editable-cell" contenteditable="true" data-role="qty"${editedAttr(r, 'qty')}>${r.qty}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
@@ -467,10 +475,10 @@ function calculate(){
   // Общая (максимально возможная) высота рамки щита для всех 4 чертежей -
   // см. i1PageFramePx в диаграммах I-1.
   const i1FramePx = i1PageFramePx(calc.plankQty, calc.raskosinaNeeded, calc.kryshkaDnoHasRaskosina);
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramDno(calc.dnoWidth, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.torec) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramDno(calc.dnoWidth, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.torec, 'torec') + `</div>`;
+  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
@@ -504,28 +512,15 @@ function calculate(){
   });
 });
 
-function recalcFromTable(){
-  const rows = document.querySelectorAll('#boardTables table tbody tr');
-  let totalVolume = 0;
-  rows.forEach(tr=>{
-    const t = parseFloat(tr.querySelector('[data-role="t"]').textContent.replace(',','.')) || 0;
-    const w = parseFloat(tr.querySelector('[data-role="w"]').textContent.replace(',','.')) || 0;
-    const l = parseFloat(tr.querySelector('[data-role="l"]').textContent.replace(',','.')) || 0;
-    const qty = parseFloat(tr.querySelector('[data-role="qty"]').textContent.replace(',','.')) || 0;
-    totalVolume += (t/1000)*(w/1000)*(l/1000)*qty;
-  });
-  const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
-  document.getElementById('outVolume').innerHTML = `${totalVolume.toFixed(3)} <span>м³</span>`;
-  document.getElementById('outMass').innerHTML = `${(totalVolume * WOOD_DENSITY_KG_M3).toFixed(1)} <span>кг</span>`;
-  document.getElementById('outTime').innerHTML = `${normaVremeni} <span>ч</span>`;
-}
 
 document.getElementById('boardTables').addEventListener('input', e=>{
   if(e.target.classList.contains('editable-cell')){
-    if(e.target.hasAttribute('data-override')){
-      e.target.setAttribute('data-user-edited', 'true');
-    }
-    recalcFromTable();
+    // Правка ячейки НЕ пересчитывает итоги сразу (по указанию пользователя) -
+    // только помечает ячейку как исправленную и расчёт как устаревший
+    // ("Расчёт не проведён"); учтётся при нажатии "Рассчитать" (толщина с
+    // data-override - через readManualOverrides(), остальное - через
+    // readTableEdits(), см. common-print.js).
+    e.target.setAttribute('data-user-edited', 'true');
     invalidateCalc();
   }
 });
