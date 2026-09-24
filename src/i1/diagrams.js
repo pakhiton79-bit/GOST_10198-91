@@ -13,9 +13,15 @@ const BOX_I1_IMG_B64 = "data:image/jpeg;base64,__IMG:box_i1.jpg__";
 // "приземистые", а у торца - почти квадратное, и при том же 210px оно на их
 // фоне выглядело непропорционально крупным.
 const I1_TOREC_WIDTH = 150;
-function diagramTorec(heightVal, widthVal, hasRaskosinaVal){
+// X-образные раскосины (галочка xRaskosina): те же чертежи, где раскосина
+// отражена относительно оси промежутка, а отражение спрятано под исходной
+// доской (исходная целая, встречная - из двух кусков). Картинки *_x
+// сгенерированы из исходных программно (не отдельная разметка) - поэтому
+// калибровка стрелок у них та же, что и у исходных.
+const TOREC_1_X_IMG_B64 = "data:image/png;base64,__IMG:torec_1_x.png__";
+function diagramTorec(heightVal, widthVal, hasRaskosinaVal, xRaskosinaVal){
   return hasRaskosinaVal
-    ? diagramEndPanel1Raskosina(heightVal, widthVal, I1_TOREC_WIDTH)
+    ? diagramEndPanel1Raskosina(heightVal, widthVal, I1_TOREC_WIDTH, xRaskosinaVal ? TOREC_1_X_IMG_B64 : undefined)
     : diagramEndPanelNoRaskosina(heightVal, widthVal, I1_TOREC_WIDTH);
 }
 
@@ -25,6 +31,10 @@ const BOK_I1_4_IMG_B64  = "data:image/jpeg;base64,__IMG:bok_i1_4planks.jpg__"; /
 const BOK_I1_2R_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_2planks_1raskosina.jpg__"; // натуральный размер 1141x891 (2 планки, 1 раскосина)
 const BOK_I1_3R_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_3planks_2raskosina.jpg__"; // натуральный размер 1812x909 (3 планки, 2 раскосины)
 const BOK_I1_4R_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_4planks_3raskosina.jpg__"; // натуральный размер 2212x790 (4 планки, 3 раскосины)
+const BOK_I1_2RX_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_2planks_1raskosina_x.jpg__"; // то же + X-образные раскосины
+const BOK_I1_3RX_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_3planks_2raskosina_x.jpg__";
+const BOK_I1_4RX_IMG_B64 = "data:image/jpeg;base64,__IMG:bok_i1_4planks_3raskosina_x.jpg__";
+const BOK_I1_X_IMG = {'1_2': BOK_I1_2RX_IMG_B64, '1_3': BOK_I1_3RX_IMG_B64, '1_4': BOK_I1_4RX_IMG_B64};
 
 // Калибровка по разметке, присланной пользователем для bok_i1_2planks.jpg
 // (records с линиями/стрелками для варианта "2 планки, без раскосины") -
@@ -141,12 +151,20 @@ function bokGeomKey(plankQty, hasRaskosinaVal){
   return (hasRaskosinaVal ? '1' : '0') + '_' + n;
 }
 
-function diagramBokovoy(heightVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal){
-  return diagramBokPhoto(BOK_I1_GEOM[bokGeomKey(plankQty, hasRaskosinaVal)], heightVal, plankTVal, edgeVal, boardLenVal, 'Щит боковой');
+// Геометрия с подменой картинки на X-вариант (калибровка та же - см.
+// комментарий у TOREC_1_X_IMG_B64 выше).
+function bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal){
+  const key = bokGeomKey(plankQty, hasRaskosinaVal);
+  const g = BOK_I1_GEOM[key];
+  return (xRaskosinaVal && BOK_I1_X_IMG[key]) ? Object.assign({}, g, {img: BOK_I1_X_IMG[key]}) : g;
 }
-function diagramKryshka(widthVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal){
-  return diagramBokPhoto(BOK_I1_GEOM[bokGeomKey(plankQty, hasRaskosinaVal)], widthVal, plankTVal, edgeVal, boardLenVal, 'Крышка');
+
+function diagramBokovoy(heightVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), heightVal, plankTVal, edgeVal, boardLenVal, 'Щит боковой');
 }
-function diagramDno(widthVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal){
-  return diagramBokPhoto(BOK_I1_GEOM[bokGeomKey(plankQty, hasRaskosinaVal)], widthVal, plankTVal, edgeVal, boardLenVal, 'Дно');
+function diagramKryshka(widthVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, boardLenVal, 'Крышка');
+}
+function diagramDno(widthVal, plankTVal, edgeVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, boardLenVal, 'Дно');
 }

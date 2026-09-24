@@ -3,7 +3,7 @@
 // само разделение сделано только ради структуры (проще выделить в отдельный
 // бэкенд/API в будущем), логика и порядок вычислений не менялись ни на
 // строчку по сравнению с тем, что было раньше в единой calculate().
-// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina,addRaskosina,plankLayoutMode,plankLayoutValue}.
+// input: {L,W,H,MASS,skidEnabled,skidThicknessRaw,roundBoardWidths,removeLidBottomRaskosina,addRaskosina,xRaskosina,plankLayoutMode,plankLayoutValue}.
 // Возвращает либо {error: '...'} (валидация не прошла), либо объект со
 // всеми данными для рендера: таблицы деталей (dno/kryshka/bokovoy/torec),
 // предупреждения (warnings), итоговые размеры/объём/норма времени, и
@@ -44,7 +44,7 @@ function findNegativeField(value, path){
 const WOOD_DENSITY_KG_M3 = 500;
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -254,6 +254,15 @@ function computeGost10198I1(input){
   // Требуется при высоте груза ≥1000мм, длине >5000мм или плотности >3кг/дм³
   // (см. raskosinaNeeded выше). Геометрия - по уточнению пользователя, без
   // проверки по чертежам (их пока нет): раскосина - прямоугольный треугольник.
+  // X-образные раскосины (галочка xRaskosina, по запросу пользователя): к
+  // каждой обычной раскосине добавляется встречная, которая упирается в неё
+  // с двух сторон - т.е. 2 куска на каждую обычную раскосину, длина каждого
+  // куска = (длина обычной раскосины - её ширина)/2.
+  const RASKOSINA_W = 100;
+  function pushXRaskosina(arr, len, qty){
+    if(!xRaskosina) return;
+    arr.push({name:'Раскосина (дополнительная)', t:wall.value, w:RASKOSINA_W, l:(len-RASKOSINA_W)/2, qty:qty*2});
+  }
   if(raskosinaNeeded){
     // Торец: всегда 1 раскосина. Катеты - расстояния внутри рамки из 2
     // вертикальных + 2 горизонтальных планок (за вычетом их ширины).
@@ -263,7 +272,8 @@ function computeGost10198I1(input){
       return {error: `Недостаточно места для раскосины торца (катеты должны быть >0, получено ${Math.round(torecLegH)}×${Math.round(torecLegW)} мм) — расчёт не выполняется.`};
     }
     const torecRaskosinaLen = Math.sqrt(torecLegH*torecLegH + torecLegW*torecLegW);
-    torec.push({name:'Раскосина', t:wall.value, w:100, l:torecRaskosinaLen, qty:1});
+    torec.push({name:'Раскосина', t:wall.value, w:RASKOSINA_W, l:torecRaskosinaLen, qty:1});
+    pushXRaskosina(torec, torecRaskosinaLen, 1);
 
     // Боковой щит, крышка, дно: раскосины между планками (планки по обе
     // стороны от каждой раскосины) - количество = кол-во планок минус 1.
@@ -274,15 +284,18 @@ function computeGost10198I1(input){
     const raskosinaQty = plankQty - 1;
     if(raskosinaQty > 0){
       const bokRaskosinaLen = Math.sqrt(H*H + plankGap*plankGap);
-      bokovoy.push({name:'Раскосина', t:wall.value, w:100, l:bokRaskosinaLen, qty:raskosinaQty});
+      bokovoy.push({name:'Раскосина', t:wall.value, w:RASKOSINA_W, l:bokRaskosinaLen, qty:raskosinaQty});
+      pushXRaskosina(bokovoy, bokRaskosinaLen, raskosinaQty);
 
       if(!removeLidBottomRaskosina){
         const kryshkaRaskosinaLen = Math.sqrt(kPlankaKryshka*kPlankaKryshka + plankGap*plankGap);
-        kryshka.push({name:'Раскосина', t:wall.value, w:100, l:kryshkaRaskosinaLen, qty:raskosinaQty});
+        kryshka.push({name:'Раскосина', t:wall.value, w:RASKOSINA_W, l:kryshkaRaskosinaLen, qty:raskosinaQty});
+        pushXRaskosina(kryshka, kryshkaRaskosinaLen, raskosinaQty);
 
         const dnoLegW = W + wall.value*2; // ширина груза + толщина доски бок.щита*2 (как у крышки)
         const dnoRaskosinaLen = Math.sqrt(dnoLegW*dnoLegW + plankGap*plankGap);
-        dno.push({name:'Раскосина', t:wall.value, w:100, l:dnoRaskosinaLen, qty:raskosinaQty});
+        dno.push({name:'Раскосина', t:wall.value, w:RASKOSINA_W, l:dnoRaskosinaLen, qty:raskosinaQty});
+        pushXRaskosina(dno, dnoRaskosinaLen, raskosinaQty);
       }
     }
   }
@@ -348,7 +361,7 @@ function computeGost10198I1(input){
     outerL, outerW, outerH, totalVolume, normaVremeni, crateMass,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
-    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kryshkaDnoHasRaskosina, kPlankaKryshka, H, W, wall,
+    dnoWidth, kLen, plank, plankQty, raskosinaNeeded, kryshkaDnoHasRaskosina, xRaskosina: !!xRaskosina, kPlankaKryshka, H, W, wall,
     standardPlankCount, standardPlankGap
   };
   const negField = findNegativeField(result, '');
@@ -391,6 +404,7 @@ function calculate(){
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     removeLidBottomRaskosina: document.getElementById('removeLidBottomRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
+    xRaskosina: document.getElementById('xRaskosina').checked,
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,
@@ -443,10 +457,10 @@ function calculate(){
   }
 
   let tablesHtml = '';
-  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.dnoWidth, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina) + `</div>` + renderSection('', calc.dno) + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.torec) + `</div>`;
-  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.raskosinaNeeded) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
+  tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.dnoWidth, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina) + `</div>` + renderSection('', calc.dno) + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina) + `</div>` + renderSection('', calc.kryshka) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina) + `</div>` + renderSection('', calc.torec) + `</div>`;
+  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina) + `</div>` + renderSection('', calc.bokovoy) + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
