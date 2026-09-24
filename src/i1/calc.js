@@ -44,7 +44,7 @@ function findNegativeField(value, path){
 const WOOD_DENSITY_KG_M3 = 500;
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -363,13 +363,21 @@ function computeGost10198I1(input){
     warnings.push('Использованы вручную введённые толщины, а не расчётные по ГОСТ — чертежи ниже могут их не точно отражать.');
   }
 
+  // Лента обшивки торцов (галочка «Добавить ленту обшивки торцов», по
+  // указанию пользователя): длина одной ленты = (ширина груза + толщина
+  // доски бока*2) + (высота груза + толщина доски крышки*2); лент 2
+  // (выводится "… мм × 2" под всеми элементами, см. calculate()). В объём
+  // пиломатериала, массу ящика и норму времени не входит - это не
+  // пиломатериал. У типа I-1 доски бока и крышки - одной толщины wall.value.
+  const endTapeLength = addEndTape ? Math.ceil((W + wall.value*2) + (H + wall.value*2) - 1e-9) : null;
+
   const result = {
     warnings, dno, kryshka, bokovoy, torec,
     outerL, outerW, outerH, totalVolume, normaVremeni, crateMass,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
     dnoWidth, kLen, plank, plankQty, plankGap, raskosinaNeeded, kryshkaDnoHasRaskosina, xRaskosina: !!xRaskosina, kPlankaKryshka, H, W, wall,
-    standardPlankCount, standardPlankGap
+    standardPlankCount, standardPlankGap, endTapeLength
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -416,6 +424,7 @@ function calculate(){
     removeLidBottomRaskosina: document.getElementById('removeLidBottomRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addEndTape: document.getElementById('addEndTape').checked,
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,
@@ -490,6 +499,12 @@ function calculate(){
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramKryshka(calc.kPlankaKryshka, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.torec, 'torec') + `</div>`;
   tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-size-group="i1-panels">` + diagramBokovoy(calc.H, calc.wall.value, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, i1FramePx) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
+  // Лента обшивки торцов - одной строкой под всеми элементами и чертежами
+  // (по указанию пользователя), попадает и в печать/PDF (buildPrintHtml
+  // берёт содержимое #boardTables целиком).
+  if(calc.endTapeLength){
+    tablesHtml += `<div class="part-title">Обшивочная лента ${calc.endTapeLength} мм × 2</div>`;
+  }
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   const boardImages = Array.from(boardTablesEl.querySelectorAll('img'));
