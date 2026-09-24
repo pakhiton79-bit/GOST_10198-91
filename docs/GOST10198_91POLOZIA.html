@@ -1193,7 +1193,7 @@
     <button onclick="calculate()">Рассчитать</button>
     <span class="calc-status">
       <span class="calc-check" id="calcCheck"><span class="mark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><polyline points="3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Расчёт выполнен</span>
-      <span class="calc-outdated" id="calcOutdated"><span class="mark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><line x1="8" y1="4" x2="8" y2="8.7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="11.3" r="1.1" fill="#fff"/></svg></span>Расчёт не проведён</span>
+      <span class="calc-outdated" id="calcOutdated"><span class="mark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><line x1="8" y1="4" x2="8" y2="8.7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="11.3" r="1.1" fill="#fff"/></svg></span>Нажмите «Рассчитать»</span>
       <span class="calc-error" id="calcError"><span class="mark mark-error"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><line x1="4.5" y1="4.5" x2="11.5" y2="11.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="11.5" y1="4.5" x2="4.5" y2="11.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></span>Расчёт не проведён</span>
     </span>
     <button class="print-btn btn-secondary" onclick="printBox()"><svg class="btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5V2.5h7v3"/><rect x="3" y="5.5" width="10" height="5" rx="0.8"/><path d="M4.5 9.5v4h7v-4"/><line x1="6" y1="11.5" x2="10" y2="11.5"/></svg>Печать</button>
@@ -2876,7 +2876,7 @@ function setCalcStatus(state){
 // ============ Ручные правки таблицы деталей ============
 // По указанию пользователя: правка любой ячейки таблицы деталей (толщина,
 // ширина, длина, кол-во) НЕ пересчитывает итоги сразу - только помечает
-// расчёт как устаревший ("Расчёт не проведён"); пересчёт - по кнопке
+// расчёт как устаревший (подсказка «Нажмите «Рассчитать»»); пересчёт - по кнопке
 // "Рассчитать" (в бэкенд-версии - на сервере, как и весь остальной расчёт).
 // Правки толщины у строк с data-override по-прежнему идут в расчёт
 // каскадом (manualOverrides); остальные правки (ширина/длина/кол-во и
@@ -2967,7 +2967,8 @@ function applyTableEdits(calc, edits, sections){
 
 // Общий слушатель "параметры изменились" (по указанию пользователя: при
 // изменении ЛЮБОГО параметра - цифры, галочки, радио, выпадающего списка
-// толщин и т.д. - должна появляться надпись "Расчёт не проведён"). Раньше
+// толщин и т.д. - должна появляться подсказка «Нажмите «Рассчитать»»; надпись
+// «Расчёт не проведён» - только когда расчёт заблокирован ошибкой). Раньше
 // invalidateCalc() вызывался точечно из обработчиков отдельных полей, и
 // часть галочек (напр. "Добавить раскосины", "X-образные раскосины",
 // "Убрать раскосины крышки и дна") её не вызывала вовсе - после их
@@ -3836,7 +3837,7 @@ function initTimeSettings(storageKey){
   // По указанию пользователя - настройки нормы времени, как и любые другие
   // параметры, применяются только по «Рассчитать» (в бэкенд-версии - на
   // сервере): здесь только сохраняем их и помечаем расчёт как устаревший
-  // («Расчёт не проведён», см. invalidateCalc()).
+  // (подсказка «Нажмите «Рассчитать»», см. invalidateCalc()).
   function applySettings(next){
     saveTimeSettings(storageKey, next);
     if(typeof invalidateCalc === 'function') invalidateCalc();
@@ -3951,7 +3952,7 @@ function buildThicknessCheckboxList(){
 // нечего, поле ещё пустое, а не "устаревшее".
 function invalidateCalc(){
   // По указанию пользователя - при ЛЮБОМ изменении параметров (цифры,
-  // галочки, выпадающие списки...) сразу "Расчёт не проведён", в т.ч. и до
+  // галочки, выпадающие списки...) сразу подсказка «Нажмите «Рассчитать»», в т.ч. и до
   // первого расчёта (см. также общий слушатель в common-print.js).
   setCalcStatus('outdated');
 }
@@ -4811,7 +4812,7 @@ document.getElementById('boardTables').addEventListener('input', e=>{
   if(e.target.classList.contains('editable-cell')){
     // Правка ячейки НЕ пересчитывает итоги сразу (по указанию пользователя) -
     // только помечает ячейку как исправленную и расчёт как устаревший
-    // ("Расчёт не проведён"); учтётся при нажатии "Рассчитать" (толщина с
+    // (подсказка «Нажмите «Рассчитать»»); учтётся при нажатии "Рассчитать" (толщина с
     // data-override - через readManualOverrides(), остальное - через
     // readTableEdits(), см. common-print.js).
     e.target.setAttribute('data-user-edited', 'true');
