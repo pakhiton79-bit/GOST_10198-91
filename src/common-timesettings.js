@@ -10,13 +10,6 @@ const TIME_SETTINGS_PRODUCTIVITY_STEPS = [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.
 const TIME_SETTINGS_COEFF_STEPS = [0.5, 0.7, 1.0, 1.2, 1.5, 2.0, 3.0];
 const TIME_SETTINGS_DEFAULTS = { baseProductivity: 0.06, timeCoeff: 1.0 };
 
-// totalVolume последнего расчёта - запоминается при каждом вызове
-// computeNormaVremeni() (единственное место, где объём и ключ хранения
-// оказываются вместе), чтобы при изменении ползунков в уже открытой
-// шестерёнке можно было сразу пересчитать и обновить плитку, не заставляя
-// пользователя заново нажимать «Рассчитать».
-let _timeSettingsLastVolume = null;
-
 function loadTimeSettings(storageKey){
   try{
     const raw = localStorage.getItem(storageKey);
@@ -38,7 +31,6 @@ function saveTimeSettings(storageKey, settings){
 }
 
 function computeNormaVremeni(totalVolume, storageKey){
-  _timeSettingsLastVolume = totalVolume;
   const s = loadTimeSettings(storageKey);
   return roundup((totalVolume / s.baseProductivity) * s.timeCoeff, 1);
 }
@@ -156,13 +148,13 @@ function initTimeSettings(storageKey){
   const tcSliderEl = document.getElementById('timeCoeffSlider');
   const tcInput = document.getElementById('timeCoeffInput');
 
+  // По указанию пользователя - настройки нормы времени, как и любые другие
+  // параметры, применяются только по «Рассчитать» (в бэкенд-версии - на
+  // сервере): здесь только сохраняем их и помечаем расчёт как устаревший
+  // («Расчёт не проведён», см. invalidateCalc()).
   function applySettings(next){
     saveTimeSettings(storageKey, next);
-    if(_timeSettingsLastVolume != null){
-      const val = computeNormaVremeni(_timeSettingsLastVolume, storageKey);
-      const el = document.getElementById('outTime');
-      if(el) el.innerHTML = `${val} <span>ч</span>`;
-    }
+    if(typeof invalidateCalc === 'function') invalidateCalc();
   }
 
   const bpSlider = createJumpSlider(bpSliderEl, TIME_SETTINGS_PRODUCTIVITY_STEPS, v=>{
