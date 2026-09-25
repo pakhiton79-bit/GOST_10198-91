@@ -604,13 +604,8 @@ function computeGost10198I3(input){
   // п.102 docx: при ширине груза 600мм или менее раскосины на торце тоже не нужны
   // (независимо от высоты).
   const torecHasRaskosina = H > 600 && W > 600 && !(torecSections === 1 && torecAngleDeg(1) > 60);
-  // Фото-чертёж торца (см. diagramEndPanel/diagramEndPanel3Raskosina) показывает не
-  // больше 3 секций - при большем реальном количестве расположение планок и раскосин
-  // на чертеже то же самое (аналогично), просто секций на фото меньше, чем в реальном
-  // ящике; таблица деталей ниже при этом всегда отражает настоящее количество.
-  if(torecHasRaskosina && torecSections > 3 && !xRaskosina){ // X-вариант - генерируемый чертёж на любое число секций
-    warnings.push(`Щит торцевой: чертёж — макс. 3 секции (расчётных ${torecSections}, раскладка та же); точное количество см. в таблице ниже.`);
-  }
+  // Чертёж торца при числе секций больше 3 (фото есть только на 1-3) строится
+  // по расчёту - diagramEndPanelGen в diagrams.js, показывает все секции.
 
   const l30 = (torecSections + 1) * torecFloors; // вертикальная планка: (секций+1) на каждый этаж
 
@@ -920,9 +915,9 @@ function calculateNow(){
 
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.k9Base, calc.t41, calc.outerW, calc.t40, calc.torecFrameThickness) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.xRaskosina && calc.torecHasRaskosina) ? diagramEndPanelGen(calc.W, calc.HplusT12, calc.torecSections, calc.torecFloors, true, calc.k30plusW31) : diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31)) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.xRaskosina && calc.l42 > 0) ? diagramBokovoyGen(calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.HplusT12, calc.l19, calc.bokFloors, true, calc.k40, calc.w43, calc.bokSectionW, calc.t20) : diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43)) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + (calc.l19 > 3 ? diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW) : diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW)) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.torecHasRaskosina && (calc.xRaskosina || calc.torecSections > 3)) ? diagramEndPanelGen(calc.W, calc.HplusT12, calc.torecSections, calc.torecFloors, calc.xRaskosina, calc.k30plusW31) : diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31)) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + (((calc.xRaskosina && calc.l42 > 0) || calc.l19 > 4) ? diagramBokovoyGen(calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.HplusT12, calc.l19, calc.bokFloors, calc.xRaskosina, calc.k40, calc.w43, calc.bokSectionW, calc.t20, calc.l42 > 0) : diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43)) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   // Подписи/стрелки чертежей могут выходить за пределы картинки (см.
