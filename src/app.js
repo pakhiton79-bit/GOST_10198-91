@@ -208,7 +208,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards'].forEach(persistCheckbox);
+['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','xRaskosina'].forEach(persistCheckbox);
 
 // ============ Чистый расчёт (без обращений к DOM) - тип I-3 ============
 // Разделено на «посчитать» (эта функция) и «показать» (calculate() ниже) -
@@ -257,7 +257,7 @@ function findNegativeField(value, path){
 const WOOD_DENSITY_KG_M3 = 500;
 function computeGost10198I3(input){
   const {L, W, H, MASS, fasteningType, optimizeSizes, removeFloorBoards, removeSkidBoards,
-         roundBoardWidths, solidRigidBase, forkliftLoading, manualOverrides} = input;
+         roundBoardWidths, solidRigidBase, forkliftLoading, xRaskosina, manualOverrides} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -608,7 +608,7 @@ function computeGost10198I3(input){
   // больше 3 секций - при большем реальном количестве расположение планок и раскосин
   // на чертеже то же самое (аналогично), просто секций на фото меньше, чем в реальном
   // ящике; таблица деталей ниже при этом всегда отражает настоящее количество.
-  if(torecHasRaskosina && torecSections > 3){
+  if(torecHasRaskosina && torecSections > 3 && !xRaskosina){ // X-вариант - генерируемый чертёж на любое число секций
     warnings.push(`Щит торцевой: чертёж — макс. 3 секции (расчётных ${torecSections}, раскладка та же); точное количество см. в таблице ниже.`);
   }
 
@@ -634,15 +634,22 @@ function computeGost10198I3(input){
     warnings.push('Доска торца: одна доска уже менее 100 мм.');
   }
 
+  // X-образные раскосины (галочка xRaskosina, как у типа I-1, по запросу
+  // пользователя): к каждой раскосине добавляется встречная из 2 кусков,
+  // упирающихся в неё с двух сторон - длина куска = (длина раскосины - её
+  // ширина)/2, кол-во ×2; толщина та же. Входит в объём/массу/время.
+  const torecX = xRaskosina && torecHasRaskosina;
   const volTorPanel = vol(t30,w30,k30,l30) + vol(t31,w31,k31_,l31)
     + vol(t32,w32,k32,l32) + fbTorec.extra.reduce((s,e)=>s+vol(t32,e.width,k32,e.qty),0)
-    + vol(t33,w33,k33,l33);
+    + vol(t33,w33,k33,l33)
+    + (torecX ? vol(t33,w33,(k33-w33)/2,l33*2) : 0);
 
   const endPanel = [
     {name:'Вертикальная планка', t:t30, w:w30, l:k30, qty:l30, overrideKey:'wallValue'},
     {name:'Горизонтальная планка', t:t31, w:w31, l:k31_, qty:l31, overrideKey:'wallValue'},
   ];
   if(torecHasRaskosina) endPanel.push({name:'Раскосина', t:t33, w:w33, l:k33, qty:l33, overrideKey:'wallValue'});
+  if(torecX) endPanel.push({name:'Раскосина (дополнительная)', t:t33, w:w33, l:(k33-w33)/2, qty:l33*2, overrideKey:'wallValue'});
   if(l32>0) endPanel.push({name:'Доска торца', t:t32, w:w32, l:k32, qty:l32, overrideKey:'wallValue'});
   fbTorec.extra.forEach((e,i)=>{
     const suffix = fbTorec.extra.length > 1 ? ' ' + (i+1) : '';
@@ -726,9 +733,11 @@ function computeGost10198I3(input){
     }
   }
 
+  const bokX = xRaskosina && bokHasRaskosina; // X-раскосины - см. torecX выше
   const volBokPanel = vol(t40,w40,k40,l40) + vol(t41,w41,k41,l41)
     + fbBok.extra.reduce((s,e)=>s+vol(t41,e.width,k41,e.qty),0)
-    + vol(t42,w42,k42,l42) + vol(t43,w43,k43,l43);
+    + vol(t42,w42,k42,l42) + vol(t43,w43,k43,l43)
+    + (bokX ? vol(t42,w42,(k42-w42)/2,l42*2) : 0);
 
   const bokovoy = [
     {name:'Вертикальная планка', t:t40, w:w40, l:k40, qty:l40, overrideKey:'wallValue'},
@@ -740,6 +749,7 @@ function computeGost10198I3(input){
   });
   if(l43>0) bokovoy.push({name:'Горизонтальная планка', t:t43, w:w43, l:k43, qty:l43, overrideKey:'wallValue'});
   if(bokHasRaskosina) bokovoy.push({name:'Раскосина', t:t42, w:w42, l:k42, qty:l42, overrideKey:'wallValue'});
+  if(bokX) bokovoy.push({name:'Раскосина (дополнительная)', t:t42, w:w42, l:(k42-w42)/2, qty:l42*2, overrideKey:'wallValue'});
 
   // --- Итоговый расход пиломатериала ---
   const totalVolume = volDno + volKryshka + 2*volTorPanel + 2*volBokPanel;
@@ -811,7 +821,7 @@ function computeGost10198I3(input){
     k9Base, t41, t40, torecFrameThickness: t_doska_torca + t_planka_torca,
     W, L, t30, t32, t40Display, edgeDistKryshka, l21, w21, l19, bokSectionW,
     k32, torecSections, torecHasRaskosina, HplusT12: H + t12, torecNoRaskosinaDiagram, torecFloors, k30plusW31: k30 + w31,
-    H, t12, k41, bokOverhang, l42, bokFloors, bokVertSpan, k40, w43
+    H, t12, k41, bokOverhang, l42, bokFloors, bokVertSpan, k40, w43, xRaskosina: !!xRaskosina
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -862,6 +872,7 @@ function calculateNow(){
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
+    xRaskosina: document.getElementById('xRaskosina').checked,
     manualOverrides,
   };
 
@@ -910,8 +921,8 @@ function calculateNow(){
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.k9Base, calc.t41, calc.outerW, calc.t40, calc.torecFrameThickness) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
-  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
-  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
+  tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.xRaskosina && calc.torecHasRaskosina) ? diagramEndPanelGen(calc.W, calc.HplusT12, calc.torecSections, calc.torecFloors, true, calc.k30plusW31) : diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31)) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
+  tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.xRaskosina && calc.l42 > 0) ? diagramBokovoyGen(calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.HplusT12, calc.l19, calc.bokFloors, true, calc.k40, calc.w43, calc.bokSectionW) : diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43)) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
   // Подписи/стрелки чертежей могут выходить за пределы картинки (см.
