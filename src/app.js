@@ -252,6 +252,9 @@ function findNegativeField(value, path){
   return null;
 }
 
+// Плотность древесины для «Массы ящика» (как у типа I-1: 500 кг/м³ -
+// типовое значение для сухой сосны/ели).
+const WOOD_DENSITY_KG_M3 = 500;
 function computeGost10198I3(input){
   const {L, W, H, MASS, fasteningType, optimizeSizes, removeFloorBoards, removeSkidBoards,
          roundBoardWidths, solidRigidBase, forkliftLoading, manualOverrides} = input;
@@ -741,6 +744,9 @@ function computeGost10198I3(input){
   // --- Итоговый расход пиломатериала ---
   const totalVolume = volDno + volKryshka + 2*volTorPanel + 2*volBokPanel;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
+  // Масса ящика (тары, без груза) - объём пиломатериала × плотность
+  // древесины 500 кг/м³ (как у типа I-1, по указанию пользователя).
+  const crateMass = totalVolume * WOOD_DENSITY_KG_M3;
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${outerL} × ${outerW} × ${outerH} <span>мм</span>`;
@@ -798,7 +804,7 @@ function computeGost10198I3(input){
   }
 
   const result = {
-    warnings, dno, kryshka, endPanel, bokovoy,
+    warnings, dno, kryshka, endPanel, bokovoy, crateMass,
     outerL, outerW, outerH, totalVolume, normaVremeni,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramEndPanel/diagramBokovoy.
@@ -873,11 +879,13 @@ function calculateNow(){
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, endPanel:2, bokovoy:2})){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
+    calc.crateMass = calc.totalVolume * WOOD_DENSITY_KG_M3;
   }
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${calc.outerL} × ${calc.outerW} × ${calc.outerH} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 
   function renderSection(title, rows, sectionKey){
@@ -977,6 +985,7 @@ function buildPrintHtml(){
 
   const outDimsText = document.getElementById('outDims').textContent.trim();
   const volumeText  = document.getElementById('outVolume').textContent.trim();
+  const massText    = document.getElementById('outMass').textContent.trim();
   const timeText    = document.getElementById('outTime').textContent.trim();
 
   // Клонируем блок со схемами и таблицами (там уже нужный порядок:
@@ -1061,6 +1070,7 @@ function buildPrintHtml(){
           <table class="print-plain-table">
             <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
             <tr><td class="k">Расход пило&shy;материала</td><td>${volumeText}</td></tr>
+            <tr><td class="k">Масса ящика</td><td>${massText}</td></tr>
             <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
           </table>
         </div>
