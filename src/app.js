@@ -729,13 +729,20 @@ function computeGost10198I3(input){
   }
 
   // Внутренний поперечный брус: толщина и ширина по Таблице 14 (масса + наружная ширина
-  // ящика; ширина по таблице всегда 100мм). Количество — временная формула Сильвана
-  // (длина груза : 800, округление вверх), позже уточнят.
+  // ящика; ширина по таблице всегда 100мм). Расстановка (по указанию пользователя,
+  // вместо прежней временной формулы «длина груза : 800, вверх»): зазор между
+  // кромками соседних брусьев - ровно 800 мм, число брусьев - максимальное, при
+  // котором отступ от края крышки до кромки крайнего бруса не меньше (толщина
+  // вертикальной планки торца + толщина доски торца); остаток длины крышки -
+  // поровну на оба отступа (максимально равномерно).
   const crossBeam = crossBeamThickness(MASS, outerW); // Табл. 14
   if(crossBeam.exceeded){
     warnings.push('Масса или ширина ящика вне Табл. 14 — брус крышки принят по крайнему значению.');
   }
-  const t21=ov('t21Value', roundUpToAvailable(crossBeam.value), 'Толщина внутреннего поперечного бруса крышки'), w21=100, k21=W - (optimizeSizes ? 4 : 0), l21=ceilInt(L/800);
+  const t21=ov('t21Value', roundUpToAvailable(crossBeam.value), 'Толщина внутреннего поперечного бруса крышки'), w21=100, k21=W - (optimizeSizes ? 4 : 0);
+  const I3_BEAM_GAP = 800, beamMinEdge = t_planka_torca + t_doska_torca;
+  const l21 = Math.max(1, Math.floor((k9Base - 2*beamMinEdge + I3_BEAM_GAP) / (w21 + I3_BEAM_GAP) + 1e-9));
+  const beamEdgeDist = (k9Base - l21*w21 - (l21-1)*I3_BEAM_GAP) / 2;
   kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21, overrideKey:'t21Value'});
 
   const volKryshka = vol(t19,w19,k19,l19)+vol(t20,w20,k20,l20)+vol(t21,w21,k21,l21)
@@ -1008,7 +1015,7 @@ function computeGost10198I3(input){
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramEndPanel/diagramBokovoy.
     k9Base, t41, t40, torecFrameThickness: t_doska_torca + t_planka_torca,
-    W, L, t30, t32, t40Display, edgeDistKryshka, l21, w21, l19, bokSectionW, plankGap,
+    W, L, t30, t32, t40Display, edgeDistKryshka, l21, w21, l19, bokSectionW, plankGap, beamEdgeDist, beamGap: I3_BEAM_GAP,
     standardPlankCount: standardLayout.count, standardPlankGap: standardLayout.gap,
     k32, torecSections, torecHasRaskosina, HplusT12: H + t12, torecNoRaskosinaDiagram, torecFloors, k30plusW31: k30 + w31,
     H, t12, k41, bokOverhang, l42, bokFloors, bokVertSpan, k40, w43, xRaskosina: !!xRaskosina, t20
@@ -1138,7 +1145,7 @@ function calculateNow(){
 
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.k9Base, calc.t41, calc.outerW, calc.t40, calc.torecFrameThickness) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + (calc.l19 > 3 ? diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap) : diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap)) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + (calc.l19 > 3 ? diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap) : diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap)) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.xRaskosina && calc.torecHasRaskosina && calc.torecFloors !== 2 && calc.torecSections <= 1) ? diagramEndPanel1Raskosina(calc.HplusT12, calc.W, undefined, I3_TOREC_1_X_IMG_B64) : (calc.torecHasRaskosina && (calc.xRaskosina || calc.torecSections > 3)) ? diagramEndPanelGen(calc.W, calc.HplusT12, calc.torecSections, calc.torecFloors, calc.xRaskosina, calc.k30plusW31) : diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31)) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + (((calc.xRaskosina && calc.l42 > 0) || calc.l19 > 4) ? diagramBokovoyGen(calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.HplusT12, calc.l19, calc.bokFloors, calc.xRaskosina, calc.k40, calc.w43, calc.bokSectionW, calc.t20, calc.l42 > 0, calc.plankGap) : diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43, calc.plankGap)) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
