@@ -802,6 +802,12 @@ function computeGost10198I3(input){
   const I3_BEAM_GAP = beamGapValue > 0 ? beamGapValue : 800, beamMinEdge = t_planka_torca + t_doska_torca;
   const l21 = Math.max(1, Math.floor((k9Base - 2*beamMinEdge + I3_BEAM_GAP) / (w21 + I3_BEAM_GAP) + 1e-9));
   const beamEdgeDist = (k9Base - l21*w21 - (l21-1)*I3_BEAM_GAP) / 2;
+  // Свой зазор (галочка), при котором помещается только 1 брус, и зазор больше
+  // отступа этого бруса от края крышки - расчёт блокируется (по указанию
+  // пользователя: такой зазор не имеет смысла). Штатные 800 мм не блокируются.
+  if(beamGapValue > 0 && l21 === 1 && I3_BEAM_GAP > beamEdgeDist){
+    return {error: `Расстояние между поперечными брусьями ${I3_BEAM_GAP} мм больше отступа единственного бруса от края крышки (${Math.round(beamEdgeDist)} мм) — расчёт не выполняется.`};
+  }
   kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21, overrideKey:'t21Value'});
 
   const volKryshka = vol(t19,w19,k19,l19)+vol(t20,w20,k20,l20)+vol(t21,w21,k21,l21)
@@ -1205,7 +1211,7 @@ function calculateNow(){
 
   let tablesHtml = '';
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot">` + diagramDno(calc.k9Base, calc.t41, calc.outerW, calc.t40, calc.torecFrameThickness) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
-  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + (calc.l19 > 3 ? diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap) : diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap)) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
+  tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot">` + (!((calc.l19 === 2 && calc.l21 === 2) || (calc.l19 === 3 && calc.l21 === 3)) ? diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap) : diagramKryshka(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap)) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + ((calc.xRaskosina && calc.torecHasRaskosina && calc.torecFloors !== 2 && calc.torecSections <= 1) ? diagramEndPanel1Raskosina(calc.HplusT12, calc.W, undefined, I3_TOREC_1_X_IMG_B64) : (calc.torecHasRaskosina && (calc.xRaskosina || calc.torecSections > 3)) ? diagramEndPanelGen(calc.W, calc.HplusT12, calc.torecSections, calc.torecFloors, calc.xRaskosina, calc.k30plusW31) : diagramEndPanel(calc.k32, calc.torecSections, calc.torecHasRaskosina, calc.W, calc.HplusT12, calc.torecNoRaskosinaDiagram, calc.torecFloors, calc.k30plusW31)) + `</div>` + renderSection('', calc.endPanel, 'endPanel') + `</div>`;
   tablesHtml += `<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot">` + (((calc.xRaskosina && calc.l42 > 0) || calc.l19 > 4) ? diagramBokovoyGen(calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.HplusT12, calc.l19, calc.bokFloors, calc.xRaskosina, calc.k40, calc.w43, calc.bokSectionW, calc.t20, calc.l42 > 0, calc.plankGap) : diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43, calc.plankGap)) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   const boardTablesEl = document.getElementById('boardTables');
