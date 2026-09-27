@@ -204,7 +204,7 @@ function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, he
   return diagramPlaceholder('Щит торцевой');
 }
 
-function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm){
+function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm, plankEdgeGapVal){
   // Фото под 3 планки крышки (l19=3) - выбор чертежа крышки идёт по l19, см. diagramKryshka().
   // Длина крышки = длина груза + (толщина доски торца + толщина планки торца)*2 (см. k9Base).
   const valLen        = dimLabel(lengthMm + t30*2 + t32*2);
@@ -221,9 +221,10 @@ function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKr
   const valEdgeBeam     = crossBeamQty > 0
     ? dimLabel((valLen - crossBeamQty*crossBeamWidthMm) / (crossBeamQty + 1))
     : dimLabel(valLen);
-  // Расстояние между соседними планками крышки (plankGapMm) на чертеже не
-  // показываем - по замечанию пользователя, лишняя метка (не нужна помимо
-  // остальных размеров крышки).
+  // Зазор между кромками соседних поясов-планок (plankEdgeGapVal) - по более
+  // позднему указанию пользователя показываем (как у типа I-1): за задней
+  // кромкой, между торчащими из-под крышки концами 1-й и 2-й планок.
+  const valPlankGap = dimLabel(plankEdgeGapVal);
 
   const records = [
     {type:'line', x1:371, y1:1138, x2:506, y2:1432},
@@ -238,13 +239,16 @@ function diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKr
     {type:'double', x1:299, y1:989, x2:441, y2:936},
     {type:'single', x1:194, y1:1236, x2:377, y2:959, lx:205, ly:1296, text: valEdgeBeam+' мм'},
     {type:'line', x1:273, y1:422, x2:251, y2:378},
-    {type:'single', x1:-51, y1:266, x2:263, y2:400, lx:-85, ly:225, text: valPlankaThick+' мм'}
+    {type:'single', x1:-51, y1:266, x2:263, y2:400, lx:-85, ly:225, text: valPlankaThick+' мм'},
+    {type:'line', x1:273, y1:263, x2:195, y2:124},
+    {type:'line', x1:567, y1:178, x2:489, y2:39},
+    {type:'double', x1:204, y1:141, x2:498, y2:56, lx:351, ly:92, text: valPlankGap+' мм'}
   ];
 
   return renderDiagram(KRYSHKA_IMG_B64, 'Крышка - схема расположения деталей', 1718, 1274, records, null, photoStrokeScale(1718));
 }
 
-function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm){
+function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm, plankEdgeGapVal){
   // Фото под 2 планки крышки (l19=2, натуральный размер 1157×839) - выбор чертежа
   // крышки идёт по l19, см. diagramKryshka().
   const valLen      = dimLabel(lengthMm + t30*2 + t32*2);
@@ -254,9 +258,9 @@ function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKry
   const valEdgeBeam    = crossBeamQty > 0
     ? dimLabel((valLen - crossBeamQty*crossBeamWidthMm) / (crossBeamQty + 1))
     : dimLabel(valLen);
-  // Расстояние между соседними планками крышки (plankGapMm) на чертеже не
-  // показываем - по замечанию пользователя, лишняя метка (не нужна помимо
-  // остальных размеров крышки, см. тот же фикс в diagramKryshkaDefault выше).
+  // Зазор между кромками поясов-планок - за задней кромкой, между концами
+  // планок (см. diagramKryshkaDefault выше).
+  const valPlankGap = dimLabel(plankEdgeGapVal);
 
   const records = [
     {type:'line', x1:373, y1:758, x2:433, y2:865},
@@ -273,21 +277,24 @@ function diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKry
     {type:'line', x1:1007, y1:552, x2:1234, y2:480},
     {type:'double', x1:996, y1:-13, x2:1236, y2:479, lx:1155, ly:205, text: valWidth+' мм'},
     {type:'line', x1:173, y1:351, x2:75, y2:384},
-    {type:'single', x1:28, y1:607, x2:117, y2:371, lx:5, ly:639, text: valEdgeBeam+' мм'}
+    {type:'single', x1:28, y1:607, x2:117, y2:371, lx:5, ly:639, text: valEdgeBeam+' мм'},
+    {type:'line', x1:187, y1:175, x2:147, y2:105},
+    {type:'line', x1:610, y1:45, x2:570, y2:-25},
+    {type:'double', x1:157, y1:123, x2:580, y2:-7, lx:368, ly:52, text: valPlankGap+' мм'}
   ];
 
   return renderDiagram(KRYSHKA_2BEAMS_IMG_B64, 'Крышка (2 поперечных бруса) - схема расположения деталей', 1157, 839, records, null, photoStrokeScale(1157));
 }
 
-function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm){
+function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm, plankEdgeGapVal){
   // Выбор чертежа крышки идёт по количеству планок крышки (l19), а не по числу
   // поперечных брусьев: доступны 2 фото - под 2 планки и под 3. Для l19>3 показываем
   // фото под 3 планки (расположение планок то же самое, просто на фото меньше
   // планок, чем в реальном ящике) - как раньше делалось по числу брусьев.
   if(plankCount <= 2){
-    return diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm);
+    return diagramKryshka2Beams(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm, plankEdgeGapVal);
   }
-  return diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm);
+  return diagramKryshkaDefault(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankGapMm, plankEdgeGapVal);
 }
 
 // Шесть чертежей ниже подобраны по фактическому числу планок бокового щита (l19)
@@ -299,7 +306,25 @@ function diagramKryshka(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm
 // слева, у первой планки) - координаты у каждого фото свои (см. комментарий к
 // каждой функции), т.к. сами фото разного размера.
 
-function diagramBokovoy2Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+// Зазор между кромками соседних поясов планок (по указанию пользователя -
+// как у типа I-1): размер под щитом, между выступающими вниз концами планок
+// (у 4 планок - во второй секции, у 2-3 - в первой: так подпись не
+// упирается в подписи отступа и напуска по краям). xL/xR - кромки планок,
+// yBottom - низ планок на фото; dy - где размер относительно низа планок
+// (отрицательный - между концами планок под щитом, без выносных линий:
+// там, где снизу тесно от других подписей).
+function bokGapRecords(xL, xR, yBottom, gapVal, dy){
+  const y = yBottom + (dy || 45);
+  const text = dimLabel(gapVal)+' мм';
+  if(dy < 0) return [{type:'double', x1:xL, y1:y, x2:xR, y2:y, lx:(xL+xR)/2, ly:y-6, text}];
+  return [
+    {type:'line', x1:xL, y1:yBottom+5, x2:xL, y2:y+25},
+    {type:'line', x1:xR, y1:yBottom+5, x2:xR, y2:y+25},
+    {type:'double', x1:xL, y1:y, x2:xR, y2:y, lx:(xL+xR)/2, ly:y-6, text}
+  ];
+}
+
+function diagramBokovoy2Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankGapVal){
   // Фото-чертёж: 2 планки, без раскосины (натуральный размер 855×713).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -322,10 +347,10 @@ function diagramBokovoy2Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:-92, y1:534, x2:69, y2:736, lx:-101, ly:516, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_2P_0R_IMG_B64, 'Щит боковой (2 планки, без раскосины) - схема расположения деталей', 855, 713, records, null, photoStrokeScale(855));
+  return renderDiagram(BOKOVOY_2P_0R_IMG_B64, 'Щит боковой (2 планки, без раскосины) - схема расположения деталей', 855, 713, records.concat(bokGapRecords(240, 618, 706, plankGapVal)), null, photoStrokeScale(855));
 }
 
-function diagramBokovoy2Planks1Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy2Planks1Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankGapVal){
   // Фото-чертёж: 2 планки, 1 раскосина (натуральный размер 874×733).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -348,10 +373,10 @@ function diagramBokovoy2Planks1Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:-78, y1:540, x2:83, y2:742, lx:-87, ly:522, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_2P_1R_IMG_B64, 'Щит боковой (2 планки, 1 раскосина) - схема расположения деталей', 874, 733, records, null, photoStrokeScale(874));
+  return renderDiagram(BOKOVOY_2P_1R_IMG_B64, 'Щит боковой (2 планки, 1 раскосина) - схема расположения деталей', 874, 733, records.concat(bokGapRecords(253, 632, 713, plankGapVal)), null, photoStrokeScale(874));
 }
 
-function diagramBokovoy3Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy3Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankGapVal){
   // Фото-чертёж: 3 планки, без раскосины (натуральный размер 1390×752).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -374,10 +399,10 @@ function diagramBokovoy3Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:-67, y1:548, x2:94, y2:750, lx:-76, ly:530, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_3P_0R_IMG_B64, 'Щит боковой (3 планки, без раскосины) - схема расположения деталей', 1390, 752, records, null, photoStrokeScale(1390));
+  return renderDiagram(BOKOVOY_3P_0R_IMG_B64, 'Щит боковой (3 планки, без раскосины) - схема расположения деталей', 1390, 752, records.concat(bokGapRecords(252, 632, 720, plankGapVal)), null, photoStrokeScale(1390));
 }
 
-function diagramBokovoy3Planks2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy3Planks2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankGapVal){
   // Фото-чертёж: 3 планки, 2 раскосины (натуральный размер 1418×781).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -400,10 +425,10 @@ function diagramBokovoy3Planks2Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:-34, y1:583, x2:127, y2:785, lx:-43, ly:565, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_3P_2R_IMG_B64, 'Щит боковой (3 планки, 2 раскосины) - схема расположения деталей', 1418, 781, records, null, photoStrokeScale(1418));
+  return renderDiagram(BOKOVOY_3P_2R_IMG_B64, 'Щит боковой (3 планки, 2 раскосины) - схема расположения деталей', 1418, 781, records.concat(bokGapRecords(286, 664, 756, plankGapVal)), null, photoStrokeScale(1418));
 }
 
-function diagramBokovoy4Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy4Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankGapVal){
   // Фото-чертёж: 4 планки, без раскосины (натуральный размер 1900×778).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -426,10 +451,10 @@ function diagramBokovoy4Planks0Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:-61, y1:561, x2:100, y2:763, lx:-70, ly:543, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_4P_0R_IMG_B64, 'Щит боковой (4 планки, без раскосины) - схема расположения деталей', 1900, 778, records, null, photoStrokeScale(1900));
+  return renderDiagram(BOKOVOY_4P_0R_IMG_B64, 'Щит боковой (4 планки, без раскосины) - схема расположения деталей', 1900, 778, records.concat(bokGapRecords(764, 1143, 734, plankGapVal)), null, photoStrokeScale(1900));
 }
 
-function diagramBokovoy4Planks3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal){
+function diagramBokovoy4Planks3Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankGapVal){
   // Фото-чертёж: 4 планки, 3 раскосины (натуральный размер 1877×746).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -452,7 +477,7 @@ function diagramBokovoy4Planks3Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:-75, y1:537, x2:86, y2:739, lx:-84, ly:519, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_4P_3R_IMG_B64, 'Щит боковой (4 планки, 3 раскосины) - схема расположения деталей', 1877, 746, records, null, photoStrokeScale(1877));
+  return renderDiagram(BOKOVOY_4P_3R_IMG_B64, 'Щит боковой (4 планки, 3 раскосины) - схема расположения деталей', 1877, 746, records.concat(bokGapRecords(749, 1129, 710, plankGapVal)), null, photoStrokeScale(1877));
 }
 
 // Три чертежа ниже - варианты на 2 этажа (средняя горизонтальная планка делит щит
@@ -466,7 +491,7 @@ function diagramBokovoy4Planks3Raskosina(boardLenVal, overhangVal, edgeDistVal, 
 // планка начинает заходить на полоз - т.е. без учёта самого напуска, он показан
 // отдельной подписью).
 
-function diagramBokovoy2Floors2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal){
+function diagramBokovoy2Floors2Raskosina(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal, plankGapVal){
   // Фото-чертёж: 2 этажа, 2 планки, 2 раскосины (натуральный размер 966×1361).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -496,10 +521,10 @@ function diagramBokovoy2Floors2Raskosina(boardLenVal, overhangVal, edgeDistVal, 
     {type:'single', x1:393, y1:1512, x2:128, y2:1364, lx:399, ly:1532, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_2FL_2P_IMG_B64, 'Щит боковой (2 этажа, 2 планки, 2 раскосины) - схема расположения деталей', 966, 1361, records, null, photoStrokeScale(966));
+  return renderDiagram(BOKOVOY_2FL_2P_IMG_B64, 'Щит боковой (2 этажа, 2 планки, 2 раскосины) - схема расположения деталей', 966, 1361, records.concat(bokGapRecords(312, 691, 1335, plankGapVal, -45)), null, photoStrokeScale(966));
 }
 
-function diagramBokovoy2Floors3Planks(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal){
+function diagramBokovoy2Floors3Planks(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal, plankGapVal){
   // Фото-чертёж: 2 этажа, 3 планки, 4 раскосины (натуральный размер 1381×1326).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -529,10 +554,10 @@ function diagramBokovoy2Floors3Planks(boardLenVal, overhangVal, edgeDistVal, hei
     {type:'single', x1:331, y1:1485, x2:66, y2:1337, lx:337, ly:1505, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_2FL_3P_IMG_B64, 'Щит боковой (2 этажа, 3 планки, 4 раскосины) - схема расположения деталей', 1381, 1326, records, null, photoStrokeScale(1381));
+  return renderDiagram(BOKOVOY_2FL_3P_IMG_B64, 'Щит боковой (2 этажа, 3 планки, 4 раскосины) - схема расположения деталей', 1381, 1326, records.concat(bokGapRecords(249, 628, 1307, plankGapVal)), null, photoStrokeScale(1381));
 }
 
-function diagramBokovoy2Floors4Planks(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal){
+function diagramBokovoy2Floors4Planks(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, upperSpanVal, midPlankWidthVal, plankGapVal){
   // Фото-чертёж: 2 этажа, 4 планки, 6 раскосин (натуральный размер 1886×1338).
   const valBoardLen = dimLabel(boardLenVal);
   const valOverhang = dimLabel(overhangVal);
@@ -562,10 +587,10 @@ function diagramBokovoy2Floors4Planks(boardLenVal, overhangVal, edgeDistVal, hei
     {type:'single', x1:338, y1:1498, x2:73, y2:1350, lx:344, ly:1518, text: valEdgeDist+' мм'}
   ];
 
-  return renderDiagram(BOKOVOY_2FL_4P_IMG_B64, 'Щит боковой (2 этажа, 4 планки, 6 раскосин) - схема расположения деталей', 1886, 1338, records, null, photoStrokeScale(1886));
+  return renderDiagram(BOKOVOY_2FL_4P_IMG_B64, 'Щит боковой (2 этажа, 4 планки, 6 раскосин) - схема расположения деталей', 1886, 1338, records.concat(bokGapRecords(750, 1130, 1321, plankGapVal)), null, photoStrokeScale(1886));
 }
 
-function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal, floorsVal, floorSpanVal, plankCountVal, plankLenVal, midPlankWidthVal){
+function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, raskosinCountVal, floorsVal, floorSpanVal, plankCountVal, plankLenVal, midPlankWidthVal, plankGapVal){
   const hasRaskosina = raskosinCountVal > 0;
   const plankCount = Math.min(plankCountVal, 4);
   const heightPlusFloor = Hmm + t12val;
@@ -575,12 +600,12 @@ function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, r
     // есть почти всегда (см. bokHasRaskosina в app.js), отдельных фото «без
     // раскосины» на 2 этажа не присылали.
     if(plankCount <= 2){
-      return diagramBokovoy2Floors2Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal);
+      return diagramBokovoy2Floors2Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal, plankGapVal);
     }
     if(plankCount === 3){
-      return diagramBokovoy2Floors3Planks(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal);
+      return diagramBokovoy2Floors3Planks(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal, plankGapVal);
     }
-    return diagramBokovoy2Floors4Planks(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal);
+    return diagramBokovoy2Floors4Planks(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal, plankGapVal);
   }
   // Выбор фото идёт по числу планок (plankCountVal = l19) и наличию раскосины
   // (raskosinCountVal > 0 <=> bokHasRaskosina). Для 5+ планок фото ещё нет —
@@ -588,17 +613,17 @@ function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, r
   // то же самое, просто на фото меньше планок, чем в реальном ящике.
   if(plankCount <= 2){
     return hasRaskosina
-      ? diagramBokovoy2Planks1Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor)
-      : diagramBokovoy2Planks0Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor);
+      ? diagramBokovoy2Planks1Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal)
+      : diagramBokovoy2Planks0Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal);
   }
   if(plankCount === 3){
     return hasRaskosina
-      ? diagramBokovoy3Planks2Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor)
-      : diagramBokovoy3Planks0Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor);
+      ? diagramBokovoy3Planks2Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal)
+      : diagramBokovoy3Planks0Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal);
   }
   return hasRaskosina
-    ? diagramBokovoy4Planks3Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor)
-    : diagramBokovoy4Planks0Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor);
+    ? diagramBokovoy4Planks3Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal)
+    : diagramBokovoy4Planks0Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal);
 }
 
 // ===== Генерируемые чертежи I-3 (X-образные раскосины, любое число секций) =====
@@ -723,7 +748,7 @@ function diagramEndPanelGen(Wmm, Htot, sections, floors, xMode, floorSpanVal){
 }
 
 // --- Щит боковой: P планок (P-1 секций), 1 или 2 этажа ---
-function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankCount, floors, xMode, upperSpanVal, midPlankWidthVal, sectionWmm, lidBoardTVal, hasBraces){
+function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankCount, floors, xMode, upperSpanVal, midPlankWidthVal, sectionWmm, lidBoardTVal, hasBraces, plankGapVal){
   const P = Math.max(2, Math.round(plankCount)), F = floors === 2 ? 2 : 1;
   const PH = floors === 2 ? 1300 : 800, pw = 100, stub = 100, hp = 100; // средняя планка - той же ширины
   const ovh = 80;                                   // напуск планок ниже щита (на полоз)
@@ -793,6 +818,16 @@ function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloo
       {type:'double', x1:-Math.max(40, 27*k), y1:0, x2:-Math.max(40, 27*k), y2:innerH, lx:-Math.max(100, 28*k), ly:innerH/2, text: dimLabel(upperSpanVal)+' мм', vertical:true}
     );
   }
+  // Зазор между кромками соседних поясов (по указанию пользователя, как у
+  // типа I-1) - под щитом, между концами планок средней секции.
+  if(P > 1){
+    const gi = Math.floor((P-1)/2), xa = px(gi) + pw, xb = px(gi+1), yg = IHp + 60;
+    records.push(
+      {type:'line', x1:xa, y1:IHp+5, x2:xa, y2:yg+25},
+      {type:'line', x1:xb, y1:IHp+5, x2:xb, y2:yg+25},
+      {type:'double', x1:xa, y1:yg, x2:xb, y2:yg, lx:(xa+xb)/2, ly:yg-6, text: dimLabel(plankGapVal)+' мм'}
+    );
+  }
   records.forEach(r=>{ ['y1','y2','ly'].forEach(k=>{ if(typeof r[k]==='number') r[k] += up; }); });
   const title = `Щит боковой (${F} эт., ${P} планок${hasBraces === false ? ', без раскосин' : xMode ? ', X-раскосины' : ''}) - схема расположения деталей`;
   return i3render(title, IW, IH, shapes, records);
@@ -805,45 +840,50 @@ function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloo
 // Положение планок/брусьев вдоль длины - в реальных пропорциях; сама длина
 // крышки на чертеже - в пределах 1.4..4 её ширины (иначе очень длинная
 // крышка превратилась бы в тонкую полосу).
-function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm){
+function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm, plankEdgeGapVal){
   const lidLen = lengthMm + t30*2 + t32*2, lidW = widthMm + t41*2;
   const P = Math.max(1, Math.round(plankCount)), B = Math.max(0, Math.round(crossBeamQty));
   const eu = [0.9507, -0.3101], ev = [-0.4406, -0.8977];
-  const Wv = 850, Lu = Wv * Math.min(4, Math.max(1.4, lidLen / lidW));
+  // Длина чертежа - не больше 2.5 ширин (по указанию пользователя «поплотнее»:
+  // схема не в масштабе, реальные размеры - в подписях; раньше было до 4, и
+  // длинная крышка превращалась в узкую полосу).
+  const Wv = 850, Lu = Wv * Math.min(2.5, Math.max(1.4, lidLen / lidW));
   const k = Lu / lidLen;                            // единиц чертежа на 1 мм вдоль длины
-  // ширина планки/бруса на чертеже - не меньше, чем на фото крышки (схема, не
-  // в масштабе: при реальных 100 мм на длинной крышке они были бы нитками),
-  // но не шире, чем позволяет промежуток между соседними.
-  const minGapU = P > 1 ? plankGapMm*k : Lu;
+  // Как на фото крышки (по уточнению пользователя): пояса-планки - снизу, из-под
+  // крышки видны только их концы за передней и задней кромками; сверху -
+  // внутренние поперечные брусья. Ширина планки/бруса на чертеже - не меньше,
+  // чем на фото (схема, не в масштабе: при реальных 100 мм на длинной крышке они
+  // были бы нитками), но не шире, чем позволяет промежуток между соседними.
+  const minGapU = P > 1 ? plankGapMm*k : Lu;       // plankGapMm - шаг поясов по осям
   const pw = Math.min(Math.max(100*k, 120), 0.55*minGapU);
-  const bw = Math.min(pw, B > 0 ? 0.55*(Lu/(B+1)) : pw); // брусья - той же ширины, что и планки
-  const up = [-8, -26], thick = [7, 20];            // подъём планок над крышкой, толщина крышки
+  const bw = B > 0 ? Math.min(Math.max(100*k, 120), 0.55*(Lu/(B+1))) : 0;
+  const up = [-8, -26], thick = [7, 20];            // подъём брусьев над крышкой, толщина крышки
+  const low = [thick[0]*2, thick[1]*2], lowEnd = [thick[0]*3.5, thick[1]*3.5]; // планки под крышкой
   const pt = (u, v, d) => [u*eu[0] + v*ev[0] + (d?d[0]:0), u*eu[1] + v*ev[1] + (d?d[1]:0)];
   const polys = [];                                 // [точки] в порядке отрисовки
   const quad = (u0, u1, v0, v1, d) => [pt(u0,v0,d), pt(u1,v0,d), pt(u1,v1,d), pt(u0,v1,d)];
-  const box = (u0, u1, v0, v1, lift) => {           // брусок: боковые грани + верх
-    const base = lift ? up.map(x=>0) : thick, top = lift ? up : [0,0];
-    polys.push([pt(u0,v0,base), pt(u1,v0,base), pt(u1,v0,top), pt(u0,v0,top)]);  // передняя грань
-    polys.push([pt(u0,v0,base), pt(u0,v1,base), pt(u0,v1,top), pt(u0,v0,top)]);  // левая грань
-    polys.push(quad(u0, u1, v0, v1, top));
+  const box = (u0, u1, v0, v1) => {                 // брус сверху: боковые грани + верх
+    polys.push([pt(u0,v0), pt(u1,v0), pt(u1,v0,up), pt(u0,v0,up)]);  // передняя грань
+    polys.push([pt(u0,v0), pt(u0,v1), pt(u0,v1,up), pt(u0,v0,up)]);  // левая грань
+    polys.push(quad(u0, u1, v0, v1, up));
   };
-  // поперечные брусья - под крышкой, торцы видны за кромками
-  const beamStep = B > 0 ? (lidLen - B*(crossBeamWidthMm||100)) / (B + 1) : 0;
-  const beamU = i => (beamStep*(i+1) + i*(crossBeamWidthMm||100)) * k;
-  for(let i=0; i<B; i++){
-    const u0 = beamU(i);
-    polys.push(quad(u0, u0+bw, -0.13*Wv, 1.13*Wv, [thick[0]*2, thick[1]*2]));
-    polys.push([pt(u0,-0.13*Wv,[thick[0]*2,thick[1]*2]), pt(u0+bw,-0.13*Wv,[thick[0]*2,thick[1]*2]), pt(u0+bw,-0.13*Wv,[thick[0]*3.5,thick[1]*3.5]), pt(u0,-0.13*Wv,[thick[0]*3.5,thick[1]*3.5])]);
+  // пояса-планки - под крышкой, концы видны за кромками
+  const plankU = i => Math.min(Math.max(P > 1 ? (edgeDistKryshkaMm + i*plankGapMm) * k : (Lu - pw)/2, 0), Lu - pw);
+  for(let i=0; i<P; i++){
+    const u0 = plankU(i);
+    polys.push(quad(u0, u0+pw, -0.13*Wv, 1.13*Wv, low));
+    polys.push([pt(u0,-0.13*Wv,low), pt(u0+pw,-0.13*Wv,low), pt(u0+pw,-0.13*Wv,lowEnd), pt(u0,-0.13*Wv,lowEnd)]);
   }
   // крышка: передняя и левая грани толщины + верх
   polys.push([pt(0,0), pt(Lu,0), pt(Lu,0,thick), pt(0,0,thick)]);
   polys.push([pt(0,0), pt(0,Wv), pt(0,Wv,thick), pt(0,0,thick)]);
   polys.push(quad(0, Lu, 0, Wv));
-  // планки сверху
-  const plankU = i => P > 1 ? (edgeDistKryshkaMm + i*plankGapMm) * k : (Lu - pw)/2;
-  for(let i=0; i<P; i++){
-    const u0 = Math.min(Math.max(plankU(i), 0), Lu - pw);
-    box(u0, u0 + pw, 0.05*Wv, 0.95*Wv, true);
+  // внутренние поперечные брусья - сверху
+  const beamStep = B > 0 ? (lidLen - B*(crossBeamWidthMm||100)) / (B + 1) : 0;
+  const beamU = i => Math.min(Math.max((beamStep*(i+1) + i*(crossBeamWidthMm||100)) * k, 0), Lu - bw);
+  for(let i=0; i<B; i++){
+    const u0 = beamU(i);
+    box(u0, u0 + bw, 0.05*Wv, 0.95*Wv);
   }
   // сдвиг всего в положительные координаты
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -861,7 +901,7 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
   const nfront = [-ev[0], -ev[1]], nright = eu, nback = ev;
   const D = P2(0,0,thick), C = P2(Lu,0,thick), Bk = P2(Lu,Wv);
   const records = [];
-  // длина - вдоль передней кромки, снаружи
+  // длина - вдоль передней кромки, снаружи (за концами планок)
   const d1 = off(D, nfront, 260), d2 = off(C, nfront, 260);
   records.push({type:'line', x1:D[0], y1:D[1], x2:off(D,nfront,300)[0], y2:off(D,nfront,300)[1]});
   records.push({type:'line', x1:C[0], y1:C[1], x2:off(C,nfront,300)[0], y2:off(C,nfront,300)[1]});
@@ -871,23 +911,36 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
   records.push({type:'line', x1:Cr[0], y1:Cr[1], x2:off(Cr,nright,240)[0], y2:off(Cr,nright,240)[1]});
   records.push({type:'line', x1:Bk[0], y1:Bk[1], x2:off(Bk,nright,240)[0], y2:off(Bk,nright,240)[1]});
   records.push({type:'double', x1:w1[0], y1:w1[1], x2:w2[0], y2:w2[1], lx:(w1[0]+w2[0])/2, ly:(w1[1]+w2[1])/2, text: valWidth+' мм'});
-  // отступ крайней планки от края крышки - за задней кромкой, у правого конца
-  const uLast = Math.min(Math.max(plankU(P-1), 0), Lu - pw) + pw;
-  const e1 = P2(uLast, Wv, up), e2 = P2(Lu, Wv);
-  const ea = off(e1, nback, 170), eb = off(e2, nback, 170);
-  records.push({type:'line', x1:e1[0], y1:e1[1], x2:off(e1,nback,210)[0], y2:off(e1,nback,210)[1]});
-  records.push({type:'line', x1:e2[0], y1:e2[1], x2:off(e2,nback,210)[0], y2:off(e2,nback,210)[1]});
-  records.push({type:'double', x1:ea[0], y1:ea[1], x2:eb[0], y2:eb[1], lx:(ea[0]+eb[0])/2, ly:(ea[1]+eb[1])/2 - 40, text: valEdgePlanka+' мм'});
-  // отступ крайнего поперечного бруса - у левого конца, за передней кромкой
+  // Размеры по концам планок за задней кромкой: выносные линии - от дальних
+  // углов концов планок (и от угла крышки), размер - на 170 за кромкой.
+  const backDim = (uA, uB, fromA, fromB, text, dy) => {
+    const a = off(P2(uA, Wv), nback, 170), b = off(P2(uB, Wv), nback, 170);
+    const ea = off(P2(uA, Wv), nback, 200), eb = off(P2(uB, Wv), nback, 200);
+    records.push({type:'line', x1:fromA[0], y1:fromA[1], x2:ea[0], y2:ea[1]});
+    records.push({type:'line', x1:fromB[0], y1:fromB[1], x2:eb[0], y2:eb[1]});
+    records.push({type:'double', x1:a[0], y1:a[1], x2:b[0], y2:b[1], lx:(a[0]+b[0])/2, ly:(a[1]+b[1])/2 + dy, text});
+  };
+  const tip = u => P2(u, 1.13*Wv, low);             // дальний угол конца планки
+  // отступ крайней планки от края крышки - у правого конца
+  const uLast = plankU(P-1) + pw;
+  backDim(uLast, Lu, tip(uLast), P2(Lu, Wv), valEdgePlanka+' мм', -40);
+  // зазор между кромками соседних планок (по указанию пользователя, как у
+  // типа I-1) - в средней секции, чтобы не наезжать на подпись отступа
+  if(P > 1){
+    const gi = Math.floor((P-1)/2);
+    const ga = plankU(gi) + pw, gb = plankU(gi+1);
+    backDim(ga, gb, tip(ga), tip(gb), dimLabel(plankEdgeGapVal)+' мм', -40);
+  }
+  // отступ крайнего поперечного бруса - у левого конца, у передней кромки
+  // (по верху крышки, между кромкой и передними торцами брусьев)
   if(B > 0){
-    const b1 = off(P2(0,0,thick), nfront, 120), b2 = off(P2(beamU(0),0,thick), nfront, 120);
+    const b1 = P2(0, 0.025*Wv), b2 = P2(beamU(0), 0.025*Wv);
     records.push({type:'double', x1:b1[0], y1:b1[1], x2:b2[0], y2:b2[1]});
     const mid = [(b1[0]+b2[0])/2, (b1[1]+b2[1])/2];
-    records.push({type:'single', x1:mid[0]-150, y1:mid[1]+230, x2:mid[0], y2:mid[1], lx:mid[0]-160, ly:mid[1]+270, text: valEdgeBeam+' мм'});
+    records.push({type:'single', x1:mid[0]-150, y1:mid[1]+330, x2:mid[0], y2:mid[1], lx:mid[0]-160, ly:mid[1]+370, text: valEdgeBeam+' мм'});
   }
-  // толщина планки бокового щита - сноска к левому заднему углу первой планки
-  const u1 = Math.min(Math.max(plankU(0), 0), Lu - pw);
-  const tc = P2(u1, 0.95*Wv, up);
+  // толщина планки - сноска к дальнему левому углу конца первой планки
+  const tc = tip(plankU(0));
   records.push({type:'single', x1:tc[0]-260, y1:tc[1]-120, x2:tc[0], y2:tc[1], lx:tc[0]-290, ly:tc[1]-160, text: valPlankaThick+' мм'});
 
   // Толщина линий (по указанию пользователя): как у остальных чертежей, пока
