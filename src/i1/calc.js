@@ -41,10 +41,10 @@ function findNegativeField(value, path){
 // Плотность древесины для перевода объёма пиломатериала (м³) в массу
 // ящика (кг) - по уточнению пользователя, типовое значение для сухой
 // сосны/ели.
-const WOOD_DENSITY_KG_M3 = 500;
+const WOOD_DENSITY_KG_M3 = 700; // по умолчанию; настраивается шестерёнкой у «Массы ящика»
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, manualOverrides, woodDensity} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -365,9 +365,10 @@ function computeGost10198I1(input){
   const totalVolume = volDno + volKryshka + 2*volBok + 2*volTorec;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   // Масса ящика (тары, без груза) - объём пиломатериала × плотность
-  // древесины (по уточнению пользователя: 500 кг/м³, типовое значение для
-  // сухой сосны/ели).
-  const crateMass = totalVolume * WOOD_DENSITY_KG_M3;
+  // древесины (woodDensity - шестерёнка у «Массы ящика», по умолчанию
+  // 700 кг/м³, по указанию пользователя).
+  const woodRho = woodDensity > 0 ? woodDensity : WOOD_DENSITY_KG_M3;
+  const crateMass = totalVolume * woodRho;
 
 
   if(thicknessLimitExceeded){
@@ -402,7 +403,7 @@ function computeGost10198I1(input){
 
   const result = {
     warnings, dno, kryshka, bokovoy, torec,
-    outerL, outerW, outerH, totalVolume, normaVremeni, crateMass,
+    outerL, outerW, outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
     dnoWidth, kLen, plank, plankQty, plankGap, raskosinaNeeded, kryshkaDnoHasRaskosina, xRaskosina: !!xRaskosina, kPlankaKryshka, H, W, wall,
@@ -462,6 +463,7 @@ function calculateNow(){
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,
+    woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 
   const calc = computeGost10198I1(input);
@@ -478,7 +480,7 @@ function calculateNow(){
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0})){ // endTape - лента, в объём не входит
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
-    calc.crateMass = calc.totalVolume * WOOD_DENSITY_KG_M3;
+    calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
   // "Стандартные" (штатные) число/шаг поясов планок - центр ползунков у
   // галочек "Настроить число поясов"/"Настроить расстояние между поясами"
@@ -686,3 +688,4 @@ function buildPrintHtml(){
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_I1_IMG_B64;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+initDensitySettings(WOOD_DENSITY_STORAGE_KEY);

@@ -10,6 +10,8 @@ const THICKNESS_STORAGE_KEY = 'silvan-gost10198-t1-k3-available-thickness';
 // и коэффициент времени, см. src/common-timesettings.js) - свой ключ
 // localStorage для этого типа ящика, как и у THICKNESS_STORAGE_KEY выше.
 const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-t1-k3-time-settings';
+// Плотность древесины для «Массы ящика» (шестерёнка у плитки) - свой ключ.
+const WOOD_DENSITY_STORAGE_KEY = 'silvan-gost10198-t1-k3-wood-density';
 // Стандартный ряд толщин пиломатериала (сортаментный ряд) - округление "в наличии"
 // возможно только до одного из этих значений, не до произвольного мм. 225 и 250 -
 // добавлены по замечанию пользователя: Табл. 19 (подбор сечения полоза, см.
@@ -252,12 +254,12 @@ function findNegativeField(value, path){
   return null;
 }
 
-// Плотность древесины для «Массы ящика» (как у типа I-1: 500 кг/м³ -
-// типовое значение для сухой сосны/ели).
-const WOOD_DENSITY_KG_M3 = 500;
+// Плотность древесины для «Массы ящика» по умолчанию (настраивается
+// шестерёнкой у плитки, см. initDensitySettings в common-timesettings.js).
+const WOOD_DENSITY_KG_M3 = 700; // по умолчанию; настраивается шестерёнкой у «Массы ящика»
 function computeGost10198I3(input){
   const {L, W, H, MASS, fasteningType, optimizeSizes, removeFloorBoards, removeSkidBoards,
-         roundBoardWidths, solidRigidBase, forkliftLoading, xRaskosina, manualOverrides} = input;
+         roundBoardWidths, solidRigidBase, forkliftLoading, xRaskosina, manualOverrides, woodDensity} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -750,8 +752,10 @@ function computeGost10198I3(input){
   const totalVolume = volDno + volKryshka + 2*volTorPanel + 2*volBokPanel;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   // Масса ящика (тары, без груза) - объём пиломатериала × плотность
-  // древесины 500 кг/м³ (как у типа I-1, по указанию пользователя).
-  const crateMass = totalVolume * WOOD_DENSITY_KG_M3;
+  // древесины (woodDensity - шестерёнка у «Массы ящика», по умолчанию
+  // 700 кг/м³, по указанию пользователя).
+  const woodRho = woodDensity > 0 ? woodDensity : WOOD_DENSITY_KG_M3;
+  const crateMass = totalVolume * woodRho;
 
   // --- Рендер ---
   document.getElementById('outDims').innerHTML = `${outerL} × ${outerW} × ${outerH} <span>мм</span>`;
@@ -809,7 +813,7 @@ function computeGost10198I3(input){
   }
 
   const result = {
-    warnings, dno, kryshka, endPanel, bokovoy, crateMass,
+    warnings, dno, kryshka, endPanel, bokovoy, crateMass, woodDensity: woodRho,
     outerL, outerW, outerH, totalVolume, normaVremeni,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramEndPanel/diagramBokovoy.
@@ -869,6 +873,7 @@ function calculateNow(){
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     manualOverrides,
+    woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 
   const calc = computeGost10198I3(input);
@@ -885,7 +890,7 @@ function calculateNow(){
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, endPanel:2, bokovoy:2})){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
-    calc.crateMass = calc.totalVolume * WOOD_DENSITY_KG_M3;
+    calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
 
   // --- Рендер ---
@@ -1092,3 +1097,4 @@ function buildPrintHtml(){
 document.getElementById('boxView').src = BOX_IMG_B64;
 
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+initDensitySettings(WOOD_DENSITY_STORAGE_KEY);

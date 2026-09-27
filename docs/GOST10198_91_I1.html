@@ -1304,8 +1304,9 @@
             <div class="label">Расход пило&shy;материала</div>
             <div class="value" id="outVolume">— <span>м³</span></div>
           </div>
-          <div>
+          <div class="time-tile">
             <div class="label">Масса ящика</div>
+            <button type="button" class="time-settings-btn" id="densitySettingsBtn" onclick="onDensitySettingsOpen()" aria-label="Настройки плотности древесины" title="Плотность древесины">⚙</button>
             <div class="value" id="outMass">— <span>кг</span></div>
           </div>
           <div class="time-tile">
@@ -1330,6 +1331,19 @@
     <div class="disclaimer" style="margin-top:20px;">Калькулятор может ошибаться. Проверяйте результаты перед использованием в производстве.</div>
   </div>
 
+  <div class="modal-overlay" id="densitySettingsOverlay" onclick="onDensitySettingsOverlayClick(event)" hidden>
+    <div class="modal-box">
+      <button type="button" class="modal-close" onclick="onDensitySettingsClose()" aria-label="Закрыть">✕</button>
+      <h3>Настройки массы ящика</h3>
+      <div class="modal-field">
+        <label id="woodDensityLabel" for="woodDensityInput">Плотность древесины, кг/м³</label>
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="woodDensitySlider" aria-labelledby="woodDensityLabel"></div>
+          <input type="number" id="woodDensityInput" step="10" min="1" oninput="onWoodDensityInputChange()">
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal-overlay" id="timeSettingsOverlay" onclick="onTimeSettingsOverlayClick(event)" hidden>
     <div class="modal-box">
       <button type="button" class="modal-close" onclick="onTimeSettingsClose()" aria-label="Закрыть">✕</button>
@@ -2834,7 +2848,7 @@ function onAnyParamChange(e){
   const t = e.target;
   if(!t || !t.matches || !t.matches('input, select, textarea')) return;
   if(t.id === 'userComment' || t.id === 'boxName') return; // в расчёт не входят
-  if(t.closest('#boardTables, #timeSettingsOverlay, #printArea')) return;
+  if(t.closest('#boardTables, #timeSettingsOverlay, #densitySettingsOverlay, #printArea')) return;
   if(typeof invalidateCalc === 'function') invalidateCalc();
 }
 document.addEventListener('input', onAnyParamChange);
@@ -3798,6 +3812,55 @@ function initTimeSettings(storageKey){
   };
 }
 
+// ============ Плотность древесины («Масса ящика») ============
+// Шестерёнка у плитки «Масса ящика» (по указанию пользователя - по аналогии с
+// настройками нормы времени): масса ящика = объём пиломатериала × плотность.
+// По умолчанию 700 кг/м³; остановки ползунка - 400..900 кг/м³ с шагом 50
+// (от лёгкой сухой хвои ~450 до тяжёлых лиственных пород/сырой древесины
+// ~850-900), любое другое значение - в поле ручного ввода. Хранится в
+// localStorage отдельно для каждого типа ящика (ключ передаётся в
+// initDensitySettings()), применяется только по «Рассчитать».
+const WOOD_DENSITY_STEPS = [400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900];
+const WOOD_DENSITY_DEFAULT = 700;
+
+function loadWoodDensity(storageKey){
+  try{
+    const v = Number(localStorage.getItem(storageKey));
+    if(v > 0) return v;
+  }catch(e){}
+  return WOOD_DENSITY_DEFAULT;
+}
+
+function initDensitySettings(storageKey){
+  const overlay = document.getElementById('densitySettingsOverlay');
+  const sliderEl = document.getElementById('woodDensitySlider');
+  const input = document.getElementById('woodDensityInput');
+  if(!overlay || !sliderEl || !input) return;
+
+  function apply(v){
+    try{ localStorage.setItem(storageKey, String(v)); }catch(e){}
+    if(typeof invalidateCalc === 'function') invalidateCalc();
+  }
+  const slider = createJumpSlider(sliderEl, WOOD_DENSITY_STEPS, v=>{ input.value = v; apply(v); });
+
+  window.onDensitySettingsOpen = function(){
+    const v = loadWoodDensity(storageKey);
+    slider.setValue(v);
+    input.value = v;
+    overlay.hidden = false;
+  };
+  window.onDensitySettingsClose = function(){ overlay.hidden = true; };
+  window.onDensitySettingsOverlayClick = function(event){
+    if(event.target === overlay) overlay.hidden = true;
+  };
+  window.onWoodDensityInputChange = function(){
+    const v = parseFloat(String(input.value).replace(',', '.'));
+    if(!(v > 0)) return;
+    slider.setValue(v);
+    apply(v);
+  };
+}
+
 
 // ============ Фильтр толщин пиломатериала "в наличии" ============
 // Тот же механизм, что и в GOST10198_91POLOZIA.html (тип I-3), но с отдельным
@@ -3807,6 +3870,8 @@ const AVAILABLE_THICKNESS_OPTIONS = [16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 12
 // Настройки шестерёнки у плитки "Норма времени" - свой ключ localStorage
 // для этого типа ящика (см. src/common-timesettings.js).
 const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-i1-time-settings';
+// Плотность древесины для «Массы ящика» (шестерёнка у плитки) - свой ключ.
+const WOOD_DENSITY_STORAGE_KEY = 'silvan-gost10198-i1-wood-density';
 
 function loadAvailableThicknesses(){
   try{
@@ -4171,10 +4236,10 @@ function findNegativeField(value, path){
 // Плотность древесины для перевода объёма пиломатериала (м³) в массу
 // ящика (кг) - по уточнению пользователя, типовое значение для сухой
 // сосны/ели.
-const WOOD_DENSITY_KG_M3 = 500;
+const WOOD_DENSITY_KG_M3 = 700; // по умолчанию; настраивается шестерёнкой у «Массы ящика»
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, manualOverrides} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, manualOverrides, woodDensity} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -4495,9 +4560,10 @@ function computeGost10198I1(input){
   const totalVolume = volDno + volKryshka + 2*volBok + 2*volTorec;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
   // Масса ящика (тары, без груза) - объём пиломатериала × плотность
-  // древесины (по уточнению пользователя: 500 кг/м³, типовое значение для
-  // сухой сосны/ели).
-  const crateMass = totalVolume * WOOD_DENSITY_KG_M3;
+  // древесины (woodDensity - шестерёнка у «Массы ящика», по умолчанию
+  // 700 кг/м³, по указанию пользователя).
+  const woodRho = woodDensity > 0 ? woodDensity : WOOD_DENSITY_KG_M3;
+  const crateMass = totalVolume * woodRho;
 
 
   if(thicknessLimitExceeded){
@@ -4532,7 +4598,7 @@ function computeGost10198I1(input){
 
   const result = {
     warnings, dno, kryshka, bokovoy, torec,
-    outerL, outerW, outerH, totalVolume, normaVremeni, crateMass,
+    outerL, outerW, outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
     // Параметры чертежей - ровно те значения, что раньше шли позиционными
     // аргументами в diagramDno/diagramKryshka/diagramTorec/diagramBokovoy.
     dnoWidth, kLen, plank, plankQty, plankGap, raskosinaNeeded, kryshkaDnoHasRaskosina, xRaskosina: !!xRaskosina, kPlankaKryshka, H, W, wall,
@@ -4592,6 +4658,7 @@ function calculateNow(){
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,
+    woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 
   const calc = computeGost10198I1(input);
@@ -4608,7 +4675,7 @@ function calculateNow(){
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
   if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0})){ // endTape - лента, в объём не входит
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
-    calc.crateMass = calc.totalVolume * WOOD_DENSITY_KG_M3;
+    calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
   // "Стандартные" (штатные) число/шаг поясов планок - центр ползунков у
   // галочек "Настроить число поясов"/"Настроить расстояние между поясами"
@@ -4816,6 +4883,7 @@ function buildPrintHtml(){
 // Общий вид ящика показываем и на самом сайте, не только в печати.
 document.getElementById('boxView').src = BOX_I1_IMG_B64;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+initDensitySettings(WOOD_DENSITY_STORAGE_KEY);
 
 </script>
 </body>
