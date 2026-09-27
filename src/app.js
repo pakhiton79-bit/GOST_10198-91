@@ -69,7 +69,7 @@ function invalidateCalc(){
   // По указанию пользователя - при ЛЮБОМ изменении параметров (цифры,
   // галочки, выпадающие списки...) сразу подсказка «Нажмите «Рассчитать»», в т.ч. и до
   // первого расчёта (см. также общий слушатель в common-print.js).
-  setCalcStatus('outdated');
+  markCalcChanged(); // вернули как было - снова «Расчёт выполнен» (см. common-print.js)
 }
 
 function onThicknessCheckboxChange(el){
@@ -848,16 +848,13 @@ function readManualOverrides(){
   return overrides;
 }
 
-// Сам расчёт и рендер; кнопка «Рассчитать» вызывает общую обёртку
-// calculate() из common-print.js (индикатор «Идёт расчёт…», защита от
-// повторного запуска, блокировка печати на время расчёта).
-function calculateNow(){
-  const errEl = document.getElementById('err');
-  errEl.textContent = '';
+// Входные данные расчёта - в том виде, в каком они уходят в расчёт.
+// Вынесены из calculateNow(), чтобы по ним же сравнивать текущее
+// состояние формы с последним успешным расчётом (см. calcStateSignature
+// в common-print.js).
+function buildCalcInput(){
   const manualOverrides = readManualOverrides();
-  const tableEdits = readTableEdits(); // см. applyTableEdits в common-print.js
-
-  const input = {
+  return {
     L: parseFloat(document.getElementById('L').value),
     W: parseFloat(document.getElementById('W').value),
     H: parseFloat(document.getElementById('H').value),
@@ -875,6 +872,17 @@ function calculateNow(){
     manualOverrides,
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
+}
+
+// Сам расчёт и рендер; кнопка «Рассчитать» вызывает общую обёртку
+// calculate() из common-print.js (индикатор «Идёт расчёт…», защита от
+// повторного запуска, блокировка печати на время расчёта).
+function calculateNow(){
+  const errEl = document.getElementById('err');
+  errEl.textContent = '';
+  const input = buildCalcInput();
+  const manualOverrides = input.manualOverrides;
+  const tableEdits = readTableEdits(); // см. applyTableEdits в common-print.js
 
   const calc = computeGost10198I3(input);
   if(calc.error){
@@ -977,7 +985,7 @@ document.getElementById('boardTables').addEventListener('input', e=>{
     // (подсказка «Нажмите «Рассчитать»»); учтётся при нажатии "Рассчитать" (толщина с
     // data-override - через readManualOverrides(), остальное - через
     // readTableEdits(), см. common-print.js).
-    e.target.setAttribute('data-user-edited', 'true'); syncOverrideCells(e.target);
+    markCellEdited(e.target); syncOverrideCells(e.target);
     updateResetButton();
     invalidateCalc();
   }
