@@ -1134,7 +1134,7 @@
   }
 
   /* ============ Новая раскладка (body.layout-v2) - по указанию пользователя,
-     пока только на типе I-3 (пример для одобрения) ============
+     на всех типах (I-1, I-3, II-1) ============
      1) Одна колонка, как раньше; на узком экране панель с кнопкой
         «Рассчитать» прилипает к низу экрана; Enter в поле - расчёт.
      4) Поле, из-за которого расчёт заблокирован, - красная рамка (.field-error).
@@ -1170,7 +1170,7 @@
     .layout-v2 #boardTables .spec-table td{display:block;padding:2px 0;border:none;text-align:left;}
     .layout-v2 #boardTables .spec-table td:first-child{grid-column:1 / -1;width:auto;font-weight:700;padding-bottom:4px;}
     /* итог на телефоне - списком: подпись слева, значение справа */
-    .layout-v2 .summary.summary-4{grid-template-columns:1fr;}
+    .layout-v2 .summary, .layout-v2 .summary.summary-4{grid-template-columns:1fr;}
     .layout-v2 .summary > div > div{padding:0;}
     .layout-v2 .summary > div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 14px;}
     .layout-v2 .summary > div.time-tile{padding-right:48px;}
@@ -3634,8 +3634,8 @@ function markCalcChanged(){
   setCalcStatus('outdated');
 }
 // Подсветка поля, из-за которого расчёт заблокирован (по указанию пользователя):
-// тип объявляет errorFieldsFor(текст ошибки) -> id полей (пока только I-3);
-// у остальных типов функции нет - ничего не подсвечивается. Рамка снимается
+// тип объявляет errorFieldsFor(текст ошибки) -> id полей (I-1, I-3, II-1);
+// если функции нет - ничего не подсвечивается. Рамка снимается
 // при вводе в поле и при следующем расчёте.
 function highlightErrorFields(scroll){
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
@@ -3648,6 +3648,17 @@ function highlightErrorFields(scroll){
 }
 document.addEventListener('input', e=>{
   if(e.target.classList && e.target.classList.contains('field-error')) e.target.classList.remove('field-error');
+});
+// Enter в числовом поле параметров (не в таблице деталей и не в окнах
+// настроек) - «Рассчитать» (по указанию пользователя; страницы новой
+// раскладки - body.layout-v2).
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Enter' || !document.body.classList.contains('layout-v2')) return;
+  const t = e.target;
+  if(!t.matches || !t.matches('input[type="number"]') || t.closest('#boardTables, .modal-overlay, #printArea')) return;
+  e.preventDefault();
+  t.blur();
+  calculate();
 });
 function beginPrintJob(kind){
   printInProgress = true;
@@ -6316,17 +6327,6 @@ initDensitySettings(WOOD_DENSITY_STORAGE_KEY);
   const sync = () => { m.style.display = r.style.display === 'block' ? 'block' : 'none'; };
   new MutationObserver(sync).observe(r, {attributes:true, attributeFilter:['style']});
   sync();
-})();
-// Enter в числовом поле ввода - «Рассчитать».
-(function enterToCalculate(){
-  const box = document.querySelector('.io-inputs');
-  if(!box) return;
-  box.addEventListener('keydown', e=>{
-    if(e.key !== 'Enter' || !e.target.matches('input[type="number"]')) return;
-    e.preventDefault();
-    e.target.blur();
-    calculate();
-  });
 })();
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки) - подсвечиваются
 // красной рамкой (см. highlightErrorFields в common-print.js).
