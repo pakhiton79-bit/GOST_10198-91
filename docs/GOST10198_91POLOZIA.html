@@ -1282,6 +1282,16 @@
         </div>
       </div>
       <label>
+        <input type="checkbox" id="customBeamGap" onchange="onBeamGapCheckboxChange()">
+        <span>Настроить расстояние между краями поперечных брусьев крышки<span class="option-hint">Штатно — 800 мм</span></span>
+      </label>
+      <div id="beamGapRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="beamGapSlider"></div>
+          <input type="number" id="beamGapInput" step="1" min="1" max="20000" oninput="onBeamGapInputChange()">
+        </div>
+      </div>
+      <label>
         <input type="checkbox" id="xRaskosina">
         <span>X-образные раскосины</span>
       </label>
@@ -5162,6 +5172,63 @@ function onPlankGapInputChange(){
   rebuildPlankSlider(saved.mode, saved.value, saved.value);
 })();
 
+// ============ Расстояние между поперечными брусьями крышки ============
+// Галочка «Настроить расстояние между краями поперечных брусьев крышки» (по
+// указанию пользователя): вместо штатных 800 мм - своё значение: ползунок
+// 500-1100 мм с шагом 100 мм вокруг штатных 800 (тот же виджет, что у поясов
+// планок) + поле для любого значения. Расстановка - по тому же правилу
+// (зазор ровно заданный, число брусьев - максимальное при минимальном
+// отступе, остаток пополам), см. l21 в расчёте.
+const BEAM_GAP_STANDARD = 800;
+const BEAM_GAP_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'beamGap';
+let beamGapValue = null; // null - штатные 800 мм
+function beamGapSteps(){
+  const steps = [];
+  for(let i=-3;i<=3;i++) steps.push(BEAM_GAP_STANDARD + i*100);
+  return steps;
+}
+function saveBeamGap(){
+  try{ localStorage.setItem(BEAM_GAP_STORAGE_KEY, beamGapValue === null ? '' : String(beamGapValue)); }catch(e){}
+}
+const beamGapSlider = createJumpSlider(document.getElementById('beamGapSlider'), beamGapSteps(), v=>{
+  beamGapValue = v;
+  document.getElementById('beamGapInput').value = v;
+  saveBeamGap();
+  invalidateCalc();
+});
+function setBeamGapUI(v){
+  document.getElementById('beamGapInput').value = v;
+  beamGapSlider.setValue(v);
+}
+function onBeamGapCheckboxChange(){
+  const on = document.getElementById('customBeamGap').checked;
+  document.getElementById('beamGapRow').style.display = on ? '' : 'none';
+  beamGapValue = on ? BEAM_GAP_STANDARD : null;
+  setBeamGapUI(BEAM_GAP_STANDARD);
+  saveBeamGap();
+  invalidateCalc();
+}
+function onBeamGapInputChange(){
+  const v = parseFloat(String(document.getElementById('beamGapInput').value).replace(',', '.'));
+  if(!(v > 0)) return;
+  beamGapValue = v;
+  beamGapSlider.setValue(v);
+  saveBeamGap();
+  invalidateCalc();
+}
+(function initBeamGapFromStorage(){
+  let saved = null;
+  try{ const raw = localStorage.getItem(BEAM_GAP_STORAGE_KEY); if(raw) saved = parseFloat(raw); }catch(e){}
+  if(saved > 0){
+    beamGapValue = saved;
+    document.getElementById('customBeamGap').checked = true;
+    document.getElementById('beamGapRow').style.display = '';
+    setBeamGapUI(saved);
+  } else {
+    setBeamGapUI(BEAM_GAP_STANDARD);
+  }
+})();
+
 // ============ Чистый расчёт (без обращений к DOM) - тип I-3 ============
 // Разделено на «посчитать» (эта функция) и «показать» (calculate() ниже) -
 // само разделение сделано только ради структуры (проще выделить в отдельный
@@ -5210,7 +5277,7 @@ const WOOD_DENSITY_KG_M3 = 700; // по умолчанию; настраивае
 function computeGost10198I3(input){
   const {L, W, H, MASS, fasteningType, optimizeSizes, removeFloorBoards, removeSkidBoards,
          roundBoardWidths, solidRigidBase, forkliftLoading, xRaskosina, manualOverrides, woodDensity,
-         plankLayoutMode, plankLayoutValue} = input;
+         plankLayoutMode, plankLayoutValue, beamGapValue} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -5529,13 +5596,15 @@ function computeGost10198I3(input){
   // кромками соседних брусьев - ровно 800 мм, число брусьев - максимальное, при
   // котором отступ от края крышки до кромки крайнего бруса не меньше (толщина
   // вертикальной планки торца + толщина доски торца); остаток длины крышки -
-  // поровну на оба отступа (максимально равномерно).
+  // поровну на оба отступа (максимально равномерно). Зазор можно задать своим
+  // (галочка «Настроить расстояние между краями поперечных брусьев крышки»,
+  // beamGapValue).
   const crossBeam = crossBeamThickness(MASS, outerW); // Табл. 14
   if(crossBeam.exceeded){
     warnings.push('Масса или ширина ящика вне Табл. 14 — брус крышки принят по крайнему значению.');
   }
   const t21=ov('t21Value', roundUpToAvailable(crossBeam.value), 'Толщина внутреннего поперечного бруса крышки'), w21=100, k21=W - (optimizeSizes ? 4 : 0);
-  const I3_BEAM_GAP = 800, beamMinEdge = t_planka_torca + t_doska_torca;
+  const I3_BEAM_GAP = beamGapValue > 0 ? beamGapValue : 800, beamMinEdge = t_planka_torca + t_doska_torca;
   const l21 = Math.max(1, Math.floor((k9Base - 2*beamMinEdge + I3_BEAM_GAP) / (w21 + I3_BEAM_GAP) + 1e-9));
   const beamEdgeDist = (k9Base - l21*w21 - (l21-1)*I3_BEAM_GAP) / 2;
   kryshka.push({name:'Внутренний поперечный брус', t:t21, w:w21, l:k21, qty:l21, overrideKey:'t21Value'});
@@ -5864,6 +5933,7 @@ function buildCalcInput(){
     xRaskosina: document.getElementById('xRaskosina').checked,
     plankLayoutMode,
     plankLayoutValue,
+    beamGapValue,
     manualOverrides,
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
