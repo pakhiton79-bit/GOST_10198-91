@@ -30,11 +30,10 @@ src/app.js), тем же приёмом, что и в типе II-1 - НЕ от�
   - GOST10198_91POLOZIA.html
 
 == Тип I-1 ==
-src/i1/shell.html - свой HTML-каркас с плейсхолдерами STYLE_CSS/LOGIC_JS/
-DIAGRAMS_JS/COMMON_PRINT_JS (первые два - src/i1/logic.js, src/i1/diagrams.js,
-пока заглушки - фото чертежей ещё не пришли; CSS и печать - общие с типом
-I-3, файлы те же) плюс UI_JS/CALC_JS (src/i1/ui.js - фильтр толщин и галочка
-полоза, src/i1/calc.js - calculate() и buildPrintHtml()).
+src/i1/shell.html - свой HTML-каркас с плейсхолдером на каждый файл I-1
+(список - I1_PARTS ниже): src/i1/compute/ - расчёт, src/i1/diagrams/ -
+чертежи, src/i1/*.js - интерфейс; CSS, печать и настройки нормы времени -
+общие с типом I-3.
   - GOST10198_91_I1.html
 
 == Стартовые страницы (2 уровня) ==
@@ -99,17 +98,30 @@ I3_VARIANTS = [
 
 I1_DIR = SRC_DIR / "i1"
 I1_SHELL = I1_DIR / "shell.html"
+# Файлы I-1 разложены так же, как в gost_backend: compute/ - расчёт
+# (backend/src/i1), остальное - интерфейс и чертежи (frontend/public/js/i1).
 I1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
-    "/*__LOGIC_JS__*/": I1_DIR / "logic.js",
-    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__DIAGRAMS_JS__*/": I1_DIR / "diagrams.js",
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
+    "/*__I1_THICKNESS_JS__*/": I1_DIR / "compute" / "thickness.js",
+    "/*__I1_PLANK_LAYOUT_CALC_JS__*/": I1_DIR / "compute" / "plank-layout.js",
+    "/*__I1_PARTS_JS__*/": I1_DIR / "compute" / "parts.js",
+    "/*__I1_COMPUTE_JS__*/": I1_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__I1_DIAGRAM_SIZING_JS__*/": I1_DIR / "diagrams" / "sizing.js",
+    "/*__I1_DIAGRAM_PANEL_PHOTOS_JS__*/": I1_DIR / "diagrams" / "panel-photos.js",
+    "/*__I1_DIAGRAM_PANEL_GENERATED_JS__*/": I1_DIR / "diagrams" / "panel-generated.js",
+    "/*__I1_DIAGRAM_PANEL_JS__*/": I1_DIR / "diagrams" / "panel.js",
+    "/*__I1_DIAGRAM_TOREC_JS__*/": I1_DIR / "diagrams" / "torec.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
-    "/*__UI_JS__*/": I1_DIR / "ui.js",
-    "/*__CALC_JS__*/": I1_DIR / "calc.js",
+    "/*__I1_OPTIONS_JS__*/": I1_DIR / "options.js",
+    "/*__I1_PLANK_LAYOUT_UI_JS__*/": I1_DIR / "plank-layout.js",
+    "/*__I1_RENDER_JS__*/": I1_DIR / "render-i1.js",
+    "/*__I1_PRINT_JS__*/": I1_DIR / "print-i1.js",
+    "/*__I1_CALC_JS__*/": I1_DIR / "calc-i1.js",
 }
 I1_VARIANTS = [
     {"out_name": "GOST10198_91_I1.html"},
