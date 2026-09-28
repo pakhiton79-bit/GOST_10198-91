@@ -73,6 +73,27 @@ from a branch → папка `/docs`).
   `panel-photos.js` (фото щита на 2-4 планки), `panel-generated.js` (щит на 5+
   планок, SVG), `panel.js` (бок, крышка, дно), `torec.js` (торец).
 
+Тип II-1 (`GOST10198_91_II1.html`, каркасно-щитовой ящик). Файлы разложены
+так же, как в gost_backend (`compute/` — как `backend/src/ii1`, остальное —
+как `frontend/public/js/ii1`):
+
+- `src/ii1/shell.html` — HTML-каркас с плейсхолдером на каждый файл (список —
+  `II1_PARTS` в `build.py`).
+- `src/ii1/compute/` — расчёт (без обращений к DOM):
+  - `compute.js` — расчёт по шагам (`computeGost10198II1`);
+  - `sizing.js` — согласование размеров (стойка, наружная высота, полоз,
+    брусья крышки — 4 итерации);
+  - `dno.js`, `kryshka.js`, `end-panel.js`, `bokovoy.js` — узлы ящика;
+  - `frame.js` — каркас щита: стойки, этажи, раскосины;
+  - `logic.js` — таблицы и формулы типа II-1; `gost-tables.js` — таблицы,
+    общие с I-3 (копия); `helpers.js` — `fillBoards`, `vol` и т.п.
+- `src/ii1/options.js` — толщины «в наличии», способ крепления, запоминание галочек.
+- `src/ii1/calc-ii1.js` — входные данные, расчёт, подсветка ошибок.
+- `src/ii1/render-ii1.js` — вывод результата: итог, таблицы, чертежи, предупреждения.
+- `src/ii1/print-ii1.js` — содержимое печати/PDF.
+- `src/ii1/diagrams/` — чертежи по узлам: `dno.js`, `kryshka.js`, `torec.js`,
+  `bok.js` (выбор ближайшего готового чертежа — там же).
+
 Плюс:
 
 - `src/images/*` — сами картинки чертежей (PNG/JPG), отдельными файлами.

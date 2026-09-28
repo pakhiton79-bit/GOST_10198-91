@@ -21,6 +21,12 @@ src/i3/shell.html - свой HTML-каркас с плейсхолдером н�
 переключатель на самой странице (fasteningType), а не отдельные сборки.
   - GOST10198_91POLOZIA.html
 
+== Тип II-1 ==
+src/ii1/shell.html - свой HTML-каркас с плейсхолдером на каждый файл II-1
+(список - II1_PARTS ниже): src/ii1/compute/ - расчёт, src/ii1/diagrams/ -
+чертежи, src/ii1/*.js - интерфейс.
+  - GOST10198_91_II1.html
+
 == Тип I-1 ==
 src/i1/shell.html - свой HTML-каркас с плейсхолдером на каждый файл I-1
 (список - I1_PARTS ниже): src/i1/compute/ - расчёт, src/i1/diagrams/ -
@@ -143,17 +149,33 @@ I1_VARIANTS = [
 
 II1_DIR = SRC_DIR / "ii1"
 II1_SHELL = II1_DIR / "shell.html"
+# Файлы II-1 разложены так же, как в gost_backend: compute/ - расчёт
+# (backend/src/ii1), остальное - интерфейс и чертежи (frontend/public/js/ii1).
 II1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
-    "/*__LOGIC_JS__*/": II1_DIR / "logic.js",
-    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__DIAGRAMS_JS__*/": II1_DIR / "diagrams.js",
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__II1_HELPERS_JS__*/": II1_DIR / "compute" / "helpers.js",
+    "/*__II1_GOST_TABLES_JS__*/": II1_DIR / "compute" / "gost-tables.js",
+    "/*__II1_LOGIC_JS__*/": II1_DIR / "compute" / "logic.js",
+    "/*__II1_SIZING_JS__*/": II1_DIR / "compute" / "sizing.js",
+    "/*__II1_DNO_JS__*/": II1_DIR / "compute" / "dno.js",
+    "/*__II1_KRYSHKA_JS__*/": II1_DIR / "compute" / "kryshka.js",
+    "/*__II1_FRAME_JS__*/": II1_DIR / "compute" / "frame.js",
+    "/*__II1_END_PANEL_JS__*/": II1_DIR / "compute" / "end-panel.js",
+    "/*__II1_BOKOVOY_JS__*/": II1_DIR / "compute" / "bokovoy.js",
+    "/*__II1_COMPUTE_JS__*/": II1_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__II1_DIAGRAM_DNO_JS__*/": II1_DIR / "diagrams" / "dno.js",
+    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1_DIR / "diagrams" / "kryshka.js",
+    "/*__II1_DIAGRAM_TOREC_JS__*/": II1_DIR / "diagrams" / "torec.js",
+    "/*__II1_DIAGRAM_BOK_JS__*/": II1_DIR / "diagrams" / "bok.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
-    "/*__UI_JS__*/": II1_DIR / "ui.js",
-    "/*__CALC_JS__*/": II1_DIR / "calc.js",
+    "/*__II1_OPTIONS_JS__*/": II1_DIR / "options.js",
+    "/*__II1_RENDER_JS__*/": II1_DIR / "render-ii1.js",
+    "/*__II1_PRINT_JS__*/": II1_DIR / "print-ii1.js",
+    "/*__II1_CALC_JS__*/": II1_DIR / "calc-ii1.js",
 }
 II1_VARIANTS = [
     {"out_name": "GOST10198_91_II1.html"},

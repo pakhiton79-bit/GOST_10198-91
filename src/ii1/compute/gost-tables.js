@@ -1,103 +1,5 @@
-// ГОСТ 10198-91, тип II-1: каркасно-щитовые неразборные плотные ящики.
-// Чистые расчётные формулы, без обращений к DOM. Источник — файл заказчика
-// «ГОСТ 10198-91 тип 2-1.docx». Максимальная масса груза по этому типу — 20000 кг.
-// Конструкция принципиально отличается от типа I-3/I-1 (щиты из досок): здесь
-// боковые и торцевые щиты — каркас (стойки + горизонтальные брусья + раскосины),
-// обшитый досками, а не сплошной набор планок/досок.
-
-function roundup(x, decimals){
-  const f = Math.pow(10, decimals);
-  return Math.ceil(x*f - 1e-9)/f;
-}
-function ceilInt(x){
-  return Math.ceil(x - 1e-9);
-}
-function vol(t,w,l,qty){ // m3, dims in mm
-  return (t*w*l)/1e9*qty;
-}
-
-// fillBoards: заполняет пространство `space` (мм) досками шириной 100мм по максимуму,
-// а остаток — 1-2(+) дополнительными досками шириной 75-99мм. См. подробные комментарии
-// в src/logic.js (тип I-3) — здесь та же функция без изменений (независимые методики).
-function fillBoards(space, roundWidths){
-  space = Math.round(space);
-  if(roundWidths){
-    return {mainQty: ceilInt(space/100), extra: [], warn: false, singleNarrow: false};
-  }
-  let mainQty = Math.floor(space/100);
-  const remainder = space - mainQty*100;
-  const extra = [];
-  let warn = false;
-  if(remainder > 0){
-    let placed = false;
-    for(let borrow=0; borrow<=mainQty && !placed; borrow++){
-      const total = remainder + 100*borrow;
-      for(let n=1; n<=50 && !placed; n++){
-        if(total < 75*n || total > 99*n) continue;
-        mainQty -= borrow;
-        const base = Math.floor(total/n);
-        const rem2 = total - base*n;
-        const groups = {};
-        for(let i=0;i<n;i++){
-          const w = base + (i<rem2?1:0);
-          groups[w] = (groups[w]||0) + 1;
-        }
-        Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(w=>{
-          extra.push({width:w, qty:groups[w]});
-        });
-        placed = true;
-      }
-    }
-    if(!placed && mainQty === 0){
-      extra.push({width:remainder, qty:1});
-    } else if(!placed){
-      const borrow = Math.min(mainQty, 1);
-      mainQty -= borrow;
-      const total = remainder + 100*borrow;
-      const w1 = Math.min(99, Math.max(1, total-75));
-      const w2 = total - w1;
-      extra.push({width:w1, qty:1});
-      if(w2>0) extra.push({width:w2, qty:1});
-      warn = true;
-    }
-  }
-  const totalExtraQty = extra.reduce((s,e)=>s+e.qty,0);
-  const totalBoards = mainQty + totalExtraQty;
-  const singleNarrow = totalBoards===1 && mainQty===0;
-  return {mainQty, extra, warn, singleNarrow};
-}
-
-// Толщина досок обшивки (боковых/торцевых щитов и крышки) по массе груза.
-// ЧЕРНОВАЯ таблица — по прямому указанию пользователя официальную таблицу
-// в тексте ГОСТ не нашли («Нормальную таблицу я не нашел, попытайся её найти,
-// а пока используй эту»). Верхняя граница диапазона (>600кг) в источнике не
-// указана — применяется 25мм вплоть до 20000кг. Пользователь подтвердил
-// использование этой таблицы как временной.
-function skinThickness(mass){
-  if(mass<=400) return 19;
-  if(mass<=600) return 22;
-  return 25;
-}
-
-// Толщина и ширина стоек по массе груза и наружной высоте ящика (по тексту
-// источника — «табл. 12»). Ширина всегда 100мм (во всех ячейках источника).
-const T_STOJKI_HEIGHTS = [1000,1500,2000,2500,3000];
-const TABLE_STOJKI = [
-  {maxMass:4000,  t:[25,25,32,32,40]},
-  {maxMass:6000,  t:[25,25,32,40,40]},
-  {maxMass:8000,  t:[25,32,40,40,50]},
-  {maxMass:10000, t:[25,32,40,50,50]},
-  {maxMass:16000, t:[25,40,50,50,50]},
-  {maxMass:20000, t:[32,40,50,50,50]},
-];
-function stojkaSection(mass, outerHmm){
-  let exceeded=false;
-  let row = TABLE_STOJKI.find(r=>mass<=r.maxMass);
-  if(!row){ row=TABLE_STOJKI[TABLE_STOJKI.length-1]; exceeded=true; }
-  let colIdx = T_STOJKI_HEIGHTS.findIndex(h=>outerHmm<=h);
-  if(colIdx===-1){ colIdx=T_STOJKI_HEIGHTS.length-1; exceeded=true; }
-  return {t: row.t[colIdx], w: 100, exceeded};
-}
+// ГОСТ 10198-91: таблицы и формулы, общие с типом I-3 (Табл. 19, 4, 14,
+// п.1.6.5, 1.6.11) - копия, т.к. страница II-1 собирается отдельно.
 
 // ГОСТ 10198-91, п.1.6.5-аналог: высота и ширина полозьев для грузов со сплошным
 // жёстким основанием — только по массе груза (галочка «сплошное жёсткое основание
@@ -123,6 +25,7 @@ function polozSection165(mass){
 // I-3 и II-1 (тот же источник, см. подробные комментарии в src/logic.js) —
 // значения перенесены без изменений из уже проверенной реализации типа I-3.
 const T19_LENGTHS = [1000,1500,2000,2500,3000,3500,4000,4500,5000];
+
 const TABLE19 = [
   {mass:500,  rows:[
     {count:2, dims:['50x100','60x100','60x100','75x100','75x100','100x100','100x100',null,null]},
@@ -197,6 +100,7 @@ const TABLE19 = [
     {count:5, dims:[null,null,'175x200','200x200','200x200','200x225','225x225','225x250','225x250']},
   ]},
 ];
+
 function nearestIndexBy(arr, keyFn, target){
   let best = 0, bestDiff = Infinity;
   arr.forEach((item,i)=>{
@@ -207,34 +111,12 @@ function nearestIndexBy(arr, keyFn, target){
   });
   return best;
 }
+
 function minSkidsByWidth162(widthMm, skidW){
   const span = Math.max(0, widthMm - (skidW||0));
   return Math.max(2, Math.ceil(span / 1200) + 1);
 }
 
-// Общий принцип для ЛЮБОГО набора одинаковых брусков/стоек/полозьев,
-// расставленных по одной оси с шагом между осями не более maxAxis: сами
-// бруски - не точки, а тела шириной memberWidth, и КРАЙНИЕ из них не
-// должны выступать наружным краем за пределы отведённого пространства
-// space (см. minSkidsByWidth162 выше - тот же принцип для полозьев, п.1.6.2).
-// Значит пролёт между осями крайних элементов - не space целиком, а
-// space-memberWidth (по половине ширины крайнего элемента убирается с
-// каждого края). Используется для стоек каркаса (буквально по тексту
-// источника - "как с полозьями в I-3"), а также по аналогии - для
-// поперечных/продольных брусьев крышки (та же физика: тело фиксированной
-// ширины, позиционируемое по оси, не должно вылезать за пределы места).
-function minCountBySpan(space, memberWidth, maxAxis){
-  const span = Math.max(0, space - (memberWidth||0));
-  return Math.max(2, Math.ceil(span / maxAxis) + 1);
-}
-// Чистый просвет (без учёта самих осей) между соседними из `count`
-// одинаковых элементов шириной memberWidth, равномерно расставленных в
-// пространстве space - тот же приём, что и torecSectionWidth в типе I-3
-// (src/app.js): (W - w30*(sections+1))/sections, то есть общая ширина
-// минус суммарная ширина всех элементов, поровну на все просветы.
-function clearGapBySpan(space, memberWidth, count){
-  return (space - memberWidth*count) / (count-1);
-}
 function selectSkid19(mass, workingLengthMm, widthMm){
   const massIdx = nearestIndexBy(TABLE19, r=>r.mass, mass);
   const massRow = TABLE19[massIdx];
@@ -299,19 +181,6 @@ function subfloorThicknessRaw(mass){
   return 50;
 }
 
-// Торцовый брус дна — толщина/ширина по массе груза. Диапазон в источнике этого
-// типа явно продлён до 20000кг (в отличие от типа I-3, где верхняя граница явно
-// не описана дальше 5000кг) — сечение по верхнему диапазону НЕ считается выходом
-// за пределы применимости.
-function endBeamSection(mass){
-  if(mass<=1000) return {h:44,w:100,exceeded:false};
-  if(mass<=2000) return {h:60,w:100,exceeded:false};
-  if(mass<=3500) return {h:75,w:100,exceeded:false};
-  if(mass<=5000) return {h:100,w:100,exceeded:false};
-  if(mass<=20000) return {h:125,w:125,exceeded:false};
-  return {h:125,w:125,exceeded:true};
-}
-
 // Толщина доски дна при креплении груза за полозья (доски дна не несущие) —
 // минимум по массе груза. Значения идентичны типу I-3.
 function floorBoardThicknessNew(mass){
@@ -322,7 +191,9 @@ function floorBoardThicknessNew(mass){
 // нагрузке и расстоянию между осями смежных полозьев. Общая для типов I-3 и
 // II-1 (тот же источник) — значения перенесены без изменений.
 const T4_LOADS = [0.10,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
+
 const T4_DISTANCES = [500,600,800,1000,1200];
+
 const TABLE4 = [
   [19,19,19,22,25],
   [19,19,22,32,32],
@@ -333,6 +204,7 @@ const TABLE4 = [
   [22,25,40,50,50],
   [22,32,40,50,50],
 ];
+
 function floorBoardThickness(mass, Lmm, Wmm, distanceMm){
   const S_cm2 = (Lmm/10)*(Wmm/10);
   const udel = mass/S_cm2;
@@ -349,6 +221,7 @@ function floorBoardThickness(mass, Lmm, Wmm, distanceMm){
 // ящика. Значения в источнике этого типа (картинка в docx) численно совпадают с
 // уже проверенной таблицей типа I-3 — перенесены без изменений.
 const T14_WIDTHS = [1000,1500,2000,2500,3200];
+
 const TABLE14 = [
   {maxMass:1000,  t:[32,32,32,40,40]},
   {maxMass:3000,  t:[32,32,40,50,50]},
@@ -357,6 +230,7 @@ const TABLE14 = [
   {maxMass:12000, t:[40,60,75,75,100]},
   {maxMass:20000, t:[50,75,75,100,100]},
 ];
+
 function crossBeamThickness(mass, outerWmm){
   let exceeded=false;
   let row = TABLE14.find(r=>mass<=r.maxMass);
@@ -364,26 +238,4 @@ function crossBeamThickness(mass, outerWmm){
   let colIdx = T14_WIDTHS.findIndex(w=>outerWmm<=w);
   if(colIdx===-1){ colIdx=T14_WIDTHS.length-1; exceeded=true; }
   return {value:row.t[colIdx], exceeded};
-}
-
-// Продольные брусья крышки (только режим «поперечное расположение досок») — по
-// массе груза и расстоянию между осями поперечных брусьев крышки; строка выбирается
-// по фактическому расстоянию между осями САМИХ продольных брусьев (≤750 / >750).
-// «25×75, либо 25×100 при включённой «Округлить ширину досок»» — трактовка по
-// уточнению пользователя.
-const T_LONGBEAM_CROSS = [500,600,700,800,900,1000];
-const TABLE_LONGBEAM = [
-  { maxAxis:750, t:[25,25,32,32,32,40], wRoundOverride:100, wRoundBase:75 },
-  { maxAxis:Infinity, t:[25,32,32,32,40,40] },
-];
-function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
-  let colIdx = T_LONGBEAM_CROSS.findIndex(v=>crossBeamAxisMm<=v);
-  let exceeded=false;
-  if(colIdx===-1){ colIdx=T_LONGBEAM_CROSS.length-1; exceeded=true; }
-  const row = axisSpacingMm<=750 ? TABLE_LONGBEAM[0] : TABLE_LONGBEAM[1];
-  let w = 100;
-  if(row.wRoundOverride && colIdx===0){
-    w = roundBoardWidths ? row.wRoundOverride : row.wRoundBase;
-  }
-  return {t: row.t[colIdx], w, exceeded};
 }

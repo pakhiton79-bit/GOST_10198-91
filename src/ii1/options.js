@@ -1,12 +1,13 @@
-
-// ============ Фильтр толщин пиломатериала "в наличии" ============
-// Тот же механизм, что и в остальных калькуляторах, свой ключ localStorage.
+// ГОСТ 10198-91, тип II-1: опции формы - толщины «в наличии», способ
+// крепления груза, взаимоисключающие галочки, запоминание галочек и
+// расположения досок крышки в localStorage (ключи - свои для типа II-1).
 const THICKNESS_STORAGE_KEY = 'silvan-gost10198-ii1-available-thickness';
 const AVAILABLE_THICKNESS_OPTIONS = [16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250];
-// Настройки шестерёнки у плитки "Норма времени" - свой ключ localStorage
-// для этого типа ящика (см. src/common-timesettings.js).
-const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-ii1-time-settings';
+const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-ii1-time-settings'; // шестерёнка «Нормы времени»
+const FASTENING_STORAGE_KEY = 'silvan-gost10198-ii1-fastening-type';
+const OPTIONS_STORAGE_PREFIX = 'silvan-gost10198-ii1-opt-';             // галочки и переключатели
 
+// ============ Толщины «в наличии» ============
 function loadAvailableThicknesses(){
   try{
     const raw = localStorage.getItem(THICKNESS_STORAGE_KEY);
@@ -22,11 +23,9 @@ function saveAvailableThicknesses(){
 let availableThicknesses = loadAvailableThicknesses();
 let thicknessLimitExceeded = false;
 
-// Если расчётная толщина превышает даже максимальную из выбранных "в наличии" -
-// значение НЕ занижается (см. тот же комментарий в типе I-3, src/app.js), а
-// остаётся расчётным по ГОСТ; при этом взводится предупреждение. Полоз - тоже
-// исключение из этого правила (не проходит через roundUpToAvailable вообще -
-// см. src/ii1/calc.js), как и в типах I-3/I-1.
+// Округление вверх до ближайшей толщины «в наличии» (ничего не выбрано - как
+// есть, строго по ГОСТ). Больше максимальной «в наличии» - остаётся расчётной
+// по ГОСТ, взводится thicknessLimitExceeded (предупреждение в расчёте).
 function roundUpToAvailable(t){
   if(availableThicknesses.length === 0) return t;
   for(const a of availableThicknesses){ if(t<=a) return a; }
@@ -44,18 +43,11 @@ function buildThicknessCheckboxList(){
   list.innerHTML = html;
 }
 
-// Прячет "Расчёт выполнен" при любом изменении входных данных или таблицы
-// деталей. Если расчёт уже хоть раз показывался (#results видим) - вместо
-// галочки показываем краткую подсказку "устарело" (см. #calcOutdated в
-// src/ii1/shell.html) - до первого расчёта её показывать нечего, поле ещё
-// пустое, а не "устаревшее".
+// Любое изменение параметров: после первого расчёта показывается «Нажмите
+// «Рассчитать»» (вернули как было - снова «Расчёт выполнен»), см.
+// markCalcChanged в common-print.js.
 function invalidateCalc(){
-  // По указанию пользователя - при ЛЮБОМ изменении параметров (цифры,
-  // галочки, выпадающие списки...) сразу подсказка «Нажмите «Рассчитать»», но
-  // только после первого нажатия «Рассчитать» (позднее указание пользователя:
-  // при первом заполнении формы подсказка не нужна; см. markCalcChanged и
-  // общий слушатель в common-print.js).
-  markCalcChanged(); // вернули как было - снова «Расчёт выполнен» (см. common-print.js)
+  markCalcChanged();
 }
 
 function onThicknessCheckboxChange(el){
@@ -79,6 +71,7 @@ function setAllThickness(state){
   invalidateCalc();
 }
 
+// Надпись на кнопке списка и предупреждение, если ничего не выбрано.
 function updateThicknessSummary(){
   const label = document.getElementById('thicknessDropdownLabel');
   const note  = document.getElementById('thicknessNote');
@@ -101,6 +94,7 @@ function updateThicknessSummary(){
 function toggleThicknessDropdown(){
   document.getElementById('thicknessDropdownPanel').classList.toggle('open');
 }
+// Клик мимо выпадающего списка закрывает его.
 document.addEventListener('click', e=>{
   document.querySelectorAll('.dropdown-wrap').forEach(wrap=>{
     if(!wrap.contains(e.target)){
@@ -113,12 +107,7 @@ document.addEventListener('click', e=>{
 buildThicknessCheckboxList();
 updateThicknessSummary();
 
-// ============ Тип крепления груза (за полозья / к доскам дна) ============
-// В отличие от типа I-3, здесь это не переключение между двумя собранными
-// файлами (в I-3 - разные файлы из-за разной толщины доски дна, см.
-// src/variants/), а простой переключатель на одной странице - доска дна
-// пересчитывается на лету через параметр fasteningType в computeGost10198II1().
-const FASTENING_STORAGE_KEY = 'silvan-gost10198-ii1-fastening-type';
+// ============ Способ крепления груза ============
 const FASTENING_LABELS = {
   skid:         'Крепление за полозья',
   floor_boards: 'Крепление к доскам дна'
@@ -129,11 +118,17 @@ try{
   if(saved === 'skid' || saved === 'floor_boards') fasteningType = saved;
 }catch(e){}
 
+// «Убрать доски дна» - только при креплении за полозья: при креплении к
+// доскам дна они и есть точка крепления.
+function showRemoveFloorBoardsRow(){
+  document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
+}
+
 function onFasteningTypeChange(el){
   fasteningType = el.value;
   try{ localStorage.setItem(FASTENING_STORAGE_KEY, fasteningType); }catch(e){}
   updateFasteningSummary();
-  document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
+  showRemoveFloorBoardsRow();
   if(fasteningType !== 'skid'){
     document.getElementById('removeFloorBoards').checked = false;
   }
@@ -149,10 +144,9 @@ function toggleFasteningDropdown(){
   document.getElementById('fasteningDropdownPanel').classList.toggle('open');
 }
 updateFasteningSummary();
-document.getElementById('removeFloorBoardsRow').style.display = fasteningType === 'skid' ? '' : 'none';
+showRemoveFloorBoardsRow();
 
-// «Убрать подполозные доски» и «Погрузка авто/электропогрузчиком» - взаимоисключающие
-// (см. тот же комментарий в типе I-3, src/app.js).
+// «Убрать подполозные доски» и «Погрузка погрузчиком» - взаимоисключающие.
 function onSkidForkliftExclusive(el){
   if(el.checked){
     const otherId = el.id === 'removeSkidBoards' ? 'forkliftLoading' : 'removeSkidBoards';
@@ -162,15 +156,7 @@ function onSkidForkliftExclusive(el){
   invalidateCalc();
 }
 
-// ============ Запоминание галочек и переключателей «Дополнительные опции» /
-// «Расположение досок крышки» ============
-// Тот же принцип, что и у толщин/способа крепления выше (THICKNESS_STORAGE_KEY/
-// FASTENING_STORAGE_KEY) - свой набор ключей localStorage для этого типа
-// ящика, чтобы выбор не «утекал» между калькуляторами разных типов. По
-// просьбе пользователя: все чекбоксы/переключатели опций должны запоминаться
-// между заходами, как уже давно работает для толщин "в наличии" и способа
-// крепления.
-const OPTIONS_STORAGE_PREFIX = 'silvan-gost10198-ii1-opt-';
+// ============ Запоминание галочек и расположения досок крышки ============
 function persistCheckbox(id){
   const el = document.getElementById(id);
   if(!el) return;

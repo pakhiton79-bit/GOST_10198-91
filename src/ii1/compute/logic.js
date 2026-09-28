@@ -1,0 +1,102 @@
+// ГОСТ 10198-91, тип II-1: каркасно-щитовые неразборные плотные ящики.
+// Таблицы и формулы, специфичные для этого типа. Источник — файл заказчика
+// «ГОСТ 10198-91 тип 2-1.docx». Максимальная масса груза по этому типу — 20000 кг.
+// Конструкция принципиально отличается от типа I-3/I-1 (щиты из досок): здесь
+// боковые и торцевые щиты — каркас (стойки + горизонтальные брусья + раскосины),
+// обшитый досками, а не сплошной набор планок/досок.
+
+// Толщина досок обшивки (боковых/торцевых щитов и крышки) по массе груза.
+// ЧЕРНОВАЯ таблица — по прямому указанию пользователя официальную таблицу
+// в тексте ГОСТ не нашли («Нормальную таблицу я не нашел, попытайся её найти,
+// а пока используй эту»). Верхняя граница диапазона (>600кг) в источнике не
+// указана — применяется 25мм вплоть до 20000кг. Пользователь подтвердил
+// использование этой таблицы как временной.
+function skinThickness(mass){
+  if(mass<=400) return 19;
+  if(mass<=600) return 22;
+  return 25;
+}
+
+// Толщина и ширина стоек по массе груза и наружной высоте ящика (по тексту
+// источника — «табл. 12»). Ширина всегда 100мм (во всех ячейках источника).
+const T_STOJKI_HEIGHTS = [1000,1500,2000,2500,3000];
+
+const TABLE_STOJKI = [
+  {maxMass:4000,  t:[25,25,32,32,40]},
+  {maxMass:6000,  t:[25,25,32,40,40]},
+  {maxMass:8000,  t:[25,32,40,40,50]},
+  {maxMass:10000, t:[25,32,40,50,50]},
+  {maxMass:16000, t:[25,40,50,50,50]},
+  {maxMass:20000, t:[32,40,50,50,50]},
+];
+
+function stojkaSection(mass, outerHmm){
+  let exceeded=false;
+  let row = TABLE_STOJKI.find(r=>mass<=r.maxMass);
+  if(!row){ row=TABLE_STOJKI[TABLE_STOJKI.length-1]; exceeded=true; }
+  let colIdx = T_STOJKI_HEIGHTS.findIndex(h=>outerHmm<=h);
+  if(colIdx===-1){ colIdx=T_STOJKI_HEIGHTS.length-1; exceeded=true; }
+  return {t: row.t[colIdx], w: 100, exceeded};
+}
+
+// Общий принцип для ЛЮБОГО набора одинаковых брусков/стоек/полозьев,
+// расставленных по одной оси с шагом между осями не более maxAxis: сами
+// бруски - не точки, а тела шириной memberWidth, и КРАЙНИЕ из них не
+// должны выступать наружным краем за пределы отведённого пространства
+// space (см. minSkidsByWidth162 выше - тот же принцип для полозьев, п.1.6.2).
+// Значит пролёт между осями крайних элементов - не space целиком, а
+// space-memberWidth (по половине ширины крайнего элемента убирается с
+// каждого края). Используется для стоек каркаса (буквально по тексту
+// источника - "как с полозьями в I-3"), а также по аналогии - для
+// поперечных/продольных брусьев крышки (та же физика: тело фиксированной
+// ширины, позиционируемое по оси, не должно вылезать за пределы места).
+function minCountBySpan(space, memberWidth, maxAxis){
+  const span = Math.max(0, space - (memberWidth||0));
+  return Math.max(2, Math.ceil(span / maxAxis) + 1);
+}
+
+// Чистый просвет (без учёта самих осей) между соседними из `count`
+// одинаковых элементов шириной memberWidth, равномерно расставленных в
+// пространстве space - тот же приём, что и torecSectionWidth в типе I-3
+// (src/app.js): (W - w30*(sections+1))/sections, то есть общая ширина
+// минус суммарная ширина всех элементов, поровну на все просветы.
+function clearGapBySpan(space, memberWidth, count){
+  return (space - memberWidth*count) / (count-1);
+}
+
+// Торцовый брус дна — толщина/ширина по массе груза. Диапазон в источнике этого
+// типа явно продлён до 20000кг (в отличие от типа I-3, где верхняя граница явно
+// не описана дальше 5000кг) — сечение по верхнему диапазону НЕ считается выходом
+// за пределы применимости.
+function endBeamSection(mass){
+  if(mass<=1000) return {h:44,w:100,exceeded:false};
+  if(mass<=2000) return {h:60,w:100,exceeded:false};
+  if(mass<=3500) return {h:75,w:100,exceeded:false};
+  if(mass<=5000) return {h:100,w:100,exceeded:false};
+  if(mass<=20000) return {h:125,w:125,exceeded:false};
+  return {h:125,w:125,exceeded:true};
+}
+
+// Продольные брусья крышки (только режим «поперечное расположение досок») — по
+// массе груза и расстоянию между осями поперечных брусьев крышки; строка выбирается
+// по фактическому расстоянию между осями САМИХ продольных брусьев (≤750 / >750).
+// «25×75, либо 25×100 при включённой «Округлить ширину досок»» — трактовка по
+// уточнению пользователя.
+const T_LONGBEAM_CROSS = [500,600,700,800,900,1000];
+
+const TABLE_LONGBEAM = [
+  { maxAxis:750, t:[25,25,32,32,32,40], wRoundOverride:100, wRoundBase:75 },
+  { maxAxis:Infinity, t:[25,32,32,32,40,40] },
+];
+
+function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
+  let colIdx = T_LONGBEAM_CROSS.findIndex(v=>crossBeamAxisMm<=v);
+  let exceeded=false;
+  if(colIdx===-1){ colIdx=T_LONGBEAM_CROSS.length-1; exceeded=true; }
+  const row = axisSpacingMm<=750 ? TABLE_LONGBEAM[0] : TABLE_LONGBEAM[1];
+  let w = 100;
+  if(row.wRoundOverride && colIdx===0){
+    w = roundBoardWidths ? row.wRoundOverride : row.wRoundBase;
+  }
+  return {t: row.t[colIdx], w, exceeded};
+}
