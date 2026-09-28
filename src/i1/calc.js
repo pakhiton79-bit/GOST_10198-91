@@ -44,7 +44,7 @@ function findNegativeField(value, path){
 const WOOD_DENSITY_KG_M3 = 700; // по умолчанию; настраивается шестерёнкой у «Массы ящика»
 
 function computeGost10198I1(input){
-  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, manualOverrides, woodDensity} = input;
+  const {L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, addParchment, plankLayoutMode, plankLayoutValue, manualOverrides, woodDensity} = input;
   const mo = manualOverrides || {};
 
   thicknessLimitExceeded = false;
@@ -400,6 +400,12 @@ function computeGost10198I1(input){
   // распространялся общий механизм ручных правок таблицы (tableEdits,
   // applyTableEdits с множителем раздела 0 - в объём не входит).
   const endTape = addEndTape ? [{name:'Обшивочная лента', l: Math.ceil(((W + T.bokBoard * 2) + (H + T.krBoard * 2))*2 - 1e-9), qty: 2}] : [];
+  // Пергамин (галочка «Добавить пергамин», по указанию пользователя) - площадь
+  // внутренних поверхностей ящика по внутренним размерам (размерам груза):
+  // 2×(Д×Ш + Д×В + Ш×В), м², округление вверх до 0.01. Выводится строкой под
+  // лентой обшивки, как и она - отдельный раздел (правится вручную, в объём
+  // пиломатериала, массу и норму времени не входит).
+  const parchment = addParchment ? [{name:'Пергамин', area: Math.ceil(2*(L*W + L*H + W*H)/1e6*100 - 1e-9)/100}] : [];
 
   const result = {
     warnings, dno, kryshka, bokovoy, torec,
@@ -410,7 +416,7 @@ function computeGost10198I1(input){
     // Толщина у выступающего угла первой планки на чертежах Дна/Крышки/Бока
     // (своя у каждого щита: у дна - полоз либо планка дна).
     drawPlankT: { dno: skidEnabled ? skidT : T.dnoPlanka, kryshka: T.krPlanka, bokovoy: T.bokPlanka },
-    standardPlankCount, standardPlankGap, endTape
+    standardPlankCount, standardPlankGap, endTape, parchment
   };
   const negField = findNegativeField(result, '');
   if(negField){
@@ -457,6 +463,7 @@ function buildCalcInput(){
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addEndTape: document.getElementById('addEndTape').checked,
+    addParchment: document.getElementById('addParchment').checked,
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,
@@ -486,7 +493,7 @@ function calculateNow(){
   }
   // Ручные правки таблицы (ширина/длина/кол-во и т.д.) - учитываются только
   // здесь, по кнопке "Рассчитать" (см. applyTableEdits в common-print.js).
-  if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0})){ // endTape - лента, в объём не входит
+  if(applyTableEdits(calc, tableEdits, {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0, parchment:0})){ // endTape - лента, parchment - пергамин, в объём не входят
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
     calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
@@ -557,6 +564,12 @@ function calculateNow(){
     const tr = calc.endTape[0], tapeKeys = tableRowKeys(calc.endTape);
     const tapeText = (typeof tr.text === 'string') ? tr.text : `Обшивочная лента ${Math.ceil(tr.l - 1e-9)} мм × 2`;
     tablesHtml += `<div class="spec-table tape-table"><table data-section="endTape"><tbody><tr data-row-key="${escapeAttr(tapeKeys[0])}"><td class="editable-cell" contenteditable="true" data-role="text"${editedAttr(tr, 'text')}>${escapeAttr(tapeText)}</td></tr></tbody></table></div>`;
+  }
+  // Пергамин - такой же строкой под лентой (см. parchment в расчёте).
+  if(calc.parchment && calc.parchment.length){
+    const pr = calc.parchment[0], prKeys = tableRowKeys(calc.parchment);
+    const prText = (typeof pr.text === 'string') ? pr.text : `Пергамин ${pr.area.toFixed(2)} м²`;
+    tablesHtml += `<div class="spec-table tape-table"><table data-section="parchment"><tbody><tr data-row-key="${escapeAttr(prKeys[0])}"><td class="editable-cell" contenteditable="true" data-role="text"${editedAttr(pr, 'text')}>${escapeAttr(prText)}</td></tr></tbody></table></div>`;
   }
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = tablesHtml;
