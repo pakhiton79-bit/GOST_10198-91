@@ -14,19 +14,11 @@ src/common-timesettings.js (шестерёнка настроек нормы в�
 сохраняются в localStorage отдельно для каждого типа ящика):
 
 == Тип I-3 (крепление за полозья / к доскам дна) ==
-src/calc.src.html - HTML-каркас с плейсхолдерами:
-  /*__STYLE_CSS__*/             -> src/style.css
-  /*__LOGIC_JS__*/              -> src/logic.js (расчётные формулы ГОСТ)
-  /*__COMMON_DIAGRAMS_JS__*/    -> src/common-diagrams.js (общий рендер чертежей)
-  /*__DIAGRAMS_JS__*/           -> src/diagrams.js (чертежи деталей)
-  /*__COMMON_PRINT_JS__*/       -> src/common-print.js (общая механика печати)
-  /*__COMMON_TIMESETTINGS_JS__*/ -> src/common-timesettings.js (шестерёнка нормы времени)
-  /*__APP_JS__*/                -> src/app.js (UI, calculate(), buildPrintHtml())
-Способ крепления груза (за полозья / к доскам дна) - runtime-переключатель
-внутри одного файла (параметр fasteningType в computeGost10198I3(), см.
-src/app.js), тем же приёмом, что и в типе II-1 - НЕ отдельные build-варианты
-(раньше было 2 отдельных собранных файла с разной толщиной доски дна,
-см. src/variants/ и git-историю).
+src/i3/shell.html - свой HTML-каркас с плейсхолдером на каждый файл I-3
+(список - I3_PARTS ниже): src/i3/compute/ - расчёт, src/i3/diagrams/ -
+чертежи, src/i3/*.js - интерфейс; CSS, печать и настройки нормы времени -
+общие с другими типами. Способ крепления груза (за полозья / к доскам дна) -
+переключатель на самой странице (fasteningType), а не отдельные сборки.
   - GOST10198_91POLOZIA.html
 
 == Тип I-1 ==
@@ -80,17 +72,39 @@ COMMON_TIMESETTINGS_JS = SRC_DIR / "common-timesettings.js"
 VENDOR_JSPDF_JS = SRC_DIR / "vendor" / "jspdf.umd.min.js"
 VENDOR_HTML2CANVAS_JS = SRC_DIR / "vendor" / "html2canvas.min.js"
 
-I3_SHELL = SRC_DIR / "calc.src.html"
+# Файлы I-3 разложены так же, как в gost_backend: compute/ - расчёт
+# (backend/src/i3), остальное - интерфейс и чертежи (frontend/public/js/i3).
+I3_DIR = SRC_DIR / "i3"
+I3_SHELL = I3_DIR / "shell.html"
 I3_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
-    "/*__LOGIC_JS__*/": SRC_DIR / "logic.js",
-    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__DIAGRAMS_JS__*/": SRC_DIR / "diagrams.js",
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__I3_HELPERS_JS__*/": I3_DIR / "compute" / "helpers.js",
+    "/*__I3_SECTIONS_JS__*/": I3_DIR / "compute" / "sections.js",
+    "/*__I3_TABLE19_JS__*/": I3_DIR / "compute" / "data" / "table19.js",
+    "/*__I3_TABLE4_JS__*/": I3_DIR / "compute" / "data" / "table4.js",
+    "/*__I3_TABLE14_JS__*/": I3_DIR / "compute" / "data" / "table14.js",
+    "/*__I3_PLANK_LAYOUT_CALC_JS__*/": I3_DIR / "compute" / "plank-layout.js",
+    "/*__I3_DNO_JS__*/": I3_DIR / "compute" / "dno.js",
+    "/*__I3_KRYSHKA_JS__*/": I3_DIR / "compute" / "kryshka.js",
+    "/*__I3_END_PANEL_JS__*/": I3_DIR / "compute" / "end-panel.js",
+    "/*__I3_BOKOVOY_JS__*/": I3_DIR / "compute" / "bokovoy.js",
+    "/*__I3_COMPUTE_JS__*/": I3_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__I3_DIAGRAM_GENERATED_JS__*/": I3_DIR / "diagrams" / "generated.js",
+    "/*__I3_DIAGRAM_DNO_JS__*/": I3_DIR / "diagrams" / "dno.js",
+    "/*__I3_DIAGRAM_KRYSHKA_JS__*/": I3_DIR / "diagrams" / "kryshka.js",
+    "/*__I3_DIAGRAM_END_PANEL_JS__*/": I3_DIR / "diagrams" / "end-panel.js",
+    "/*__I3_DIAGRAM_BOKOVOY_JS__*/": I3_DIR / "diagrams" / "bokovoy.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
-    "/*__APP_JS__*/": SRC_DIR / "app.js",
+    "/*__I3_OPTIONS_JS__*/": I3_DIR / "options.js",
+    "/*__I3_PLANK_LAYOUT_UI_JS__*/": I3_DIR / "plank-layout.js",
+    "/*__I3_BEAMS_JS__*/": I3_DIR / "beams.js",
+    "/*__I3_RENDER_JS__*/": I3_DIR / "render-i3.js",
+    "/*__I3_PRINT_JS__*/": I3_DIR / "print-i3.js",
+    "/*__I3_CALC_JS__*/": I3_DIR / "calc-i3.js",
 }
 I3_VARIANTS = [
     {"out_name": "GOST10198_91POLOZIA.html"},
