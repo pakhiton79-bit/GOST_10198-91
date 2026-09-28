@@ -2362,7 +2362,7 @@ function fmtMm(v){
 // IW/IH, как раньше: при общем масштабе (см. i1PageFramePx) фото разной
 // ширины рисуются с разным коэффициентом, и доли давали бы разные зазоры
 // между подписями на разных вариантах.
-function diagramBokPhoto(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, partTitle, framePx){
+function diagramBokPhoto(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, partTitle, framePx, bottomTVal){
   const IW = g.IW, IH = g.IH, topY = g.topY, botY = g.botY;
   const stubL = g.stubL, p1L = g.p1L, p1R = g.p1R, p2L = g.p2L, stubR = g.stubR;
   const widthPx = i1DiagramWidth(IW, botY - topY, framePx);
@@ -2426,6 +2426,17 @@ function diagramBokPhoto(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, par
     {type:'line', x1:stubL, y1:bracketY, x2:p1L, y2:bracketY},
     {type:'single', x1:edgeLabelX, y1:edgeLabelY, x2:bracketMidX, y2:bracketY, lx:edgeLabelX, ly:edgeLabelY, text: fmtMm(edgeVal)+' мм'}
   ];
+
+  // Выступ планок снизу (только боковой щит, по указанию пользователя) - равен
+  // толщине полоза (без полоза - планки дна), он же учтён в длине планки:
+  // сноска к выступающему нижнему правому углу крайней правой планки (слева
+  // внизу - подписи отступа и зазора), подпись - под фото справа.
+  if(bottomTVal > 0){
+    const lastR = stubR - (p1L - stubL);
+    const botTargetY = botY + 0.2*(IH - botY);
+    const botTailX = lastR + 24*px, botTailY = IH + 14*px;
+    records.push({type:'single', x1:botTailX, y1:botTailY, x2:lastR, y2:botTargetY, lx:botTailX, ly:botTailY, text: dimLabel(bottomTVal)+' мм'});
+  }
 
   return renderDiagram(g.img, partTitle + ' - схема расположения деталей', IW, IH, records, widthPx, i1StrokeScale(IW, widthPx));
 }
@@ -2535,8 +2546,8 @@ function bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal){
   return (xRaskosinaVal && BOK_I1_X_IMG[key]) ? Object.assign({}, g, {img: BOK_I1_X_IMG[key]}) : g;
 }
 
-function diagramBokovoy(heightVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx){
-  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), heightVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Щит боковой', framePx);
+function diagramBokovoy(heightVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx, bottomTVal){
+  return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), heightVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Щит боковой', framePx, bottomTVal);
 }
 function diagramKryshka(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx){
   return diagramBokPhoto(bokGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Крышка', framePx);
@@ -4793,7 +4804,10 @@ function computeGost10198I1(input){
     // (своя у каждого щита).
     // У дна - толщина доски бокового щита (по уточнению пользователя; толщина
     // полоза - это выступ планок бокового щита снизу, он учтён в их длине).
-    drawPlankT: {dno: T.bokBoard, kryshka: T.krPlanka, bokovoy: T.bokPlanka},
+    // У бокового щита сверху - толщина доски крышки, снизу (bokovoyBottom) -
+    // полоза либо планки дна: на столько планки выступают за щит (учтено в их
+    // длине), по указанию пользователя.
+    drawPlankT: {dno: T.bokBoard, kryshka: T.krPlanka, bokovoy: T.krBoard, bokovoyBottom: skidEnabled ? skidT : T.dnoPlanka},
     standardPlankCount, standardPlankGap, endTape, parchment
   };
   const negField = findNegativeField(result, '');
@@ -4929,7 +4943,7 @@ function calculateNow(){
   tablesHtml += `<div class="part-title">Дно</div><div class="spec-row-diagram"><div class="diagram-slot" data-i1-panel>` + diagramDno(calc.dnoWidth, calc.drawPlankT.dno, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, kdFramePx) + `</div>` + renderSection('', calc.dno, 'dno') + `</div>`;
   tablesHtml += `<div class="part-title">Крышка</div><div class="spec-row-diagram"><div class="diagram-slot" data-i1-panel>` + diagramKryshka(calc.kPlankaKryshka, calc.drawPlankT.kryshka, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, kdFramePx) + `</div>` + renderSection('', calc.kryshka, 'kryshka') + `</div>`;
   tablesHtml += `<div class="part-title">Щит торцевой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-i1-panel>` + diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, torecFramePx) + `</div>` + renderSection('', calc.torec, 'torec') + `</div>`;
-  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-i1-panel>` + diagramBokovoy(calc.H, calc.drawPlankT.bokovoy, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, bokFramePx) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
+  tablesHtml += `<div class="part-title">Щит боковой (2 шт.)</div><div class="spec-row-diagram"><div class="diagram-slot" data-i1-panel>` + diagramBokovoy(calc.H, calc.drawPlankT.bokovoy, calc.plank.edgeDist, calc.plankGap, calc.kLen, calc.plankQty, calc.raskosinaNeeded, calc.xRaskosina, bokFramePx, calc.drawPlankT.bokovoyBottom) + `</div>` + renderSection('', calc.bokovoy, 'bokovoy') + `</div>`;
   // Лента обшивки торцов - под всеми элементами и чертежами, отдельной
   // табличкой 1×1 на всю ширину (под чертежами и под таблицами деталей), в
   // стиле таблиц деталей, без заголовка (по указанию пользователя). Попадает
