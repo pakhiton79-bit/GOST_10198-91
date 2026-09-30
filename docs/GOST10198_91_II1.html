@@ -2892,6 +2892,16 @@ function diagramPlaceholder(label){
   return diagramStub(`Чертёж «${label}» ещё не готов`);
 }
 const DIAGRAM_TOO_DENSE_TEXT = 'Слишком много деталей для чертежа — см. таблицу';
+// Сгенерированный чертёж «слишком плотный»: самый узкий просвет между
+// соседними деталями (minGap, в единицах картинки шириной IW, без толщины
+// линий) при обычной ширине чертежа на экране (DIAGRAM_DEFAULT_WIDTH) уже
+// DIAGRAM_MIN_GAP_PX - детали сливаются в сплошную массу. Сами детали могут
+// быть тонкими (линиями) - это не мешает читать чертёж. Секция с раскосиной
+// считается просветом в половину своей ширины (раскосина делит её).
+const DIAGRAM_MIN_GAP_PX = 3;
+function diagramIsTooDense(minGap, IW){
+  return minGap * DIAGRAM_DEFAULT_WIDTH / IW < DIAGRAM_MIN_GAP_PX;
+}
 function diagramTooDense(){
   return diagramStub(DIAGRAM_TOO_DENSE_TEXT);
 }
@@ -3021,8 +3031,9 @@ function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal, skidCount){
 // по длине - между торцевыми досками), поперечные - тёмно-серые, короче
 // крышки на толщину бокового щита сверху и снизу. Поперечные брусья стоят
 // по расчёту: отступ от края и зазоры - edgeDist, ширина - crossBeamW (в
-// масштабе длины крышки); если так плотно, что брусья слились бы, - null
-// (вызывающий код ставит заглушку).
+// масштабе длины крышки); не помещаются с зазором - сужаются; если так
+// плотно, что брусья слились бы и так, - null (вызывающий код ставит
+// заглушку).
 // Подписи - с фото того же вида (без продольных - «0×3», с продольными -
 // «4×4»), кроме привязанных к первому поперечному брусу (отступ от края и
 // толщина бокового щита) - они сдвигаются к его фактическому месту.
@@ -3032,7 +3043,6 @@ const KRYSHKA_GEN = {
 };
 const KRYSHKA_GEN_BEAM = 74;      // ширина бруса (как на фото)
 const KRYSHKA_GEN_INSET = 37.5;   // торцевая доска / боковой щит - отступ брусьев от края
-const KRYSHKA_GEN_MIN_BEAM = 20;  // уже - брусья сливаются, чертёж не рисуется
 const KRYSHKA_GEN_STROKE = 5.5;
 
 function kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, edgeDistVal, crossBeamW){
@@ -3045,8 +3055,9 @@ function kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, edgeDistVal,
   const bw = crossBeamW > 0 ? crossBeamW : 100;
   const centers = Array.from({length: crossBeamCount}, (_, i) => G.x0 + (edgeDistVal + bw / 2 + i * (bw + edgeDistVal)) * pxPerMm);
   const pitch = crossBeamCount > 1 ? centers[1] - centers[0] : span;
-  const beamW = Math.min(KRYSHKA_GEN_BEAM, pitch - 12, 2 * (centers[0] - G.x0) - 12);
-  if(beamW < KRYSHKA_GEN_MIN_BEAM) return null;
+  // брусья сужаются, если не помещаются с зазором (не меньше 40% шага)
+  const beamW = Math.min(KRYSHKA_GEN_BEAM, 0.6 * pitch, 1.2 * (centers[0] - G.x0));
+  if(diagramIsTooDense(pitch - beamW - KRYSHKA_GEN_STROKE, G.IW)) return null;
 
   let shapes = rect(G.x0, G.y0, G.x1, G.y1, '#fff');
   // продольные брусья
@@ -3394,7 +3405,7 @@ function ii1BraceStrip(l, r, top, bot, rising, PW, fmt){
 
 // Чертёж на n стоек и floors этажей: { img, gap } - картинка (data:-URL SVG)
 // и кромки 1-й и 2-й стоек для размера «расстояние между стойками» (формат
-// поля gap у TOREC_VARIANTS).
+// поля gap у TOREC_VARIANTS); null - стоек так много, что они слились бы.
 function panelGeneratedII1(n, floors, xRaskosinaVal){
   const G = PANEL_GEN_II1[floors];
   const f = v => v.toFixed(1);
@@ -3404,6 +3415,7 @@ function panelGeneratedII1(n, floors, xRaskosinaVal){
     postW = (G.frameR - G.frameL)/(n + 1.2*(n-1));
     bay = 1.2*postW;
   }
+  if(diagramIsTooDense(bay / 2 - PANEL_GEN_II1_STROKE, G.IW)) return null; // заглушка
   const px = i => G.frameL + i*(postW + bay); // левая кромка i-й стойки (с 0)
   const rect = (x1, y1, x2, y2) => `<rect x="${f(x1)}" y="${f(y1)}" width="${f(x2-x1)}" height="${f(y2-y1)}"/>`;
   const [sx1, sy1, sx2, sy2] = G.skin;
@@ -3458,6 +3470,7 @@ function panelGeneratedII1(n, floors, xRaskosinaVal){
 // На 5 и более стоек фото нет - чертёж генерируется (см. panelScheme).
 function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale, xRaskosinaVal, gapVal){
   const v = panelScheme(count, floors, xRaskosinaVal);
+  if(!v) return diagramTooDense();
   const records = v.records(dimLabel(longbeamVal), dimLabel(widthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal))
     .concat(postGapRecords(v, gapVal, widthPxOverride, labelScale));
   return renderDiagram(v.img, 'Щит торцевой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW), labelScale);
@@ -3466,13 +3479,15 @@ function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, 
 // Схема щита на count стоек и floors (1 или 2) этажей: фото из
 // TOREC_VARIANTS (2-4 стойки) или сгенерированный чертёж (5 и более, см.
 // panel-generated.js) - с подписями фото на 4 стойки: у него те же размеры
-// картинки и наружные кромки щита. { img, IW, IH, records, gap }.
+// картинки и наружные кромки щита. { img, IW, IH, records, gap }; null -
+// слишком много стоек (вместо чертежа заглушка).
 function panelScheme(count, floors, xRaskosinaVal){
   if(count <= 4){
     const v = TOREC_VARIANTS[floors][count];
     return { img: xRaskosinaVal ? v.imgX : v.img, IW: v.IW, IH: v.IH, records: v.records, gap: v.gap };
   }
   const v = TOREC_VARIANTS[floors][4], g = panelGeneratedII1(count, floors, xRaskosinaVal);
+  if(!g) return null;
   return { img: g.img, IW: v.IW, IH: v.IH, records: v.records, gap: g.gap };
 }
 
@@ -3750,6 +3765,7 @@ const TOREC_VARIANTS = {
 // (bokFrame.sectionW), см. postGapRecords в torec.js.
 function diagramBok(count, floors, longbeamVal, lengthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale, xRaskosinaVal, gapVal){
   const v = panelScheme(count, floors, xRaskosinaVal);
+  if(!v) return diagramTooDense();
   const records = v.records(dimLabel(longbeamVal), dimLabel(lengthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal))
     .concat(postGapRecords(v, gapVal, widthPxOverride, labelScale));
   return renderDiagram(v.img, 'Щит боковой - схема расположения деталей', v.IW, v.IH, records, widthPxOverride, photoStrokeScale(v.IW), labelScale);

@@ -2503,6 +2503,16 @@ function diagramPlaceholder(label){
   return diagramStub(`Чертёж «${label}» ещё не готов`);
 }
 const DIAGRAM_TOO_DENSE_TEXT = 'Слишком много деталей для чертежа — см. таблицу';
+// Сгенерированный чертёж «слишком плотный»: самый узкий просвет между
+// соседними деталями (minGap, в единицах картинки шириной IW, без толщины
+// линий) при обычной ширине чертежа на экране (DIAGRAM_DEFAULT_WIDTH) уже
+// DIAGRAM_MIN_GAP_PX - детали сливаются в сплошную массу. Сами детали могут
+// быть тонкими (линиями) - это не мешает читать чертёж. Секция с раскосиной
+// считается просветом в половину своей ширины (раскосина делит её).
+const DIAGRAM_MIN_GAP_PX = 3;
+function diagramIsTooDense(minGap, IW){
+  return minGap * DIAGRAM_DEFAULT_WIDTH / IW < DIAGRAM_MIN_GAP_PX;
+}
 function diagramTooDense(){
   return diagramStub(DIAGRAM_TOO_DENSE_TEXT);
 }
@@ -2727,6 +2737,7 @@ function panelGenerated(n, hasRaskosinaVal, xRaskosinaVal){
     plankW = (x1 - x0)/(n + 1.2*(n-1));
     bay = 1.2*plankW;
   }
+  if(diagramIsTooDense((hasRaskosinaVal ? bay / 2 : bay) - G.stroke, G.IW)) return null; // заглушка (см. panel.js)
   const px = i => x0 + i*(plankW + bay); // левый край i-й планки (с 0)
   const f = v => v.toFixed(1);
   // Горизонтальных планок у щита нет - раскосина упирается только в вертикальные.
@@ -2756,7 +2767,8 @@ function panelGenerated(n, hasRaskosinaVal, xRaskosinaVal){
 // тот же щит с поясами планок (фото на 2-4 планки из panel-photos.js, на 5 и
 // более - panel-generated.js) с размерными стрелками.
 
-// Фото или сгенерированный чертёж для числа планок.
+// Фото или сгенерированный чертёж для числа планок; null - планок так много,
+// что они слились бы (вместо чертежа заглушка).
 function panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal){
   if(plankQty > 4) return panelGenerated(Math.round(plankQty), hasRaskosinaVal, xRaskosinaVal);
   return panelPhoto(plankQty, hasRaskosinaVal, xRaskosinaVal);
@@ -2843,13 +2855,19 @@ function diagramPanel(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, partTi
 }
 
 function diagramBokovoy(heightVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx, bottomTVal){
-  return diagramPanel(panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), heightVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Щит боковой', framePx, bottomTVal);
+  const g = panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal);
+  if(!g) return diagramTooDense();
+  return diagramPanel(g, heightVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Щит боковой', framePx, bottomTVal);
 }
 function diagramKryshka(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx){
-  return diagramPanel(panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Крышка', framePx);
+  const g = panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal);
+  if(!g) return diagramTooDense();
+  return diagramPanel(g, widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Крышка', framePx);
 }
 function diagramDno(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx){
-  return diagramPanel(panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal), widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Дно', framePx);
+  const g = panelGeom(plankQty, hasRaskosinaVal, xRaskosinaVal);
+  if(!g) return diagramTooDense();
+  return diagramPanel(g, widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Дно', framePx);
 }
 
 // ГОСТ 10198-91, тип I-1: чертёж «Щит торцевой». Конструкция та же, что у
