@@ -1,6 +1,6 @@
 // ГОСТ 10198-91, тип II-1: сбор входных данных, расчёт (computeGost10198II1,
 // compute/compute.js) и вывод результата. Кнопка «Рассчитать» вызывает общую
-// обёртку calculate() из common-print.js, та - calculateNow().
+// обёртку calculate() из common-calc-state.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
 // по 2 шт.).
@@ -19,7 +19,7 @@ function readManualOverrides(){
   return overrides;
 }
 
-// Входные данные расчёта. По ним же common-print.js сравнивает текущую форму
+// Входные данные расчёта. По ним же common-calc-state.js сравнивает текущую форму
 // с последним расчётом (calcStateSignature).
 function buildCalcInput(){
   const manualOverrides = readManualOverrides();
@@ -103,7 +103,7 @@ document.getElementById('boxView').src = BOX_II1_IMG_B64;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
 
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки), - подсвечиваются
-// красной рамкой (highlightErrorFields в common-print.js).
+// красной рамкой (highlightErrorFields в common-calc-state.js).
 function errorFieldsFor(text){
   if(/Заполните все поля/.test(text)) return ['L','W','H','M'].filter(id => !(parseFloat(document.getElementById(id).value) > 0));
   if(/не помеща\S* на торцевом щите/.test(text)) return ['torecPostsInput'];

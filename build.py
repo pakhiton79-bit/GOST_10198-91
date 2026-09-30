@@ -3,9 +3,11 @@
 
 Два независимых калькулятора (разная методика ГОСТ 10198-91), у каждого
 свой набор исходников, но общий src/style.css (единый визуальный стиль),
-общий src/common-print.js (механика печати - подгонка под 1 лист А4,
-резерв места под вылет подписей чертежей - в обоих типах одинаковая,
-кроме содержимого buildPrintHtml(), которое остаётся в каждом типе своё)
+общие src/common-calc-state.js (статусы расчёта, кнопка «Рассчитать»),
+src/common-table-edits.js (ручные правки таблицы деталей),
+src/common-diagram-fit.js (подгонка чертежей под слот на экране и в печати)
+и src/common-print.js (печать и PDF - подгонка под 1 лист А4; содержимое
+листа buildPrintHtml() у каждого типа своё)
 и общий src/common-diagrams.js (рендер чертежей-фото renderDiagram() и
 общие для обоих типов чертёж торца без раскосины/с 1 раскосиной - у
 типа I-1 раскосин на торце не бывает больше одной), а также общий
@@ -65,6 +67,9 @@ OUT_DIR = ROOT / "docs"  # "docs" (не "dist") - так папку можно �
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
+COMMON_CALC_STATE_JS = SRC_DIR / "common-calc-state.js"
+COMMON_TABLE_EDITS_JS = SRC_DIR / "common-table-edits.js"
+COMMON_DIAGRAM_FIT_JS = SRC_DIR / "common-diagram-fit.js"
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
 COMMON_DIAGRAMS_JS = SRC_DIR / "common-diagrams.js"
 COMMON_TIMESETTINGS_JS = SRC_DIR / "common-timesettings.js"
@@ -103,6 +108,9 @@ I3_PARTS = {
     "/*__I3_DIAGRAM_KRYSHKA_JS__*/": I3_DIR / "diagrams" / "kryshka.js",
     "/*__I3_DIAGRAM_END_PANEL_JS__*/": I3_DIR / "diagrams" / "end-panel.js",
     "/*__I3_DIAGRAM_BOKOVOY_JS__*/": I3_DIR / "diagrams" / "bokovoy.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__I3_OPTIONS_JS__*/": I3_DIR / "options.js",
@@ -135,6 +143,9 @@ I1_PARTS = {
     "/*__I1_DIAGRAM_PANEL_GENERATED_JS__*/": I1_DIR / "diagrams" / "panel-generated.js",
     "/*__I1_DIAGRAM_PANEL_JS__*/": I1_DIR / "diagrams" / "panel.js",
     "/*__I1_DIAGRAM_TOREC_JS__*/": I1_DIR / "diagrams" / "torec.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__I1_OPTIONS_JS__*/": I1_DIR / "options.js",
@@ -171,6 +182,9 @@ II1_PARTS = {
     "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1_DIR / "diagrams" / "panel-generated.js",
     "/*__II1_DIAGRAM_TOREC_JS__*/": II1_DIR / "diagrams" / "torec.js",
     "/*__II1_DIAGRAM_BOK_JS__*/": II1_DIR / "diagrams" / "bok.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__II1_OPTIONS_JS__*/": II1_DIR / "options.js",
