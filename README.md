@@ -144,3 +144,11 @@ Google Fonts).
    стрелок/подписей в пиксельных координатах картинки) — см. соседние функции
    (`diagramDno`, `diagramKryshka` и т.д.) как образец.
 4. Пересобрать: `python3 build.py`.
+
+## Картинки дна по числу полозьев
+
+Чертёж «Дно» (I-3 и II-1) на 3-8 полозьев - это фото на 2 полоза с
+дорисованными торцами средних полозьев: `src/images/dno_3skids.png` ...
+`dno_8skids.png`. Их делает `tools/make_dno_images.py` из
+`src/images/dno_ii1.jpg`: `python3 tools/make_dno_images.py src/images/dno_ii1.jpg src/images`.
+
