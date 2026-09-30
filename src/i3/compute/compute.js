@@ -40,7 +40,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к
 //   доскам дна), L, W, H, MASS, optimizeSizes, removeFloorBoards,
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
-//   xRaskosina, plankLayoutMode, plankLayoutValue, beamGapValue,
+//   xRaskosina, addParchment, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity }.
 function computeGost10198I3(input) {
   const { L, W, H, MASS, woodDensity } = input;
@@ -122,6 +122,10 @@ function computeGost10198I3(input) {
     torecNoRaskosinaDiagram: endPanel.noRaskosinaDiagram, torecFloors: endPanel.floors, k30plusW31: endPanel.floorSpan,
     H, t12: dno.t12, k41: len, bokOverhang: bokovoy.overhang, l42: bokovoy.raskQty, bokFloors: bokovoy.floors, bokVertSpan: bokovoy.vertSpan,
     k40: bokovoy.vertLen, w43: bokovoy.horizW, xRaskosina: !!input.xRaskosina, t20: wall,
+    // Пергамин (галочка «Добавить пергамин») - площадь внутренних поверхностей
+    // ящика по размерам груза: 2×(Д×Ш + Д×В + Ш×В), м², вверх до 0.01. Не
+    // пиломатериал - в объём, массу и норму времени не входит.
+    parchment: input.addParchment ? [{ name: 'Пергамин', area: Math.ceil(2 * (L * W + L * H + W * H) / 1e6 * 100 - 1e-9) / 100 }] : [],
   };
 
   // Отрицательное число в любом поле - невозможная геометрия.

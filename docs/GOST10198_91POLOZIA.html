@@ -1367,6 +1367,11 @@
           <input type="checkbox" id="solidRigidBase">
           <span>Сплошное жёсткое основание груза<span class="option-hint">Сечение полозьев — по п.1.6.5 (по массе груза), а не по Табл. 19</span></span>
         </label>
+        <div class="option-group-title">Обшивка</div>
+        <label>
+          <input type="checkbox" id="addParchment">
+          <span>Добавить пергамин<span class="option-hint">Площадь внутренних поверхностей ящика</span></span>
+        </label>
       </div>
     </div>
 
@@ -2712,7 +2717,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к
 //   доскам дна), L, W, H, MASS, optimizeSizes, removeFloorBoards,
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
-//   xRaskosina, plankLayoutMode, plankLayoutValue, beamGapValue,
+//   xRaskosina, addParchment, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity }.
 function computeGost10198I3(input) {
   const { L, W, H, MASS, woodDensity } = input;
@@ -2794,6 +2799,10 @@ function computeGost10198I3(input) {
     torecNoRaskosinaDiagram: endPanel.noRaskosinaDiagram, torecFloors: endPanel.floors, k30plusW31: endPanel.floorSpan,
     H, t12: dno.t12, k41: len, bokOverhang: bokovoy.overhang, l42: bokovoy.raskQty, bokFloors: bokovoy.floors, bokVertSpan: bokovoy.vertSpan,
     k40: bokovoy.vertLen, w43: bokovoy.horizW, xRaskosina: !!input.xRaskosina, t20: wall,
+    // Пергамин (галочка «Добавить пергамин») - площадь внутренних поверхностей
+    // ящика по размерам груза: 2×(Д×Ш + Д×В + Ш×В), м², вверх до 0.01. Не
+    // пиломатериал - в объём, массу и норму времени не входит.
+    parchment: input.addParchment ? [{ name: 'Пергамин', area: Math.ceil(2 * (L * W + L * H + W * H) / 1e6 * 100 - 1e-9) / 100 }] : [],
   };
 
   // Отрицательное число в любом поле - невозможная геометрия.
@@ -5678,7 +5687,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','xRaskosina'].forEach(persistCheckbox);
+['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','xRaskosina','addParchment'].forEach(persistCheckbox);
 
 // ГОСТ 10198-91, тип I-3: ручная настройка поясов планок (как у I-1) - две
 // взаимоисключающие галочки «Настроить число поясов планок» и «Настроить
@@ -5970,7 +5979,7 @@ function onBeamCountInputChange(){
 })();
 
 // ГОСТ 10198-91, тип I-3: вывод результата расчёта - плитки «Итог»,
-// спецификация (чертёж + таблица по каждому узлу) и предупреждения.
+// спецификация (чертёж + таблица по каждому узлу), пергамин и предупреждения.
 // calc - результат computeGost10198I3 (compute/compute.js).
 
 // Общий вид ящика (плитка «Итог» и печать).
@@ -6009,6 +6018,14 @@ function renderPartBlock(titleHtml, diagramHtml, tableHtml){
   return titleHtml + `<div class="spec-row-diagram"><div class="diagram-slot">` + diagramHtml + `</div>` + tableHtml + `</div>`;
 }
 
+// Строка свободного текста (пергамин) - табличка 1×1 на всю ширину. Текст
+// правится целиком; пустая ячейка - расчётный текст.
+function renderTextRow(sectionKey, rows, defaultText){
+  const row = rows[0], keys = tableRowKeys(rows);
+  const text = (typeof row.text === 'string') ? row.text : defaultText(row);
+  return `<div class="spec-table tape-table"><table data-section="${sectionKey}"><tbody><tr data-row-key="${escapeAttr(keys[0])}"><td class="editable-cell" contenteditable="true" data-role="text"${editedAttr(row, 'text')}>${escapeAttr(text)}</td></tr></tbody></table></div>`;
+}
+
 function renderBoardTables(calc, manualOverrides){
   let html = '';
   html += renderPartBlock(`<div class="part-title">Дно</div>`,
@@ -6023,6 +6040,10 @@ function renderBoardTables(calc, manualOverrides){
   html += renderPartBlock(`<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div>`,
     diagramBokovoyFor(calc),
     renderPartTable(calc.bokovoy, 'bokovoy', manualOverrides));
+  // Пергамин - под всеми узлами, попадает и в печать.
+  if(calc.parchment && calc.parchment.length){
+    html += renderTextRow('parchment', calc.parchment, r => `Пергамин ${r.area.toFixed(2)} м²`);
+  }
 
   const boardTablesEl = document.getElementById('boardTables');
   boardTablesEl.innerHTML = html;
@@ -6151,8 +6172,8 @@ function buildPrintHtml(){
 // обёртку calculate() из common-print.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
-// по 2 шт.).
-const I3_TABLE_SECTIONS = {dno:1, kryshka:1, endPanel:2, bokovoy:2};
+// по 2 шт.; пергамин в объём не входит).
+const I3_TABLE_SECTIONS = {dno:1, kryshka:1, endPanel:2, bokovoy:2, parchment:0};
 
 // Ручные толщины из таблицы: только ячейки толщины, которые пользователь
 // действительно правил (data-user-edited) - иначе нетронутая ячейка
@@ -6184,6 +6205,7 @@ function buildCalcInput(){
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addParchment: document.getElementById('addParchment').checked,
     plankLayoutMode,
     plankLayoutValue,
     beamGapValue,

@@ -3,8 +3,8 @@
 // обёртку calculate() из common-print.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
-// по 2 шт.).
-const I3_TABLE_SECTIONS = {dno:1, kryshka:1, endPanel:2, bokovoy:2};
+// по 2 шт.; пергамин в объём не входит).
+const I3_TABLE_SECTIONS = {dno:1, kryshka:1, endPanel:2, bokovoy:2, parchment:0};
 
 // Ручные толщины из таблицы: только ячейки толщины, которые пользователь
 // действительно правил (data-user-edited) - иначе нетронутая ячейка
@@ -36,6 +36,7 @@ function buildCalcInput(){
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addParchment: document.getElementById('addParchment').checked,
     plankLayoutMode,
     plankLayoutValue,
     beamGapValue,
