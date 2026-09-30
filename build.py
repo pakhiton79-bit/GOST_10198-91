@@ -168,6 +168,7 @@ II1_PARTS = {
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__II1_DIAGRAM_DNO_JS__*/": II1_DIR / "diagrams" / "dno.js",
     "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1_DIR / "diagrams" / "kryshka.js",
+    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1_DIR / "diagrams" / "panel-generated.js",
     "/*__II1_DIAGRAM_TOREC_JS__*/": II1_DIR / "diagrams" / "torec.js",
     "/*__II1_DIAGRAM_BOK_JS__*/": II1_DIR / "diagrams" / "bok.js",
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,

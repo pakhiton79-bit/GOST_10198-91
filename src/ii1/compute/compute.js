@@ -11,9 +11,9 @@
 // Ручные толщины из таблицы (manualOverrides) подставляются везде, где
 // участвуют, кроме полоза (t9) и торцового бруса дна (t11): их сечение -
 // табличная пара толщина×ширина, ручное значение - только число в таблице.
-// Расчёт идёт в браузере; функции узлов - из файлов этой папки, выбор готовых
-// чертежей (nearestKryshkaVariant, nearestTorecVariant, nearestBokVariant) -
-// из ../diagrams/, толщины «в наличии» (availableThicknesses,
+// Расчёт идёт в браузере; функции узлов - из файлов этой папки, выбор готового
+// чертежа крышки (nearestKryshkaVariant) - из ../diagrams/ (щиты рисуются на
+// любое число стоек, предупреждения о них нет), толщины «в наличии» (availableThicknesses,
 // roundUpToAvailable, thicknessLimitExceeded) - из ../options.js.
 
 // Ручные правки толщин. Значение из цикла согласования читается на каждой
@@ -153,15 +153,6 @@ function computeGost10198II1(input) {
   if (bokFrame.len <= 0) {
     return { error: `Внутренняя высота груза ${H} мм слишком мала для каркаса бокового щита — расчёт не выполняется.` };
   }
-  const torecVariant = nearestTorecVariant(torecFrame.count, torecFrame.floors);
-  if (!torecVariant.exact) {
-    warnings.push(`Щит торцевой: чертёж — ближайшая готовая схема (${torecVariant.count} стойки/${torecVariant.floors} эт.) вместо расчётной (${torecFrame.count} стоек/${torecFrame.floors} эт.); точное количество см. в таблице ниже.`);
-  }
-  const bokVariant = nearestBokVariant(bokFrame.count, bokFrame.floors);
-  if (!bokVariant.exact) {
-    warnings.push(`Щит боковой: чертёж — ближайшая готовая схема (${bokVariant.count} стойки/${bokVariant.floors} эт.) вместо расчётной (${bokFrame.count} стоек/${bokFrame.floors} эт.); точное количество см. в таблице ниже.`);
-  }
-
   // Раскосина - 2/3 толщины стойки.
   const rask = { t: ov('tRaskosina', round(s.stojkaT * 2 / 3), 'Толщина раскосины'), w: 100 };
   const endPanel = buildEndPanel(c, s, torecFrame, rask);
