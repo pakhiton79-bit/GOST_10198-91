@@ -36,7 +36,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { L, W, H, MASS, fasteningType ('skid' | 'floor_boards'),
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
-//   manualOverrides }.
+//   xRaskosina, manualOverrides }.
 function computeGost10198II1(input) {
   const { L, W, H, MASS } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
@@ -168,6 +168,7 @@ function computeGost10198II1(input) {
     // размеры» (только чертёж).
     t32Display: input.optimizeSizes ? skin.value + 2 : skin.value, edgeDistCross,
     sideFrameDisplay: s.stojkaT + skin.value + (input.optimizeSizes ? 2 : 0),
+    xRaskosina: !!input.xRaskosina,
   };
 
   // Отрицательное число в любом поле - невозможная геометрия.
