@@ -1369,6 +1369,10 @@
         </label>
         <div class="option-group-title">Обшивка</div>
         <label>
+          <input type="checkbox" id="addEndTape">
+          <span>Добавить ленту обшивки торцов</span>
+        </label>
+        <label>
           <input type="checkbox" id="addParchment">
           <span>Добавить пергамин<span class="option-hint">Площадь внутренних поверхностей ящика</span></span>
         </label>
@@ -2717,7 +2721,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к
 //   доскам дна), L, W, H, MASS, optimizeSizes, removeFloorBoards,
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
-//   xRaskosina, addParchment, plankLayoutMode, plankLayoutValue, beamGapValue,
+//   xRaskosina, addEndTape, addParchment, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity }.
 function computeGost10198I3(input) {
   const { L, W, H, MASS, woodDensity } = input;
@@ -2799,6 +2803,11 @@ function computeGost10198I3(input) {
     torecNoRaskosinaDiagram: endPanel.noRaskosinaDiagram, torecFloors: endPanel.floors, k30plusW31: endPanel.floorSpan,
     H, t12: dno.t12, k41: len, bokOverhang: bokovoy.overhang, l42: bokovoy.raskQty, bokFloors: bokovoy.floors, bokVertSpan: bokovoy.vertSpan,
     k40: bokovoy.vertLen, w43: bokovoy.horizW, xRaskosina: !!input.xRaskosina, t20: wall,
+    // Лента обшивки торцов (галочка «Добавить ленту обшивки торцов») - по
+    // периметру торца: длина одной ленты = (ширина груза + 2 доски бока +
+    // высота груза + доска крышки + доска дна) × 2, лент 2; без досок дна
+    // («Убрать доски дна») их толщина 0. В объём не входит.
+    endTape: input.addEndTape ? [{ name: 'Обшивочная лента', l: Math.ceil(((W + wall * 2) + (H + wall + dno.t12)) * 2 - 1e-9), qty: 2 }] : [],
     // Пергамин (галочка «Добавить пергамин») - площадь внутренних поверхностей
     // ящика по размерам груза: 2×(Д×Ш + Д×В + Ш×В), м², вверх до 0.01. Не
     // пиломатериал - в объём, массу и норму времени не входит.
@@ -5687,7 +5696,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','xRaskosina','addParchment'].forEach(persistCheckbox);
+['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','xRaskosina','addEndTape','addParchment'].forEach(persistCheckbox);
 
 // ГОСТ 10198-91, тип I-3: ручная настройка поясов планок (как у I-1) - две
 // взаимоисключающие галочки «Настроить число поясов планок» и «Настроить
@@ -5979,7 +5988,8 @@ function onBeamCountInputChange(){
 })();
 
 // ГОСТ 10198-91, тип I-3: вывод результата расчёта - плитки «Итог»,
-// спецификация (чертёж + таблица по каждому узлу), пергамин и предупреждения.
+// спецификация (чертёж + таблица по каждому узлу), лента обшивки, пергамин и
+// предупреждения.
 // calc - результат computeGost10198I3 (compute/compute.js).
 
 // Общий вид ящика (плитка «Итог» и печать).
@@ -6018,8 +6028,8 @@ function renderPartBlock(titleHtml, diagramHtml, tableHtml){
   return titleHtml + `<div class="spec-row-diagram"><div class="diagram-slot">` + diagramHtml + `</div>` + tableHtml + `</div>`;
 }
 
-// Строка свободного текста (пергамин) - табличка 1×1 на всю ширину. Текст
-// правится целиком; пустая ячейка - расчётный текст.
+// Строка свободного текста (лента обшивки, пергамин) - табличка 1×1 на всю
+// ширину. Текст правится целиком; пустая ячейка - расчётный текст.
 function renderTextRow(sectionKey, rows, defaultText){
   const row = rows[0], keys = tableRowKeys(rows);
   const text = (typeof row.text === 'string') ? row.text : defaultText(row);
@@ -6040,7 +6050,10 @@ function renderBoardTables(calc, manualOverrides){
   html += renderPartBlock(`<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div>`,
     diagramBokovoyFor(calc),
     renderPartTable(calc.bokovoy, 'bokovoy', manualOverrides));
-  // Пергамин - под всеми узлами, попадает и в печать.
+  // Лента обшивки и пергамин - под всеми узлами, попадают и в печать.
+  if(calc.endTape && calc.endTape.length){
+    html += renderTextRow('endTape', calc.endTape, r => `Обшивочная лента ${Math.ceil(r.l - 1e-9)} мм × 2`);
+  }
   if(calc.parchment && calc.parchment.length){
     html += renderTextRow('parchment', calc.parchment, r => `Пергамин ${r.area.toFixed(2)} м²`);
   }
@@ -6172,8 +6185,8 @@ function buildPrintHtml(){
 // обёртку calculate() из common-print.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
-// по 2 шт.; пергамин в объём не входит).
-const I3_TABLE_SECTIONS = {dno:1, kryshka:1, endPanel:2, bokovoy:2, parchment:0};
+// по 2 шт.; лента обшивки и пергамин в объём не входят).
+const I3_TABLE_SECTIONS = {dno:1, kryshka:1, endPanel:2, bokovoy:2, endTape:0, parchment:0};
 
 // Ручные толщины из таблицы: только ячейки толщины, которые пользователь
 // действительно правил (data-user-edited) - иначе нетронутая ячейка
@@ -6205,6 +6218,7 @@ function buildCalcInput(){
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addEndTape: document.getElementById('addEndTape').checked,
     addParchment: document.getElementById('addParchment').checked,
     plankLayoutMode,
     plankLayoutValue,
