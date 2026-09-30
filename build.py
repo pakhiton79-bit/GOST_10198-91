@@ -173,6 +173,7 @@ II1_PARTS = {
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__II1_OPTIONS_JS__*/": II1_DIR / "options.js",
+    "/*__II1_POSTS_JS__*/": II1_DIR / "posts.js",
     "/*__II1_RENDER_JS__*/": II1_DIR / "render-ii1.js",
     "/*__II1_PRINT_JS__*/": II1_DIR / "print-ii1.js",
     "/*__II1_CALC_JS__*/": II1_DIR / "calc-ii1.js",

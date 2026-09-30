@@ -9,9 +9,12 @@ const MIN_ANGLE = 20, MAX_ANGLE = 60; // допустимый угол раск�
 // Этажи: 2 при высоте груза больше 2000 мм или если на 1 этаже угол раскосины
 // при 2 стойках больше 60°. Стоек - не меньше, чем по шагу осей 800 мм, и
 // столько, чтобы угол раскосины был не меньше 20° (пока есть место).
+// manualCount - число стоек, заданное вручную (галочка «Настроить число
+// стоек»): крайние - по краям щита, остальные равномерно между ними; не
+// помещаются - sectionW ≤ 0 (проверяет compute.js).
 // Возвращает { count, floors, len (длина стойки), sectionW, hasRaskosina,
 // warn, tooNarrow }.
-function buildFrame(fillspace, panelH, H) {
+function buildFrame(fillspace, panelH, H, manualCount) {
   const spacingMinCount = minCountBySpan(fillspace, STOJKA_W, MAX_AXIS);
   const sectionW = n => clearGapBySpan(fillspace, STOJKA_W, n);
   const angleDeg = (n, h) => Math.atan2(h, sectionW(n)) * 180 / Math.PI;
@@ -23,6 +26,11 @@ function buildFrame(fillspace, panelH, H) {
   let floors = H > 2000 ? 2 : 1;
   if (floors === 1 && angleDeg(2, stojkaLen(1)) > MAX_ANGLE) floors = 2;
   const len = stojkaLen(floors);
+
+  if (manualCount > 0) {
+    const count = Math.max(2, Math.round(manualCount));
+    return { count, floors, len, sectionW: sectionW(count), hasRaskosina: len > 0, warn: null, tooNarrow: false };
+  }
 
   let warn = null;
   let angleCount = 2;
@@ -38,5 +46,19 @@ function buildFrame(fillspace, panelH, H) {
     return { count, floors, len: 0, sectionW: 0, hasRaskosina: false, warn: null, tooNarrow: true };
   }
   return { count, floors, len, sectionW: sectionW(count), hasRaskosina: len > 0, warn, tooNarrow: false };
+}
+
+// Угол раскосины каркаса к горизонтали, °.
+function frameAngleDeg(frame) {
+  return Math.atan2(frame.len, frame.sectionW) * 180 / Math.PI;
+}
+
+// Текст «N стоек не помещаются»: «21 стойка не помещается», «3 стойки не
+// помещаются», «5 стоек не помещаются».
+function tooManyPostsText(n) {
+  const n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return `${n} стойка не помещается`;
+  if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return `${n} стойки не помещаются`;
+  return `${n} стоек не помещаются`;
 }
 
