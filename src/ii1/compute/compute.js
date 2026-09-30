@@ -11,10 +11,10 @@
 // Ручные толщины из таблицы (manualOverrides) подставляются везде, где
 // участвуют, кроме полоза (t9) и торцового бруса дна (t11): их сечение -
 // табличная пара толщина×ширина, ручное значение - только число в таблице.
-// Расчёт идёт в браузере; функции узлов - из файлов этой папки, выбор готового
-// чертежа крышки (nearestKryshkaVariant) - из ../diagrams/ (щиты рисуются на
-// любое число стоек, предупреждения о них нет), толщины «в наличии» (availableThicknesses,
-// roundUpToAvailable, thicknessLimitExceeded) - из ../options.js.
+// Расчёт идёт в браузере; функции узлов - из файлов этой папки, толщины «в
+// наличии» (availableThicknesses, roundUpToAvailable, thicknessLimitExceeded) -
+// из ../options.js. Чертежи крышки и щитов рисуются на любое сочетание
+// брусьев/стоек, поэтому предупреждений «чертёж - ближайший вариант» нет.
 
 // Ручные правки толщин. Значение из цикла согласования читается на каждой
 // итерации, поэтому «меньше ГОСТ» не пишется в предупреждения сразу, а
@@ -88,10 +88,6 @@ function computeGost10198II1(input) {
   }
   if (s.longBeamExceeded) {
     warnings.push('Шаг осей брусьев крышки вне табл. продольных брусьев — сечение принято по крайнему значению.');
-  }
-  const kryshkaVariant = nearestKryshkaVariant(s.longBeamCount, s.crossBeamCount);
-  if (!kryshkaVariant.exact) {
-    warnings.push(`Крышка: чертёж — ближайшее готовое сочетание брусьев (${kryshkaVariant.longbeamCount}×прод./${kryshkaVariant.crossBeamCount}×попер.) вместо расчётного (${s.longBeamCount}×прод./${s.crossBeamCount}×попер.); точное количество см. в таблице ниже.`);
   }
   // Отступ от края крышки до края крайнего поперечного бруса (брусья - равномерно).
   const edgeDistCross = Math.round((L - s.crossBeamCount * s.crossBeamW) / (s.crossBeamCount + 1));
