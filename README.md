@@ -100,7 +100,8 @@ from a branch → папка `/docs`).
 - `src/ii1/print-ii1.js` — содержимое печати/PDF.
 - `src/ii1/diagrams/` — чертежи по узлам: `dno.js`, `kryshka.js`, `torec.js`,
   `bok.js`, `panel-generated.js` (щиты на 5 и более стоек — генерируемый
-  чертёж), `kryshka-generated.js` (крышка на сочетания брусьев без фото).
+  чертёж); крышка (`kryshka.js`) — всегда генерируемая, на любое сочетание
+  брусьев.
 
 Плюс:
 
