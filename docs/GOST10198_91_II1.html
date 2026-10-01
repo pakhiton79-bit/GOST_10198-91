@@ -1700,11 +1700,11 @@ else initSiteSettings();
       <div class="thickness-dropdown-panel" id="fasteningDropdownPanel">
         <div class="fastening-option-list">
           <label>
-            <input type="radio" name="fasteningType" value="skid" checked onchange="onFasteningTypeChange(this)">
+            <input type="radio" name="fasteningType" value="skid" onchange="onFasteningTypeChange(this)">
             <span>Крепление за полозья</span>
           </label>
           <label>
-            <input type="radio" name="fasteningType" value="floor_boards" onchange="onFasteningTypeChange(this)">
+            <input type="radio" name="fasteningType" value="floor_boards" checked onchange="onFasteningTypeChange(this)">
             <span>Крепление к доскам дна</span>
           </label>
         </div>
@@ -3136,7 +3136,7 @@ function tooManyCrossBeamsText(n) {
 // Поля «Тонкая настройка» (fineThickness) -> ключи ручных толщин: каркас -
 // одна толщина и у стоек, и у раскосин.
 const FINE_THICKNESS_KEYS = {
-  frame: ['tStojka', 'tRaskosina'], skid: ['t9'], skin: ['skinValue'], floor: ['floorBoardT'],
+  frame: ['tStojka', 'tRaskosina'], skid: ['t9'], sub: ['t10'], skin: ['skinValue'], floor: ['floorBoardT'],
   endBeam: ['t11'], crossBeam: ['t21'], longBeam: ['tLongbeam'],
 };
 function fineThicknessOverrides(fineThickness) {
@@ -3177,7 +3177,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
 //   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
-//   addParchment, fineThickness ({ frame, skid, skin, floor, endBeam,
+//   addParchment, fineThickness ({ frame, skid, sub, skin, floor, endBeam,
 //   crossBeam, longBeam } - толщины из «Тонкой настройки», мм; нет - по расчёту),
 //   manualOverrides, woodDensity }.
 function computeGost10198II1(input) {
@@ -5681,7 +5681,7 @@ const FASTENING_LABELS = {
   skid:         'Крепление за полозья',
   floor_boards: 'Крепление к доскам дна'
 };
-let fasteningType = 'skid';
+let fasteningType = 'floor_boards'; // по умолчанию - к доскам дна (по указанию пользователя)
 try{
   const saved = localStorage.getItem(FASTENING_STORAGE_KEY);
   if(saved === 'skid' || saved === 'floor_boards') fasteningType = saved;
@@ -5753,6 +5753,9 @@ function persistRadioGroup(name){
   }));
 }
 ['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','optimizeSizes','xRaskosina','addParchment'].forEach(persistCheckbox);
+// «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
+// галочка не должна действовать незаметно.
+if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
 persistRadioGroup('lidLayout');
 
 // ГОСТ 10198-91, тип II-1: ручная настройка числа деталей - стоек каркаса
@@ -5864,6 +5867,7 @@ Object.keys(MANUAL_COUNTS).forEach(kind=>{
 const FINE_THICKNESS_FIELDS = [
   { key: 'frame',     label: 'Каркас (стойки и раскосины)' },
   { key: 'skid',      label: 'Полозья' },
+  { key: 'sub',       label: 'Подполозные доски' },
   { key: 'skin',      label: 'Доски обшивки' },
   { key: 'floor',     label: 'Доски дна' },
   { key: 'endBeam',   label: 'Торцовые брусья дна' },

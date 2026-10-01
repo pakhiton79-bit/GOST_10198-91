@@ -31,7 +31,7 @@ function tooManyCrossBeamsText(n) {
 // Поля «Тонкая настройка» (fineThickness) -> ключи ручных толщин: каркас -
 // одна толщина и у стоек, и у раскосин.
 const FINE_THICKNESS_KEYS = {
-  frame: ['tStojka', 'tRaskosina'], skid: ['t9'], skin: ['skinValue'], floor: ['floorBoardT'],
+  frame: ['tStojka', 'tRaskosina'], skid: ['t9'], sub: ['t10'], skin: ['skinValue'], floor: ['floorBoardT'],
   endBeam: ['t11'], crossBeam: ['t21'], longBeam: ['tLongbeam'],
 };
 function fineThicknessOverrides(fineThickness) {
@@ -72,7 +72,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
 //   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
-//   addParchment, fineThickness ({ frame, skid, skin, floor, endBeam,
+//   addParchment, fineThickness ({ frame, skid, sub, skin, floor, endBeam,
 //   crossBeam, longBeam } - толщины из «Тонкой настройки», мм; нет - по расчёту),
 //   manualOverrides, woodDensity }.
 function computeGost10198II1(input) {
