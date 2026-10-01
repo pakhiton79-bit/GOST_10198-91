@@ -43,6 +43,7 @@ function buildCalcInput(){
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
     manualOverrides,
+    woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 }
 
@@ -64,10 +65,11 @@ function calculateNow(){
     showCalcError(calc.error);
     return;
   }
-  // Ручные правки таблицы (ширина, длина, кол-во) - поверх расчёта; объём и
-  // норма времени пересчитываются с их учётом.
+  // Ручные правки таблицы (ширина, длина, кол-во) - поверх расчёта; объём,
+  // норма времени и масса пересчитываются с их учётом.
   if(applyTableEdits(calc, tableEdits, II1_TABLE_SECTIONS)){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
+    calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
 
   updateManualCountsFromCalc(calc);
@@ -102,6 +104,7 @@ document.getElementById('boardTables').addEventListener('input', e=>{
 
 document.getElementById('boxView').src = BOX_II1_IMG_B64;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+initDensitySettings(WOOD_DENSITY_STORAGE_KEY);
 
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки), - подсвечиваются
 // красной рамкой (highlightErrorFields в common-calc-state.js).

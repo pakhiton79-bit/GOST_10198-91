@@ -16,6 +16,10 @@
 // из ../options.js. Чертежи крышки и щитов рисуются на любое сочетание
 // брусьев/стоек, поэтому предупреждений «чертёж - ближайший вариант» нет.
 
+// Плотность древесины по умолчанию, кг/м³; на клиенте настраивается
+// шестерёнкой у «Массы ящика».
+const WOOD_DENSITY_KG_M3 = 700;
+
 // «N поперечных брусьев не помещаются» - с согласованием по числу.
 function tooManyCrossBeamsText(n) {
   const n10 = n % 10, n100 = n % 100;
@@ -46,9 +50,9 @@ function makeThicknessOverrides(manualOverrides) {
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
 //   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
-//   manualOverrides }.
+//   manualOverrides, woodDensity }.
 function computeGost10198II1(input) {
-  const { L, W, H, MASS } = input;
+  const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
   const round = roundUpToAvailable;
   const { ov, belowGost, appliedCount } = makeThicknessOverrides(input.manualOverrides || {});
@@ -186,6 +190,8 @@ function computeGost10198II1(input) {
   // --- 4. Итог ---
   const totalVolume = dno.volume + kryshka.volume + 2 * endPanel.volume + 2 * bokovoy.volume;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
+  const woodRho = woodDensity > 0 ? woodDensity : WOOD_DENSITY_KG_M3;
+  const crateMass = totalVolume * woodRho;
 
   if (thicknessLimitExceeded) {
     warnings.push(`Расчётная толщина детали больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) — использовано значение по ГОСТ (нужен пиломатериал большей толщины).`);
@@ -199,7 +205,7 @@ function computeGost10198II1(input) {
 
   const result = {
     warnings, dno: dno.rows, kryshka: kryshka.rows, endPanel: endPanel.rows, bokovoy: bokovoy.rows,
-    outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni,
+    outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
     // Параметры чертежей.
     k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT, lidLayout: input.lidLayout,
     torecFrame, bokFrame, panelHeightFull,

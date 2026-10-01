@@ -323,7 +323,7 @@
   }
   .summary .value span{font-size:13px;font-weight:400;color:var(--ink-soft);}
 
-  /* У типа I-1 в "Итоге" 4 плитки вместо 3 (добавлена "Масса ящика") - при
+  /* В "Итоге" 4 плитки вместо 3 (добавлена "Масса ящика") - при
      3 узких колонках длинные подписи ("Расход пиломатериала") переносились
      по 3 строки нечитаемо. 2×2 даёт плиткам вдвое больше ширины. */
   .summary.summary-4{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -1343,7 +1343,7 @@
       <h2>Итог</h2>
       <div class="summary-row">
         <img class="box-view" id="boxView" alt="Общий вид ящика">
-        <div class="summary">
+        <div class="summary summary-4">
           <div>
             <div class="label">Наружные размеры</div>
             <div class="value" id="outDims">— <span>мм</span></div>
@@ -1351,6 +1351,11 @@
           <div>
             <div class="label">Расход пило&shy;материала</div>
             <div class="value" id="outVolume">— <span>м³</span></div>
+          </div>
+          <div class="time-tile">
+            <div class="label">Масса ящика</div>
+            <button type="button" class="time-settings-btn" id="densitySettingsBtn" onclick="onDensitySettingsOpen()" aria-label="Настройки плотности древесины" title="Плотность древесины">⚙</button>
+            <div class="value" id="outMass">— <span>кг</span></div>
           </div>
           <div class="time-tile">
             <div class="label">Норма времени</div>
@@ -1374,6 +1379,19 @@
     <div class="disclaimer" style="margin-top:20px;">Калькулятор может ошибаться. Проверяйте результаты перед использованием в производстве.</div>
   </div>
 
+  <div class="modal-overlay" id="densitySettingsOverlay" onclick="onDensitySettingsOverlayClick(event)" hidden>
+    <div class="modal-box">
+      <button type="button" class="modal-close" onclick="onDensitySettingsClose()" aria-label="Закрыть">✕</button>
+      <h3>Настройки массы ящика</h3>
+      <div class="modal-field">
+        <label id="woodDensityLabel" for="woodDensityInput">Плотность древесины, кг/м³</label>
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="woodDensitySlider" aria-labelledby="woodDensityLabel"></div>
+          <input type="number" id="woodDensityInput" step="10" min="1" oninput="onWoodDensityInputChange()">
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal-overlay" id="timeSettingsOverlay" onclick="onTimeSettingsOverlayClick(event)" hidden>
     <div class="modal-box">
       <button type="button" class="modal-close" onclick="onTimeSettingsClose()" aria-label="Закрыть">✕</button>
@@ -2615,6 +2633,10 @@ function buildBokovoy(c, s, frame, rask) {
 // из ../options.js. Чертежи крышки и щитов рисуются на любое сочетание
 // брусьев/стоек, поэтому предупреждений «чертёж - ближайший вариант» нет.
 
+// Плотность древесины по умолчанию, кг/м³; на клиенте настраивается
+// шестерёнкой у «Массы ящика».
+const WOOD_DENSITY_KG_M3 = 700;
+
 // «N поперечных брусьев не помещаются» - с согласованием по числу.
 function tooManyCrossBeamsText(n) {
   const n10 = n % 10, n100 = n % 100;
@@ -2645,9 +2667,9 @@ function makeThicknessOverrides(manualOverrides) {
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
 //   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
-//   manualOverrides }.
+//   manualOverrides, woodDensity }.
 function computeGost10198II1(input) {
-  const { L, W, H, MASS } = input;
+  const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
   const round = roundUpToAvailable;
   const { ov, belowGost, appliedCount } = makeThicknessOverrides(input.manualOverrides || {});
@@ -2785,6 +2807,8 @@ function computeGost10198II1(input) {
   // --- 4. Итог ---
   const totalVolume = dno.volume + kryshka.volume + 2 * endPanel.volume + 2 * bokovoy.volume;
   const normaVremeni = computeNormaVremeni(totalVolume, TIME_SETTINGS_STORAGE_KEY);
+  const woodRho = woodDensity > 0 ? woodDensity : WOOD_DENSITY_KG_M3;
+  const crateMass = totalVolume * woodRho;
 
   if (thicknessLimitExceeded) {
     warnings.push(`Расчётная толщина детали больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) — использовано значение по ГОСТ (нужен пиломатериал большей толщины).`);
@@ -2798,7 +2822,7 @@ function computeGost10198II1(input) {
 
   const result = {
     warnings, dno: dno.rows, kryshka: kryshka.rows, endPanel: endPanel.rows, bokovoy: bokovoy.rows,
-    outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni,
+    outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
     // Параметры чертежей.
     k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT, lidLayout: input.lidLayout,
     torecFrame, bokFrame, panelHeightFull,
@@ -5032,6 +5056,7 @@ function initDensitySettings(storageKey){
 const THICKNESS_STORAGE_KEY = 'silvan-gost10198-ii1-available-thickness';
 const AVAILABLE_THICKNESS_OPTIONS = [16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250];
 const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost10198-ii1-time-settings'; // шестерёнка «Нормы времени»
+const WOOD_DENSITY_STORAGE_KEY = 'silvan-gost10198-ii1-wood-density';   // шестерёнка «Массы ящика»
 const FASTENING_STORAGE_KEY = 'silvan-gost10198-ii1-fastening-type';
 const OPTIONS_STORAGE_PREFIX = 'silvan-gost10198-ii1-opt-';             // галочки и переключатели
 
@@ -5321,6 +5346,7 @@ Object.keys(MANUAL_COUNTS).forEach(kind=>{
 function renderSummary(calc){
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
+  document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;
   document.getElementById('outTime').innerHTML = `${calc.normaVremeni} <span>ч</span>`;
 }
 
@@ -5455,6 +5481,7 @@ function buildPrintHtml(){
 
   const outDimsText = document.getElementById('outDims').textContent.trim();
   const volumeText  = document.getElementById('outVolume').textContent.trim();
+  const massText    = document.getElementById('outMass').textContent.trim();
   const timeText    = document.getElementById('outTime').textContent.trim();
 
   const sections = printSections(printableBoardTables());
@@ -5484,6 +5511,7 @@ function buildPrintHtml(){
           <table class="print-plain-table">
             <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
             <tr><td class="k">Расход пило&shy;материала</td><td>${volumeText}</td></tr>
+            <tr><td class="k">Масса ящика</td><td>${massText}</td></tr>
             <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
           </table>
         </div>
@@ -5540,6 +5568,7 @@ function buildCalcInput(){
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
     manualOverrides,
+    woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 }
 
@@ -5561,10 +5590,11 @@ function calculateNow(){
     showCalcError(calc.error);
     return;
   }
-  // Ручные правки таблицы (ширина, длина, кол-во) - поверх расчёта; объём и
-  // норма времени пересчитываются с их учётом.
+  // Ручные правки таблицы (ширина, длина, кол-во) - поверх расчёта; объём,
+  // норма времени и масса пересчитываются с их учётом.
   if(applyTableEdits(calc, tableEdits, II1_TABLE_SECTIONS)){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
+    calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
 
   updateManualCountsFromCalc(calc);
@@ -5599,6 +5629,7 @@ document.getElementById('boardTables').addEventListener('input', e=>{
 
 document.getElementById('boxView').src = BOX_II1_IMG_B64;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+initDensitySettings(WOOD_DENSITY_STORAGE_KEY);
 
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки), - подсвечиваются
 // красной рамкой (highlightErrorFields в common-calc-state.js).
