@@ -73,6 +73,9 @@ COMMON_DIAGRAM_FIT_JS = SRC_DIR / "common-diagram-fit.js"
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
 COMMON_DIAGRAMS_JS = SRC_DIR / "common-diagrams.js"
 COMMON_TIMESETTINGS_JS = SRC_DIR / "common-timesettings.js"
+# Общие настройки сайта (шестерёнка вверху каждой страницы: тема оформления) -
+# встраивается в <head> всех страниц, чтобы тема ставилась до отрисовки.
+COMMON_SETTINGS_JS = SRC_DIR / "common-settings.js"
 # Сторонние библиотеки для «Скачать PDF» (downloadPdf() в common-print.js) -
 # html2canvas рендерит #printArea в канвас, jsPDF упаковывает его в
 # настоящий PDF-файл и сохраняет через doc.save() (реальная отдача файла
@@ -89,6 +92,7 @@ I3_DIR = SRC_DIR / "i3"
 I3_SHELL = I3_DIR / "shell.html"
 I3_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__I3_HELPERS_JS__*/": I3_DIR / "compute" / "helpers.js",
@@ -130,6 +134,7 @@ I1_SHELL = I1_DIR / "shell.html"
 # (backend/src/i1), остальное - интерфейс и чертежи (frontend/public/js/i1).
 I1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
@@ -164,6 +169,7 @@ II1_SHELL = II1_DIR / "shell.html"
 # (backend/src/ii1), остальное - интерфейс и чертежи (frontend/public/js/ii1).
 II1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__II1_HELPERS_JS__*/": II1_DIR / "compute" / "helpers.js",
@@ -203,6 +209,7 @@ LAUNCHER_DIR = SRC_DIR / "launcher"
 LAUNCHER_SHELL = LAUNCHER_DIR / "launcher.src.html"
 LAUNCHER_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__GOSTS_JS__*/": LAUNCHER_DIR / "gosts.js",
 }
 LAUNCHER_VARIANTS = [
@@ -216,6 +223,7 @@ LAUNCHER_VARIANTS = [
 TYPES_SHELL = LAUNCHER_DIR / "types.src.html"
 TYPES_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
 }
 TYPES_VARIANTS = [
     {
