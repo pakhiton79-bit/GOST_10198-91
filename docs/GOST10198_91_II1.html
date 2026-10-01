@@ -494,6 +494,9 @@
     background:var(--accent);
     border-color:var(--accent);
   }
+  .jump-slider-dense .jump-slider-mark{
+    display:none;
+  }
   .jump-slider-thumb{
     position:absolute;
     top:50%;
@@ -1257,11 +1260,11 @@
       <div class="option-group-title">Брусья крышки</div>
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм; при поперечном расположении досок крышки — и продольного бруса тоже</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм; при поперечном расположении досок крышки — и продольного бруса тоже. Отступ от стенки до крайнего поперечного бруса — на 2 мм больше</span></span>
       </label>
       <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
-        <span>Настроить число поперечных брусьев<span class="option-hint">Брусья — равномерно по длине крышки, отступы от стенок равны промежуткам между брусьями. Штатно — наименьшее число, при котором расстояние между краями брусьев не больше 700 мм</span></span>
+        <span>Настроить число поперечных брусьев<span class="option-hint">Брусья — равномерно по длине крышки, отступы от стенок равны промежуткам между брусьями (при «Оптимизировать размеры» — на 2 мм больше). Штатно — наименьшее число, при котором расстояния между краями брусьев и отступы не больше 700 мм</span></span>
       </label>
       <div id="crossBeamsRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
         <div class="modal-slider-row">
@@ -2260,6 +2263,7 @@ function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
 
 const CROSS_BEAM_W = 100;         // ширина поперечного бруса крышки (Табл. 14 - всегда 100 мм)
 const CROSS_BEAM_MAX_GAP = 700;   // расстояние между краями поперечных брусьев крышки (и от стенки до крайнего)
+const CROSS_BEAM_OPT_EDGE = 2;    // «Оптимизировать размеры»: отступ от стенки до крайнего бруса больше на 2 мм
 const LONG_BEAM_MAX_AXIS = 800;   // шаг осей продольных брусьев крышки
 const ITERATIONS = 4;
 
@@ -2269,7 +2273,7 @@ function stabilizeSizes(c) {
   let stojkaT = skinT, stojkaExceeded = false;
   let len = L, outerW = W, skidCalcWidth = W;
   let skid = { t: 0, w: 0, count: 0 }, skidTableInfo = null, polozSimpleExceeded = false;
-  let crossBeamT = 0, crossBeamExceeded = false, crossBeamCount = 0, standardCrossBeamCount = 0, crossBeamMarginBelowMin = false;
+  let crossBeamT = 0, crossBeamExceeded = false, crossBeamCount = 0, standardCrossBeamCount = 0;
   let longBeamT = 0, longBeamW = 100, longBeamCount = 0, longBeamExceeded = false;
   let floorBoardT = 0, floorBoardExceeded = false;
   let sub = { t: 0, w: 0, l: 0, qty: 0 };
@@ -2280,19 +2284,20 @@ function stabilizeSizes(c) {
     outerW = W + (stojkaT + skinT) * 2;
     skidCalcWidth = W + stojkaT * 2;
 
-    // Поперечные брусья крышки - равномерно по длине (отступы от стенок
-    // равны промежуткам между брусьями). Штатно - наименьшее число (не
-    // меньше 2), при котором промежутки между краями брусьев ≤ 700 мм:
-    // (L - n·100) / (n + 1) ≤ 700  =>  n ≥ (L - 700) / 800. Число,
-    // заданное вручную (c.lidCrossBeamCount), - целое не меньше 2, проверки
-    // отступа - в compute.js.
+    // Поперечные брусья крышки - равномерно по длине: отступы от стенок
+    // равны промежуткам между брусьями, при «Оптимизировать размеры» отступы
+    // больше на edgeAdd = 2 мм (промежутки соответственно меньше, см.
+    // compute.js). Штатно - наименьшее число (не меньше 2), при котором и
+    // отступы, и промежутки между краями брусьев ≤ 700 мм:
+    // (L - n·100) / (n + 1) + edgeAdd ≤ 700  =>  n ≥ (L - 700 + edgeAdd) / (800 - edgeAdd).
+    // Число, заданное вручную (c.lidCrossBeamCount), - целое не меньше 2,
+    // проверки отступа - в compute.js.
     const crossBeamRaw = crossBeamThickness(MASS, outerW);
     crossBeamExceeded = crossBeamRaw.exceeded;
     crossBeamT = ov('t21', round(crossBeamRaw.value), 'Толщина поперечного бруса крышки');
-    standardCrossBeamCount = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP) / (CROSS_BEAM_MAX_GAP + CROSS_BEAM_W)));
+    const edgeAdd = c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0;
+    standardCrossBeamCount = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP + edgeAdd) / (CROSS_BEAM_MAX_GAP + CROSS_BEAM_W - edgeAdd)));
     crossBeamCount = c.lidCrossBeamCount > 0 ? Math.max(2, Math.round(c.lidCrossBeamCount)) : standardCrossBeamCount;
-    const crossMinMargin = skinT + stojkaT + 10;
-    crossBeamMarginBelowMin = (L - crossBeamCount * CROSS_BEAM_W) / (crossBeamCount + 1) < crossMinMargin;
 
     // Полозья: при сплошном жёстком основании - п.1.6.5 и число по ширине,
     // иначе - Табл. 19.
@@ -2345,8 +2350,8 @@ function stabilizeSizes(c) {
   return {
     stojkaT, stojkaExceeded, len, outerW, outerH,
     skid, skidTableInfo, polozSimpleExceeded, sub,
-    crossBeamT, crossBeamW: CROSS_BEAM_W, crossBeamCount, standardCrossBeamCount, crossBeamExceeded, crossBeamMarginBelowMin,
-    crossBeamMaxGap: CROSS_BEAM_MAX_GAP,
+    crossBeamT, crossBeamW: CROSS_BEAM_W, crossBeamCount, standardCrossBeamCount, crossBeamExceeded,
+    crossBeamMaxGap: CROSS_BEAM_MAX_GAP, crossBeamEdgeAdd: c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0,
     longBeamT, longBeamW, longBeamCount, longBeamExceeded,
     floorBoardT, floorBoardExceeded,
   };
@@ -2668,25 +2673,30 @@ function computeGost10198II1(input) {
   if (s.crossBeamExceeded) {
     warnings.push('Масса или ширина ящика вне Табл. 14 — поперечный брус крышки принят по крайнему значению.');
   }
-  // Поперечные брусья крышки. Отступ от стенки до крайнего бруса (= промежуток
-  // между краями брусьев): штатно меньше минимума (обшивка + стойка + 10 мм)
-  // - только предупреждение; при числе, заданном вручную, меньше обшивки +
-  // стойки - блокировка, меньше минимума или больше 700 мм - предупреждение.
+  // Поперечные брусья крышки - равномерно: отступ от стенки до крайнего бруса
+  // (crossEdge) равен промежутку между краями соседних (crossGap), при
+  // «Оптимизировать размеры» отступ больше на 2 мм, промежутки - меньше.
+  // Отступ меньше толщины обшивки + стойки: при числе, заданном вручную, -
+  // блокировка, штатно (2 бруса) - предупреждение. Ручное число с
+  // расстоянием больше 700 мм - предупреждение. maxCrossBeamCount -
+  // наибольшее число брусьев без блокировки (край ползунка у клиента).
   const crossManual = input.lidCrossBeamCount > 0;
-  const crossEdge = (L - s.crossBeamCount * s.crossBeamW) / (s.crossBeamCount + 1);
-  if (crossManual) {
-    const hardMin = skin.value + s.stojkaT;
-    if (crossEdge < hardMin) {
-      return { error: `${tooManyCrossBeamsText(s.crossBeamCount)} в крышке: отступ от стенки до крайнего бруса ${Math.round(crossEdge)} мм меньше толщины обшивки и стойки (${Math.round(hardMin)} мм) — уменьшите число брусьев. Расчёт не выполняется.` };
+  const crossN = s.crossBeamCount, crossW = s.crossBeamW, crossAdd = s.crossBeamEdgeAdd;
+  const crossEdge = (L - crossN * crossW) / (crossN + 1) + crossAdd;
+  const crossGap = (L - crossN * crossW - 2 * crossEdge) / (crossN - 1);
+  const crossHardMin = skin.value + s.stojkaT;
+  const crossMinGap = crossHardMin - crossAdd; // отступ без надбавки, при котором крайний брус ещё не заходит на стенку
+  const maxCrossBeamCount = Math.max(2, Math.floor((L - crossMinGap) / (crossW + crossMinGap) + 1e-9));
+  if (crossEdge < crossHardMin) {
+    if (crossManual) {
+      return { error: `${tooManyCrossBeamsText(crossN)} в крышке: отступ от стенки до крайнего бруса ${Math.round(crossEdge)} мм меньше толщины обшивки и стойки (${Math.round(crossHardMin)} мм) — уменьшите число брусьев. Расчёт не выполняется.` };
     }
-    if (s.crossBeamMarginBelowMin) {
-      warnings.push(`Отступ от стенки до крайнего поперечного бруса крышки ${Math.round(crossEdge)} мм меньше минимума (обшивка + стойка + 10 мм = ${Math.round(hardMin + 10)} мм).`);
-    }
-    if (crossEdge > s.crossBeamMaxGap) {
-      warnings.push(`Расстояние между краями поперечных брусьев крышки ${Math.round(crossEdge)} мм больше ${s.crossBeamMaxGap} мм.`);
-    }
-  } else if (s.crossBeamMarginBelowMin) {
-    warnings.push('Отступ от края крышки до крайнего бруса меньше минимума (обшивка + стойка + 10 мм) даже при 2 брусьях — меньше 2 поперечных брусьев не ставится.');
+    warnings.push(`Отступ от стенки до крайнего поперечного бруса крышки ${Math.round(crossEdge)} мм меньше толщины обшивки и стойки (${Math.round(crossHardMin)} мм) даже при 2 брусьях.`);
+  }
+  if (crossManual && crossGap > s.crossBeamMaxGap) {
+    warnings.push(`Расстояние между краями поперечных брусьев крышки ${Math.round(crossGap)} мм больше ${s.crossBeamMaxGap} мм.`);
+  } else if (crossManual && crossEdge > s.crossBeamMaxGap) {
+    warnings.push(`Отступ от стенки до крайнего поперечного бруса крышки ${Math.round(crossEdge)} мм больше ${s.crossBeamMaxGap} мм.`);
   }
   if (s.polozSimpleExceeded) {
     warnings.push('Масса вне диапазона табл. полозьев со сплошным основанием (500–20000 кг) — сечение полоза принято по крайнему значению.');
@@ -2709,8 +2719,6 @@ function computeGost10198II1(input) {
   if (s.longBeamExceeded) {
     warnings.push('Шаг осей брусьев крышки вне табл. продольных брусьев — сечение принято по крайнему значению.');
   }
-  // Отступ от края крышки до края крайнего поперечного бруса (брусья - равномерно).
-  const edgeDistCross = Math.round(crossEdge);
   if (s.floorBoardExceeded) {
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 — толщина доски дна принята по крайнему значению.');
   }
@@ -2797,11 +2805,14 @@ function computeGost10198II1(input) {
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
     // Толщина обшивки и рамы на чертеже крышки: +2 мм при «Оптимизировать
     // размеры» (только чертёж).
-    t32Display: input.optimizeSizes ? skin.value + 2 : skin.value, edgeDistCross,
+    t32Display: input.optimizeSizes ? skin.value + 2 : skin.value,
+    // Отступ от стенки до крайнего поперечного бруса и расстояние между
+    // краями соседних (на чертеже крышки).
+    edgeDistCross: Math.round(crossEdge), gapDistCross: Math.round(crossGap),
     sideFrameDisplay: s.stojkaT + skin.value + (input.optimizeSizes ? 2 : 0),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
-    standardCrossBeamCount: s.standardCrossBeamCount,
+    standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
   };
 
   // Отрицательное число в любом поле - невозможная геометрия.
@@ -3076,13 +3087,14 @@ function diagramDno(stojkaVal, skinVal, skidWidthVal, outerLenVal, skidCount){
 // границы, без досок (по указанию пользователя), продольные брусья
 // светло-серые (крайние - вровень с краями крышки, по длине - с отступом на
 // толщину торцевой доски), поперечные - тёмно-серые, короче крышки на
-// толщину бокового щита сверху и снизу. Поперечные брусья: зазоры -
-// edgeDist, ширина - crossBeamW (в масштабе длины крышки), группа - по
-// середине крышки; не помещаются с зазором - сужаются; если так плотно, что брусья
-// слились бы и так, - заглушка.
+// толщину бокового щита сверху и снизу. Поперечные брусья: промежутки -
+// gapDist, ширина - crossBeamW (в масштабе длины крышки), группа - по
+// середине крышки (отступы от краёв получаются равными); не помещаются с
+// зазором - сужаются; если так плотно, что брусья слились бы и так, - заглушка.
 // Подписи - как на фото того же вида (без продольных - «0×3», с продольными -
 // «4×4»), кроме привязанных к первому поперечному брусу (отступ от края и
-// толщина бокового щита) - они сдвигаются к его фактическому месту.
+// толщина бокового щита) - они сдвигаются к его фактическому месту. Плюс
+// размер «расстояние между краями соседних брусьев» (kryshkaGapRecords).
 
 const KRYSHKA_GEN = {
   0: { tpl: '0_3', IW: 1201, IH: 761, x0: 7.5, x1: 1190.5, y0: 9.5, y1: 751.5 },
@@ -3092,18 +3104,18 @@ const KRYSHKA_GEN_BEAM = 74;      // ширина бруса (как на фот
 const KRYSHKA_GEN_INSET = 37.5;   // отступ брусьев от края: торцевая доска / боковой щит
 const KRYSHKA_GEN_STROKE = 5.5;
 
-function kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, edgeDistVal, crossBeamW){
+function kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, gapDistVal, crossBeamW){
   const G = longbeamCount > 0 ? KRYSHKA_GEN[2] : KRYSHKA_GEN[0];
   const f = v => v.toFixed(1);
   const rect = (x0, y0, x1, y1, fill) => `<rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}" fill="${fill}"/>`;
-  // Поперечные брусья: шаг - по расчёту (ширина бруса + зазор edgeDist, в
-  // масштабе длины крышки), вся группа - по середине крышки (симметрично:
+  // Поперечные брусья: шаг - по расчёту (ширина бруса + промежуток gapDist,
+  // в масштабе длины крышки), вся группа - по середине крышки (симметрично:
   // отступ в расчёте - от внутренней стенки, а крышка на чертеже - по
   // наружным размерам).
   const span = G.x1 - G.x0, pxPerMm = span / lengthVal;
   const bw = crossBeamW > 0 ? crossBeamW : 100;
-  const startMm = (lengthVal - (crossBeamCount * bw + (crossBeamCount - 1) * edgeDistVal)) / 2;
-  const centers = Array.from({length: crossBeamCount}, (_, i) => G.x0 + (startMm + bw / 2 + i * (bw + edgeDistVal)) * pxPerMm);
+  const startMm = (lengthVal - (crossBeamCount * bw + (crossBeamCount - 1) * gapDistVal)) / 2;
+  const centers = Array.from({length: crossBeamCount}, (_, i) => G.x0 + (startMm + bw / 2 + i * (bw + gapDistVal)) * pxPerMm);
   const pitch = crossBeamCount > 1 ? centers[1] - centers[0] : span;
   // брусья сужаются, если не помещаются с зазором (не меньше 40% шага)
   const beamW = Math.min(KRYSHKA_GEN_BEAM, 0.6 * pitch, 1.2 * (centers[0] - G.x0));
@@ -3124,7 +3136,8 @@ function kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, edgeDistVal,
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${G.IW}" height="${G.IH}" viewBox="0 0 ${G.IW} ${G.IH}">`
     + `<rect width="100%" height="100%" fill="#fff"/>`
     + `<g stroke="#000" stroke-width="${KRYSHKA_GEN_STROKE}">${shapes}</g></svg>`;
-  return { img: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), IW: G.IW, IH: G.IH, tpl: G.tpl, firstBeamX: centers[0] - beamW / 2, beamW };
+  return { img: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), IW: G.IW, IH: G.IH, tpl: G.tpl,
+    firstBeamX: centers[0] - beamW / 2, secondBeamX: centers[1] - beamW / 2, beamW };
 }
 
 // Подписи сгенерированной крышки: записи фото-шаблона, у которых подписи
@@ -3169,6 +3182,24 @@ function kryshkaGeneratedRecords(g, torecBoard, sideFrame, width, length, edgeDi
   ];
 }
 
+// Размер «расстояние между краями 1-го и 2-го поперечных брусьев» - как
+// подпись отступа: линия между брусьями у края крышки (без продольных
+// брусьев - у нижнего, с ними - у верхнего, под первым продольным) и
+// выноска к её середине от подписи за чертежом (снизу / сверху - там, где
+// нет других размеров). Подпись между брусьями не помещается никогда (даже
+// при 2 брусьях промежуток меньше трети длины крышки), поэтому всегда снаружи.
+function kryshkaGapRecords(g, gapDist){
+  const x1 = g.firstBeamX + g.beamW, x2 = g.secondBeamX, mid = (x1 + x2) / 2;
+  const below = g.tpl === '0_3';
+  const y = below ? 690 : 120;
+  // дальше подписи толщины бокового щита, чтобы не касаться её
+  const tail = below ? g.IH + 100 : -100, ly = below ? tail + 16 : tail - 16;
+  return [
+    {type:'line', x1, y1:y, x2, y2:y},
+    {type:'single', x1:mid, y1:tail, x2:mid, y2:y, lx:mid, ly, text:gapDist+' мм'},
+  ];
+}
+
 // Ширина поперечного бруса крышки - из таблицы крышки (для расстановки
 // брусьев на сгенерированном чертеже).
 function crossBeamWidth(kryshkaRows){
@@ -3184,13 +3215,16 @@ function crossBeamWidth(kryshkaRows){
 // толщина доски обшивки бока (sideFrameDisplay - та же косметическая +2мм
 // надбавка при «Оптимизировать размеры», по аналогии с torecBoardVal).
 // widthVal/lengthVal - наружные ширина/длина ящика (outerW/k9Base).
-// edgeDistVal - расстояние от края крышки до края крайнего поперечного
-// бруса (calc.edgeDistCross) - по методике I-3: брусья делят длину крышки
-// на (count+1) равных промежутков, а не flush-edge, как у стоек каркаса.
-function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal, crossBeamW){
-  const g = kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, edgeDistVal, crossBeamW);
+// edgeDistVal - расстояние от стенки до края крайнего поперечного бруса
+// (calc.edgeDistCross), gapDistVal - между краями соседних брусьев
+// (calc.gapDistCross): брусья делят длину крышки на (count+1) равных
+// промежутков (при «Оптимизировать размеры» крайние на 2 мм больше), а не
+// flush-edge, как у стоек каркаса.
+function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal, crossBeamW, gapDistVal){
+  const g = kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, gapDistVal, crossBeamW);
   if(!g) return diagramTooDense();
-  const records = kryshkaGeneratedRecords(g, dimLabel(torecBoardVal), dimLabel(sideFrameVal), dimLabel(widthVal), dimLabel(lengthVal), dimLabel(edgeDistVal));
+  const records = kryshkaGeneratedRecords(g, dimLabel(torecBoardVal), dimLabel(sideFrameVal), dimLabel(widthVal), dimLabel(lengthVal), dimLabel(edgeDistVal))
+    .concat(kryshkaGapRecords(g, dimLabel(gapDistVal)));
   return renderDiagram(g.img, 'Крышка - схема расположения деталей', g.IW, g.IH, records, widthPxOverride, photoStrokeScale(g.IW));
 }
 
@@ -4797,8 +4831,13 @@ function timeSettingsNearestStepIndex(steps, value){
 // одну остановку за раз (никогда не между ними), а left/width анимируются
 // через CSS transition (см. style.css) - "прыжками, но плавно" по
 // формулировке пользователя.
+// Больше стольких шагов - метки не рисуются (на узком экране сливаются в
+// сплошную рябь): ползунок выглядит сплошным, но по-прежнему ходит по шагам.
+const JUMP_SLIDER_MAX_MARKS = 25;
+
 function createJumpSlider(container, steps, onChange){
   container.classList.add('jump-slider');
+  container.classList.toggle('jump-slider-dense', steps.length > JUMP_SLIDER_MAX_MARKS);
   container.setAttribute('role', 'slider');
   if(!container.hasAttribute('tabindex')) container.setAttribute('tabindex', '0');
   container.setAttribute('aria-valuemin', steps[0]);
@@ -5177,29 +5216,38 @@ persistRadioGroup('lidLayout');
 
 // ГОСТ 10198-91, тип II-1: ручная настройка числа деталей - стоек каркаса
 // (отдельно для торцевого и бокового щита) и поперечных брусьев крышки
-// (галочки «Настроить число …»). У включённой - ползунок (штатное число ±3)
-// и поле для любого значения от 2. Расстановку считает расчёт: крайние
-// стойки - по краям щита, остальные равномерно между ними; брусья крышки -
-// равномерно, отступы от стенок равны промежуткам. Центр ползунка при
-// включении - штатное число из последнего расчёта (до первого расчёта - 3).
+// (галочки «Настроить число …»). У включённой - ползунок и поле для любого
+// значения от 2. Ползунок стоек - штатное число ±3, брусьев крышки - все
+// числа от 2 до наибольшего, при котором расчёт не блокируется (из
+// последнего расчёта; до первого расчёта - штатное ±3). Расстановку считает
+// расчёт: крайние стойки - по краям щита, остальные равномерно между ними;
+// брусья крышки - равномерно, отступы от стенок равны промежуткам (при
+// «Оптимизировать размеры» - на 2 мм больше). Центр ползунка при включении -
+// штатное число из последнего расчёта (до первого расчёта - 3).
 const MANUAL_COUNT_DEFAULT_CENTER = 3;
-// kind -> id элементов, ключ localStorage, поле штатного числа в результате расчёта.
+// kind -> id элементов, ключ localStorage, поля штатного и наибольшего
+// (только у брусьев крышки) числа в результате расчёта.
 const MANUAL_COUNTS = {
   torec: { checkbox: 'customTorecPosts', row: 'torecPostsRow', slider: 'torecPostsSlider', input: 'torecPostsInput',
            storageKey: OPTIONS_STORAGE_PREFIX + 'torecPostCount', standardField: 'standardTorecPostCount' },
   bok:   { checkbox: 'customBokPosts', row: 'bokPostsRow', slider: 'bokPostsSlider', input: 'bokPostsInput',
            storageKey: OPTIONS_STORAGE_PREFIX + 'bokPostCount', standardField: 'standardBokPostCount' },
   cross: { checkbox: 'customCrossBeams', row: 'crossBeamsRow', slider: 'crossBeamsSlider', input: 'crossBeamsInput',
-           storageKey: OPTIONS_STORAGE_PREFIX + 'crossBeamCount', standardField: 'standardCrossBeamCount' },
+           storageKey: OPTIONS_STORAGE_PREFIX + 'crossBeamCount', standardField: 'standardCrossBeamCount', maxField: 'maxCrossBeamCount' },
 };
 const manualCount = { torec: null, bok: null, cross: null };   // null - штатно
 const lastStandardCount = { torec: null, bok: null, cross: null };
+const lastMaxCount = { torec: null, bok: null, cross: null };
 const manualCountSliders = { torec: null, bok: null, cross: null };
 
-function manualCountSteps(center){
-  center = Math.max(2, Math.round(center));
+function manualCountSteps(kind, center){
   const steps = [];
-  for(let i=-3;i<=3;i++) steps.push(Math.max(2, center+i));
+  if(lastMaxCount[kind] >= 2){
+    for(let v=2; v<=lastMaxCount[kind]; v++) steps.push(v);
+  } else {
+    center = Math.max(2, Math.round(center));
+    for(let i=-3;i<=3;i++) steps.push(Math.max(2, center+i));
+  }
   return Array.from(new Set(steps)).sort((a,b)=>a-b);
 }
 function saveManualCount(kind){
@@ -5207,7 +5255,7 @@ function saveManualCount(kind){
 }
 function rebuildManualCountSlider(kind, center, value){
   const els = MANUAL_COUNTS[kind];
-  manualCountSliders[kind] = createJumpSlider(document.getElementById(els.slider), manualCountSteps(center), v=>{
+  manualCountSliders[kind] = createJumpSlider(document.getElementById(els.slider), manualCountSteps(kind, center), v=>{
     manualCount[kind] = v;
     document.getElementById(els.input).value = v;
     saveManualCount(kind);
@@ -5244,9 +5292,16 @@ function onManualCountInputChange(kind){
   invalidateCalc();
 }
 
-// После расчёта - запомнить штатные числа (центр ползунков).
+// После расчёта - запомнить штатные числа (центр ползунков) и наибольшие;
+// включённый ползунок с наибольшим числом - перестроить под новый диапазон.
 function updateManualCountsFromCalc(calc){
-  Object.keys(MANUAL_COUNTS).forEach(kind=>{ lastStandardCount[kind] = calc[MANUAL_COUNTS[kind].standardField]; });
+  Object.keys(MANUAL_COUNTS).forEach(kind=>{
+    const els = MANUAL_COUNTS[kind];
+    lastStandardCount[kind] = calc[els.standardField];
+    if(!els.maxField) return;
+    lastMaxCount[kind] = calc[els.maxField];
+    if(manualCount[kind] !== null) rebuildManualCountSlider(kind, manualCount[kind], manualCount[kind]);
+  });
 }
 
 // Восстановление при открытии страницы.
@@ -5311,7 +5366,7 @@ function renderBoardTables(calc, manualOverrides){
     diagramDno(calc.t_stojka, calc.skin.value, torecW, calc.k9Base, dnoSkidCount(calc.dno)),
     renderPartTable(calc.dno, 'dno', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Крышка</div>`,
-    diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka)),
+    diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
     renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Щит торцевой (2 шт.)</div>`,
     diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW),
