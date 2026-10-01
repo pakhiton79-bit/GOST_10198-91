@@ -44,6 +44,7 @@ function buildCalcInput(){
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
     manualOverrides,
+    fineThickness: readFineThickness(),
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 }

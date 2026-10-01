@@ -1191,6 +1191,44 @@
   .fastening-option-list input{margin-top:3px;flex:0 0 auto;accent-color:var(--accent);}
   .fastening-option-disabled{opacity:.45;cursor:not-allowed !important;}
   .fastening-option-disabled input{cursor:not-allowed !important;}
+  /* «Тонкая настройка» толщин (II-1, js/ii1/fine-thickness.js) -
+     раскрывающаяся группа под фильтром толщин «в наличии». */
+  .fine-thickness{margin-top:16px;border-top:1px solid var(--rule);padding-top:14px;}
+  .fine-thickness summary{
+    cursor:pointer;
+    list-style:none;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .fine-thickness summary::-webkit-details-marker{display:none;}
+  .fine-thickness summary::before{
+    content:'';
+    width:7px;height:7px;
+    border-right:2px solid var(--ink-soft);
+    border-bottom:2px solid var(--ink-soft);
+    transform:rotate(-45deg);
+    transition:transform .15s ease;
+  }
+  .fine-thickness[open] summary::before{transform:rotate(45deg);}
+  .fine-thickness summary:hover{color:var(--accent);}
+  .fine-thickness-body{margin-top:14px;}
+  .fine-thickness-body .option-hint{font-size:12px;color:var(--ink-soft);margin-bottom:14px;}
+  .fine-thickness-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:14px 16px;
+  }
+  .fine-thickness-field{display:flex;flex-direction:column;justify-content:flex-end;}
+  @media screen and (max-width:640px){
+    .fine-thickness-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  }
+  .fine-thickness-hint{display:block;margin-top:2px;font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;}
+  .fine-thickness-field input[type=number]{padding:10px 12px;font-size:15px;}
+  .fine-thickness-field input::placeholder{color:var(--ink-soft);opacity:.7;}
   .fastening-option-list .option-hint{
     display:block;
     font-size:12px;
@@ -1643,6 +1681,13 @@ else initSiteSettings();
       </div>
     </div>
     <div class="note" id="thicknessNote" style="display:none;margin-top:14px;"></div>
+    <details class="fine-thickness" id="fineThickness">
+      <summary>Тонкая настройка</summary>
+      <div class="fine-thickness-body">
+        <div class="option-hint">Толщины деталей, мм. Пустое поле - по расчёту; заполненное - вместо расчётной. Правка толщины в таблице деталей главнее.</div>
+        <div class="fine-thickness-grid" id="fineThicknessGrid"></div>
+      </div>
+    </details>
   </div>
 
   <div class="card">
@@ -2768,6 +2813,10 @@ function stabilizeSizes(c) {
       skid = { t: sel.h, w: sel.w, count: sel.count };
       skidTableInfo = sel;
     }
+    // Толщина полоза из «Тонкой настройки» - в расчёт (высота ящика, объём);
+    // ширина - по таблице. tGost - по ГОСТ (для таблицы деталей, см. dno.js).
+    skid.tGost = skid.t;
+    skid.t = ov('t9', skid.t, 'Толщина полоза', { cell: false });
 
     // Подполозная доска (п.1.6.11): при погрузке погрузчиком - не тоньше 50 мм.
     const t10Raw = c.forkliftLoading ? Math.max(subfloorThicknessRaw(MASS), 50) : subfloorThicknessRaw(MASS);
@@ -2823,9 +2872,10 @@ function buildDno(c, s, subLengthWarn) {
   const { skid, sub, len } = s;
   const rows = [];
 
-  // Ручная толщина полоза (t9) и торцового бруса (t11) - только число в
-  // таблице: их сечение - табличная пара толщина×ширина.
-  rows.push({ name: 'Полоз', t: ov('t9', skid.t, 'Толщина полоза'), w: skid.w, l: len, qty: skid.count, overrideKey: 't9' });
+  // Полоз (t9) и торцовый брус (t11): толщина из «Тонкой настройки» - в
+  // расчёте (skid.t, beam.t), правка ячейки таблицы - только число в
+  // таблице (их сечение - табличная пара толщина×ширина).
+  rows.push({ name: 'Полоз', t: ov('t9', skid.tGost, 'Толщина полоза'), w: skid.w, l: len, qty: skid.count, overrideKey: 't9' });
   if (!removeSkidBoards) {
     rows.push({ name: 'Подполозная доска', t: sub.t, w: sub.w, l: subLengthWarn ? '⚠' : sub.l, qty: sub.qty, overrideKey: 't10' });
   }
@@ -2834,8 +2884,9 @@ function buildDno(c, s, subLengthWarn) {
   if (endBeam.exceeded) {
     warnings.push('Масса вне диапазона п.1.6.8 (≤20000 кг) - сечение торцового бруса дна принято по крайнему значению.');
   }
-  const beam = { t: round(endBeam.h), w: endBeam.w, l: W, qty: 2 };
-  rows.push({ name: 'Торцовый брус дна', t: ov('t11', beam.t, 'Толщина торцового бруса дна'), w: beam.w, l: beam.l, qty: beam.qty, overrideKey: 't11' });
+  const beamGostT = round(endBeam.h);
+  const beam = { t: ov('t11', beamGostT, 'Толщина торцового бруса дна', { cell: false }), w: endBeam.w, l: W, qty: 2 };
+  rows.push({ name: 'Торцовый брус дна', t: ov('t11', beamGostT, 'Толщина торцового бруса дна'), w: beam.w, l: beam.l, qty: beam.qty, overrideKey: 't11' });
 
   // Доски дна - между торцовыми брусьями, поперёк ящика.
   const floorT = s.floorBoardT, floorLen = W;
@@ -3082,15 +3133,37 @@ function tooManyCrossBeamsText(n) {
   return `${n} поперечных брусьев не помещаются`;
 }
 
-// Ручные правки толщин. Значение из цикла согласования читается на каждой
-// итерации, поэтому «меньше ГОСТ» не пишется в предупреждения сразу, а
-// копится в belowGost и выводится один раз в конце.
-function makeThicknessOverrides(manualOverrides) {
+// Поля «Тонкая настройка» (fineThickness) -> ключи ручных толщин: каркас -
+// одна толщина и у стоек, и у раскосин.
+const FINE_THICKNESS_KEYS = {
+  frame: ['tStojka', 'tRaskosina'], skid: ['t9'], skin: ['skinValue'], floor: ['floorBoardT'],
+  endBeam: ['t11'], crossBeam: ['t21'], longBeam: ['tLongbeam'],
+};
+function fineThicknessOverrides(fineThickness) {
+  const out = {};
+  Object.keys(FINE_THICKNESS_KEYS).forEach(f => {
+    const v = fineThickness && fineThickness[f];
+    if (v > 0) FINE_THICKNESS_KEYS[f].forEach(k => { out[k] = v; });
+  });
+  return out;
+}
+
+// Ручные толщины: правка ячейки таблицы деталей (manualOverrides) главнее
+// поля «Тонкая настройка» (fine), то - главнее расчёта по ГОСТ. opts.cell /
+// opts.fine = false - не учитывать этот источник (полоз и торцовый брус
+// дна: поле тонкой настройки идёт в расчёт - высоту, объём, массу, а правка
+// ячейки - только число в таблице). Значение из цикла согласования
+// читается на каждой итерации, поэтому «меньше ГОСТ» не пишется в
+// предупреждения сразу, а копится в belowGost и выводится один раз в конце.
+function makeThicknessOverrides(manualOverrides, fine) {
   const belowGost = {};
   let applied = 0;
-  function ov(key, gostValue, label) {
-    const v = manualOverrides[key];
-    if (v === undefined || v === null || Number.isNaN(v) || v <= 0) return gostValue;
+  const valid = v => !(v === undefined || v === null || Number.isNaN(v) || v <= 0);
+  function ov(key, gostValue, label, opts) {
+    const useCell = !opts || opts.cell !== false, useFine = !opts || opts.fine !== false;
+    const v = useCell && valid(manualOverrides[key]) ? manualOverrides[key]
+      : useFine && valid(fine[key]) ? fine[key] : undefined;
+    if (v === undefined) return gostValue;
     applied++;
     if (v < gostValue) belowGost[key] = { value: v, gostValue, label };
     else delete belowGost[key];
@@ -3104,13 +3177,14 @@ function makeThicknessOverrides(manualOverrides) {
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
 //   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
-//   addParchment,
+//   addParchment, fineThickness ({ frame, skid, skin, floor, endBeam,
+//   crossBeam, longBeam } - толщины из «Тонкой настройки», мм; нет - по расчёту),
 //   manualOverrides, woodDensity }.
 function computeGost10198II1(input) {
   const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
   const round = roundUpToAvailable;
-  const { ov, belowGost, appliedCount } = makeThicknessOverrides(input.manualOverrides || {});
+  const { ov, belowGost, appliedCount } = makeThicknessOverrides(input.manualOverrides || {}, fineThicknessOverrides(input.fineThickness));
 
   // --- 1. Входные данные, обшивка ---
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
@@ -5780,6 +5854,62 @@ Object.keys(MANUAL_COUNTS).forEach(kind=>{
   showManualCount(kind, saved, saved);
 });
 
+// ГОСТ 10198-91, тип II-1: «Тонкая настройка» толщин - раскрывающаяся группа
+// в карточке «Толщины пиломатериала в наличии». Пустое поле - толщина по
+// расчёту, заполненное - эта толщина в расчёте вместо расчётной (без
+// округления до толщин «в наличии»); правка толщины в ячейке таблицы
+// деталей - ещё главнее (по указанию пользователя). Каркас - одна толщина и
+// у стоек, и у раскосин. Учёт в расчёте - fineThickness в compute/compute.js.
+// Значения запоминаются в localStorage; группа открыта, если есть хоть одно.
+const FINE_THICKNESS_FIELDS = [
+  { key: 'frame',     label: 'Каркас (стойки и раскосины)' },
+  { key: 'skid',      label: 'Полозья' },
+  { key: 'skin',      label: 'Доски обшивки' },
+  { key: 'floor',     label: 'Доски дна' },
+  { key: 'endBeam',   label: 'Торцовые брусья дна' },
+  { key: 'crossBeam', label: 'Поперечные брусья крышки' },
+  { key: 'longBeam',  label: 'Продольные брусья крышки', hint: 'при досках крышки поперёк ящика' },
+];
+const FINE_THICKNESS_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'fineThickness';
+
+function fineThicknessInputId(key){
+  return 'fine' + key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+// Заполненные поля (мм > 0) - во входные данные расчёта.
+function readFineThickness(){
+  const out = {};
+  FINE_THICKNESS_FIELDS.forEach(f => {
+    const v = parseFloat(String(document.getElementById(fineThicknessInputId(f.key)).value).replace(',', '.'));
+    if(v > 0) out[f.key] = v;
+  });
+  return out;
+}
+
+function onFineThicknessInput(){
+  try{ localStorage.setItem(FINE_THICKNESS_STORAGE_KEY, JSON.stringify(readFineThickness())); }catch(e){}
+  invalidateCalc();
+}
+
+// Поля - по списку выше; восстановление сохранённых значений.
+(function initFineThickness(){
+  const grid = document.getElementById('fineThicknessGrid');
+  grid.innerHTML = FINE_THICKNESS_FIELDS.map(f => {
+    const id = fineThicknessInputId(f.key);
+    return `<div class="fine-thickness-field">
+      <label for="${id}">${f.label}${f.hint ? `<span class="fine-thickness-hint">${f.hint}</span>` : ''}</label>
+      <input type="number" id="${id}" min="1" step="1" inputmode="decimal" placeholder="по расчёту" oninput="onFineThicknessInput()">
+    </div>`;
+  }).join('');
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(FINE_THICKNESS_STORAGE_KEY)) || {}; }catch(e){}
+  let any = false;
+  FINE_THICKNESS_FIELDS.forEach(f => {
+    if(saved[f.key] > 0){ document.getElementById(fineThicknessInputId(f.key)).value = saved[f.key]; any = true; }
+  });
+  if(any) document.getElementById('fineThickness').open = true;
+})();
+
 // ГОСТ 10198-91, тип II-1: вывод результата расчёта - плитки «Итог»,
 // спецификация (чертёж + таблица по каждому узлу), пергамин и предупреждения.
 // calc - результат computeGost10198II1 (compute/compute.js). Общий вид ящика - BOX_II1_IMG_B64
@@ -6023,6 +6153,7 @@ function buildCalcInput(){
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
     manualOverrides,
+    fineThickness: readFineThickness(),
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 }
