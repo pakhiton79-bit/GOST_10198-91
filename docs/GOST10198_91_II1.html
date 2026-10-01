@@ -1259,25 +1259,35 @@
         <input type="checkbox" id="optimizeSizes">
         <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм; при поперечном расположении досок крышки — и продольного бруса тоже</span></span>
       </label>
+      <label>
+        <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
+        <span>Настроить число поперечных брусьев<span class="option-hint">Брусья — равномерно по длине крышки, отступы от стенок равны промежуткам между брусьями. Штатно — наименьшее число, при котором расстояние между краями брусьев не больше 700 мм</span></span>
+      </label>
+      <div id="crossBeamsRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="crossBeamsSlider"></div>
+          <input type="number" id="crossBeamsInput" step="1" min="2" oninput="onManualCountInputChange('cross')">
+        </div>
+      </div>
       <div class="option-group-title">Стойки каркаса</div>
       <label>
-        <input type="checkbox" id="customTorecPosts" onchange="onPostCountCheckboxChange('torec')">
+        <input type="checkbox" id="customTorecPosts" onchange="onManualCountCheckboxChange('torec')">
         <span>Настроить число стоек торцевого щита<span class="option-hint">Крайние стойки — по краям щита, остальные равномерно между ними</span></span>
       </label>
       <div id="torecPostsRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
         <div class="modal-slider-row">
           <div class="jump-slider" id="torecPostsSlider"></div>
-          <input type="number" id="torecPostsInput" step="1" min="2" oninput="onPostCountInputChange('torec')">
+          <input type="number" id="torecPostsInput" step="1" min="2" oninput="onManualCountInputChange('torec')">
         </div>
       </div>
       <label>
-        <input type="checkbox" id="customBokPosts" onchange="onPostCountCheckboxChange('bok')">
+        <input type="checkbox" id="customBokPosts" onchange="onManualCountCheckboxChange('bok')">
         <span>Настроить число стоек бокового щита<span class="option-hint">Крайние стойки — по краям щита, остальные равномерно между ними</span></span>
       </label>
       <div id="bokPostsRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
         <div class="modal-slider-row">
           <div class="jump-slider" id="bokPostsSlider"></div>
-          <input type="number" id="bokPostsInput" step="1" min="2" oninput="onPostCountInputChange('bok')">
+          <input type="number" id="bokPostsInput" step="1" min="2" oninput="onManualCountInputChange('bok')">
         </div>
       </div>
       <div class="option-group-title">Раскосины</div>
@@ -2249,7 +2259,7 @@ function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
 // решается 4 итерациями - за это время значения стабилизируются.
 
 const CROSS_BEAM_W = 100;         // ширина поперечного бруса крышки (Табл. 14 - всегда 100 мм)
-const CROSS_BEAM_MAX_AXIS = 700;  // шаг осей поперечных брусьев крышки
+const CROSS_BEAM_MAX_GAP = 700;   // расстояние между краями поперечных брусьев крышки (и от стенки до крайнего)
 const LONG_BEAM_MAX_AXIS = 800;   // шаг осей продольных брусьев крышки
 const ITERATIONS = 4;
 
@@ -2259,7 +2269,7 @@ function stabilizeSizes(c) {
   let stojkaT = skinT, stojkaExceeded = false;
   let len = L, outerW = W, skidCalcWidth = W;
   let skid = { t: 0, w: 0, count: 0 }, skidTableInfo = null, polozSimpleExceeded = false;
-  let crossBeamT = 0, crossBeamExceeded = false, crossBeamCount = 0, crossBeamMarginBelowMin = false;
+  let crossBeamT = 0, crossBeamExceeded = false, crossBeamCount = 0, standardCrossBeamCount = 0, crossBeamMarginBelowMin = false;
   let longBeamT = 0, longBeamW = 100, longBeamCount = 0, longBeamExceeded = false;
   let floorBoardT = 0, floorBoardExceeded = false;
   let sub = { t: 0, w: 0, l: 0, qty: 0 };
@@ -2270,12 +2280,17 @@ function stabilizeSizes(c) {
     outerW = W + (stojkaT + skinT) * 2;
     skidCalcWidth = W + stojkaT * 2;
 
-    // Поперечные брусья крышки: шаг осей ≤ 700 мм, равномерно по длине
-    // (отступы от краёв равны промежуткам между брусьями).
+    // Поперечные брусья крышки - равномерно по длине (отступы от стенок
+    // равны промежуткам между брусьями). Штатно - наименьшее число (не
+    // меньше 2), при котором промежутки между краями брусьев ≤ 700 мм:
+    // (L - n·100) / (n + 1) ≤ 700  =>  n ≥ (L - 700) / 800. Число,
+    // заданное вручную (c.lidCrossBeamCount), - целое не меньше 2, проверки
+    // отступа - в compute.js.
     const crossBeamRaw = crossBeamThickness(MASS, outerW);
     crossBeamExceeded = crossBeamRaw.exceeded;
     crossBeamT = ov('t21', round(crossBeamRaw.value), 'Толщина поперечного бруса крышки');
-    crossBeamCount = Math.max(2, Math.ceil((L + CROSS_BEAM_W) / CROSS_BEAM_MAX_AXIS - 1));
+    standardCrossBeamCount = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP) / (CROSS_BEAM_MAX_GAP + CROSS_BEAM_W)));
+    crossBeamCount = c.lidCrossBeamCount > 0 ? Math.max(2, Math.round(c.lidCrossBeamCount)) : standardCrossBeamCount;
     const crossMinMargin = skinT + stojkaT + 10;
     crossBeamMarginBelowMin = (L - crossBeamCount * CROSS_BEAM_W) / (crossBeamCount + 1) < crossMinMargin;
 
@@ -2330,7 +2345,8 @@ function stabilizeSizes(c) {
   return {
     stojkaT, stojkaExceeded, len, outerW, outerH,
     skid, skidTableInfo, polozSimpleExceeded, sub,
-    crossBeamT, crossBeamW: CROSS_BEAM_W, crossBeamCount, crossBeamExceeded, crossBeamMarginBelowMin,
+    crossBeamT, crossBeamW: CROSS_BEAM_W, crossBeamCount, standardCrossBeamCount, crossBeamExceeded, crossBeamMarginBelowMin,
+    crossBeamMaxGap: CROSS_BEAM_MAX_GAP,
     longBeamT, longBeamW, longBeamCount, longBeamExceeded,
     floorBoardT, floorBoardExceeded,
   };
@@ -2594,6 +2610,14 @@ function buildBokovoy(c, s, frame, rask) {
 // из ../options.js. Чертежи крышки и щитов рисуются на любое сочетание
 // брусьев/стоек, поэтому предупреждений «чертёж - ближайший вариант» нет.
 
+// «N поперечных брусьев не помещаются» - с согласованием по числу.
+function tooManyCrossBeamsText(n) {
+  const n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return `${n} поперечный брус не помещается`;
+  if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return `${n} поперечных бруса не помещаются`;
+  return `${n} поперечных брусьев не помещаются`;
+}
+
 // Ручные правки толщин. Значение из цикла согласования читается на каждой
 // итерации, поэтому «меньше ГОСТ» не пишется в предупреждения сразу, а
 // копится в belowGost и выводится один раз в конце.
@@ -2615,6 +2639,7 @@ function makeThicknessOverrides(manualOverrides) {
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
 //   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
+//   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
 //   manualOverrides }.
 function computeGost10198II1(input) {
   const { L, W, H, MASS } = input;
@@ -2643,8 +2668,25 @@ function computeGost10198II1(input) {
   if (s.crossBeamExceeded) {
     warnings.push('Масса или ширина ящика вне Табл. 14 — поперечный брус крышки принят по крайнему значению.');
   }
-  if (s.crossBeamMarginBelowMin) {
-    warnings.push('Отступ от края крышки до крайнего бруса меньше минимума (обшивка + стойка + 10 мм) даже при 2 брусьях — уменьшить без нарушения шага ≤700 мм нельзя.');
+  // Поперечные брусья крышки. Отступ от стенки до крайнего бруса (= промежуток
+  // между краями брусьев): штатно меньше минимума (обшивка + стойка + 10 мм)
+  // - только предупреждение; при числе, заданном вручную, меньше обшивки +
+  // стойки - блокировка, меньше минимума или больше 700 мм - предупреждение.
+  const crossManual = input.lidCrossBeamCount > 0;
+  const crossEdge = (L - s.crossBeamCount * s.crossBeamW) / (s.crossBeamCount + 1);
+  if (crossManual) {
+    const hardMin = skin.value + s.stojkaT;
+    if (crossEdge < hardMin) {
+      return { error: `${tooManyCrossBeamsText(s.crossBeamCount)} в крышке: отступ от стенки до крайнего бруса ${Math.round(crossEdge)} мм меньше толщины обшивки и стойки (${Math.round(hardMin)} мм) — уменьшите число брусьев. Расчёт не выполняется.` };
+    }
+    if (s.crossBeamMarginBelowMin) {
+      warnings.push(`Отступ от стенки до крайнего поперечного бруса крышки ${Math.round(crossEdge)} мм меньше минимума (обшивка + стойка + 10 мм = ${Math.round(hardMin + 10)} мм).`);
+    }
+    if (crossEdge > s.crossBeamMaxGap) {
+      warnings.push(`Расстояние между краями поперечных брусьев крышки ${Math.round(crossEdge)} мм больше ${s.crossBeamMaxGap} мм.`);
+    }
+  } else if (s.crossBeamMarginBelowMin) {
+    warnings.push('Отступ от края крышки до крайнего бруса меньше минимума (обшивка + стойка + 10 мм) даже при 2 брусьях — меньше 2 поперечных брусьев не ставится.');
   }
   if (s.polozSimpleExceeded) {
     warnings.push('Масса вне диапазона табл. полозьев со сплошным основанием (500–20000 кг) — сечение полоза принято по крайнему значению.');
@@ -2668,7 +2710,7 @@ function computeGost10198II1(input) {
     warnings.push('Шаг осей брусьев крышки вне табл. продольных брусьев — сечение принято по крайнему значению.');
   }
   // Отступ от края крышки до края крайнего поперечного бруса (брусья - равномерно).
-  const edgeDistCross = Math.round((L - s.crossBeamCount * s.crossBeamW) / (s.crossBeamCount + 1));
+  const edgeDistCross = Math.round(crossEdge);
   if (s.floorBoardExceeded) {
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 — толщина доски дна принята по крайнему значению.');
   }
@@ -2759,6 +2801,7 @@ function computeGost10198II1(input) {
     sideFrameDisplay: s.stojkaT + skin.value + (input.optimizeSizes ? 2 : 0),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
+    standardCrossBeamCount: s.standardCrossBeamCount,
   };
 
   // Отрицательное число в любом поле - невозможная геометрия.
@@ -5132,86 +5175,87 @@ function persistRadioGroup(name){
 ['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','optimizeSizes','xRaskosina'].forEach(persistCheckbox);
 persistRadioGroup('lidLayout');
 
-// ГОСТ 10198-91, тип II-1: ручная настройка числа стоек каркаса - отдельно
-// для торцевого и бокового щита (галочки «Настроить число стоек …»). У
-// включённой - ползунок (штатное число ±3) и поле для любого значения от 2.
-// Крайние стойки всегда по краям щита, остальные - равномерно между ними;
-// расстановку считает расчёт. Центр ползунка при включении - штатное число
-// из последнего расчёта (до первого расчёта - 3).
-const POST_COUNT_DEFAULT_CENTER = 3;
-const POST_KINDS = ['torec', 'bok'];
-const postCount = { torec: null, bok: null };             // null - штатно
-const lastStandardPostCount = { torec: null, bok: null };
-const postSliders = { torec: null, bok: null };
+// ГОСТ 10198-91, тип II-1: ручная настройка числа деталей - стоек каркаса
+// (отдельно для торцевого и бокового щита) и поперечных брусьев крышки
+// (галочки «Настроить число …»). У включённой - ползунок (штатное число ±3)
+// и поле для любого значения от 2. Расстановку считает расчёт: крайние
+// стойки - по краям щита, остальные равномерно между ними; брусья крышки -
+// равномерно, отступы от стенок равны промежуткам. Центр ползунка при
+// включении - штатное число из последнего расчёта (до первого расчёта - 3).
+const MANUAL_COUNT_DEFAULT_CENTER = 3;
+// kind -> id элементов, ключ localStorage, поле штатного числа в результате расчёта.
+const MANUAL_COUNTS = {
+  torec: { checkbox: 'customTorecPosts', row: 'torecPostsRow', slider: 'torecPostsSlider', input: 'torecPostsInput',
+           storageKey: OPTIONS_STORAGE_PREFIX + 'torecPostCount', standardField: 'standardTorecPostCount' },
+  bok:   { checkbox: 'customBokPosts', row: 'bokPostsRow', slider: 'bokPostsSlider', input: 'bokPostsInput',
+           storageKey: OPTIONS_STORAGE_PREFIX + 'bokPostCount', standardField: 'standardBokPostCount' },
+  cross: { checkbox: 'customCrossBeams', row: 'crossBeamsRow', slider: 'crossBeamsSlider', input: 'crossBeamsInput',
+           storageKey: OPTIONS_STORAGE_PREFIX + 'crossBeamCount', standardField: 'standardCrossBeamCount' },
+};
+const manualCount = { torec: null, bok: null, cross: null };   // null - штатно
+const lastStandardCount = { torec: null, bok: null, cross: null };
+const manualCountSliders = { torec: null, bok: null, cross: null };
 
-function postEls(kind){
-  const K = kind === 'torec' ? 'Torec' : 'Bok';
-  return { checkbox: 'custom' + K + 'Posts', row: kind + 'PostsRow', slider: kind + 'PostsSlider', input: kind + 'PostsInput' };
-}
-function postStorageKey(kind){
-  return OPTIONS_STORAGE_PREFIX + kind + 'PostCount';
-}
-function postCountSteps(center){
+function manualCountSteps(center){
   center = Math.max(2, Math.round(center));
   const steps = [];
   for(let i=-3;i<=3;i++) steps.push(Math.max(2, center+i));
   return Array.from(new Set(steps)).sort((a,b)=>a-b);
 }
-function savePostCount(kind){
-  try{ localStorage.setItem(postStorageKey(kind), postCount[kind] === null ? '' : String(postCount[kind])); }catch(e){}
+function saveManualCount(kind){
+  try{ localStorage.setItem(MANUAL_COUNTS[kind].storageKey, manualCount[kind] === null ? '' : String(manualCount[kind])); }catch(e){}
 }
-function rebuildPostSlider(kind, center, value){
-  const els = postEls(kind);
-  postSliders[kind] = createJumpSlider(document.getElementById(els.slider), postCountSteps(center), v=>{
-    postCount[kind] = v;
+function rebuildManualCountSlider(kind, center, value){
+  const els = MANUAL_COUNTS[kind];
+  manualCountSliders[kind] = createJumpSlider(document.getElementById(els.slider), manualCountSteps(center), v=>{
+    manualCount[kind] = v;
     document.getElementById(els.input).value = v;
-    savePostCount(kind);
+    saveManualCount(kind);
     invalidateCalc();
   });
-  postSliders[kind].setValue(value);
+  manualCountSliders[kind].setValue(value);
 }
-function showPostCount(kind, value, center){
-  const els = postEls(kind);
-  postCount[kind] = value;
+function showManualCount(kind, value, center){
+  const els = MANUAL_COUNTS[kind];
+  manualCount[kind] = value;
   document.getElementById(els.row).style.display = '';
   document.getElementById(els.input).value = value;
-  rebuildPostSlider(kind, center, value);
+  rebuildManualCountSlider(kind, center, value);
 }
 
-function onPostCountCheckboxChange(kind){
-  const els = postEls(kind);
+function onManualCountCheckboxChange(kind){
+  const els = MANUAL_COUNTS[kind];
   if(document.getElementById(els.checkbox).checked){
-    const center = lastStandardPostCount[kind] || POST_COUNT_DEFAULT_CENTER;
-    showPostCount(kind, center, center);
+    const center = lastStandardCount[kind] || MANUAL_COUNT_DEFAULT_CENTER;
+    showManualCount(kind, center, center);
   } else {
     document.getElementById(els.row).style.display = 'none';
-    postCount[kind] = null;
+    manualCount[kind] = null;
   }
-  savePostCount(kind);
+  saveManualCount(kind);
   invalidateCalc();
 }
-function onPostCountInputChange(kind){
-  const v = parseInt(document.getElementById(postEls(kind).input).value, 10);
+function onManualCountInputChange(kind){
+  const v = parseInt(document.getElementById(MANUAL_COUNTS[kind].input).value, 10);
   if(!(v >= 2)) return;
-  postCount[kind] = v;
-  if(postSliders[kind]) postSliders[kind].setValue(v);
-  savePostCount(kind);
+  manualCount[kind] = v;
+  if(manualCountSliders[kind]) manualCountSliders[kind].setValue(v);
+  saveManualCount(kind);
   invalidateCalc();
 }
 
-// После расчёта - запомнить штатное число стоек (центр ползунков).
-function updatePostCountsFromCalc(calc){
-  lastStandardPostCount.torec = calc.standardTorecPostCount;
-  lastStandardPostCount.bok = calc.standardBokPostCount;
+// После расчёта - запомнить штатные числа (центр ползунков).
+function updateManualCountsFromCalc(calc){
+  Object.keys(MANUAL_COUNTS).forEach(kind=>{ lastStandardCount[kind] = calc[MANUAL_COUNTS[kind].standardField]; });
 }
 
 // Восстановление при открытии страницы.
-POST_KINDS.forEach(kind=>{
+Object.keys(MANUAL_COUNTS).forEach(kind=>{
   let saved = null;
-  try{ const raw = localStorage.getItem(postStorageKey(kind)); if(raw) saved = parseInt(raw, 10); }catch(e){}
+  try{ const raw = localStorage.getItem(MANUAL_COUNTS[kind].storageKey); if(raw) saved = parseInt(raw, 10); }catch(e){}
   if(!(saved >= 2)) return;
-  document.getElementById(postEls(kind).checkbox).checked = true;
-  showPostCount(kind, saved, saved);
+  document.getElementById(MANUAL_COUNTS[kind].checkbox).checked = true;
+  showManualCount(kind, saved, saved);
 });
 
 // ГОСТ 10198-91, тип II-1: вывод результата расчёта - плитки «Итог»,
@@ -5437,8 +5481,9 @@ function buildCalcInput(){
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
-    torecPostCount: postCount.torec,
-    bokPostCount: postCount.bok,
+    torecPostCount: manualCount.torec,
+    bokPostCount: manualCount.bok,
+    lidCrossBeamCount: manualCount.cross,
     manualOverrides,
   };
 }
@@ -5467,7 +5512,7 @@ function calculateNow(){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
   }
 
-  updatePostCountsFromCalc(calc);
+  updateManualCountsFromCalc(calc);
   renderSummary(calc);
   renderBoardTables(calc, input.manualOverrides);
   renderWarnings(calc.warnings);
@@ -5506,6 +5551,7 @@ function errorFieldsFor(text){
   if(/Заполните все поля/.test(text)) return ['L','W','H','M'].filter(id => !(parseFloat(document.getElementById(id).value) > 0));
   if(/не помеща\S* на торцевом щите/.test(text)) return ['torecPostsInput'];
   if(/не помеща\S* на боковом щите/.test(text)) return ['bokPostsInput'];
+  if(/не помеща\S* в крышке/.test(text)) return ['crossBeamsInput'];
   if(/Ширина груза/.test(text)) return ['W'];
   if(/Длина груза/.test(text)) return ['L'];
   if(/высота груза/.test(text)) return ['H'];

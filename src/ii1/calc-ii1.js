@@ -39,8 +39,9 @@ function buildCalcInput(){
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
-    torecPostCount: postCount.torec,
-    bokPostCount: postCount.bok,
+    torecPostCount: manualCount.torec,
+    bokPostCount: manualCount.bok,
+    lidCrossBeamCount: manualCount.cross,
     manualOverrides,
   };
 }
@@ -69,7 +70,7 @@ function calculateNow(){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
   }
 
-  updatePostCountsFromCalc(calc);
+  updateManualCountsFromCalc(calc);
   renderSummary(calc);
   renderBoardTables(calc, input.manualOverrides);
   renderWarnings(calc.warnings);
@@ -108,6 +109,7 @@ function errorFieldsFor(text){
   if(/Заполните все поля/.test(text)) return ['L','W','H','M'].filter(id => !(parseFloat(document.getElementById(id).value) > 0));
   if(/не помеща\S* на торцевом щите/.test(text)) return ['torecPostsInput'];
   if(/не помеща\S* на боковом щите/.test(text)) return ['bokPostsInput'];
+  if(/не помеща\S* в крышке/.test(text)) return ['crossBeamsInput'];
   if(/Ширина груза/.test(text)) return ['W'];
   if(/Длина груза/.test(text)) return ['L'];
   if(/высота груза/.test(text)) return ['H'];
