@@ -268,6 +268,12 @@ def build_one(shell, parts, variant):
 
     result = IMG_PLACEHOLDER.sub(replace_img, text)
 
+    # Длинное тире на сайте не используется (по указанию пользователя) -
+    # вместо него обычный дефис.
+    if "\u2014" in result:
+        print(f"В {variant['out_name']} есть длинное тире - замените на дефис", file=sys.stderr)
+        sys.exit(1)
+
     if missing:
         print("Не найдены файлы картинок:", ", ".join(missing), file=sys.stderr)
         sys.exit(1)
