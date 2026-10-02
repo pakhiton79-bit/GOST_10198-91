@@ -1202,8 +1202,6 @@
     cursor:pointer;
   }
   .fastening-option-list input{margin-top:3px;flex:0 0 auto;accent-color:var(--accent);}
-  .fastening-option-disabled{opacity:.45;cursor:not-allowed !important;}
-  .fastening-option-disabled input{cursor:not-allowed !important;}
   /* «Тонкая настройка» толщин (II-1, js/ii1/fine-thickness.js) -
      раскрывающаяся группа под фильтром толщин «в наличии». */
   .fine-thickness{margin-top:16px;border-top:1px solid var(--rule);padding-top:14px;}
@@ -1701,6 +1699,8 @@ else initSiteSettings();
     <div class="note" id="thicknessNote" style="display:none;margin-top:14px;"></div>
   </div>
 
+  <!-- Выбор способа крепления временно убран (по указанию пользователя), не удалять.
+       Всегда «Крепление к доскам дна»; «Крепление за полозья» в списке ниже тоже временно убрано.
   <div class="card">
     <h2>Тип крепления груза</h2>
     <div class="thickness-filter dropdown-wrap">
@@ -1710,12 +1710,10 @@ else initSiteSettings();
       </button>
       <div class="thickness-dropdown-panel" id="fasteningDropdownPanel">
         <div class="fastening-option-list">
-          <!-- Крепление за полозья временно убрано (по указанию пользователя), не удалять:
           <label>
             <input type="radio" name="fasteningType" value="skid" onchange="onFasteningTypeChange(this)">
             <span>Крепление за полозья</span>
           </label>
-          -->
           <label>
             <input type="radio" name="fasteningType" value="floor_boards" checked onchange="onFasteningTypeChange(this)">
             <span>Крепление к доскам дна</span>
@@ -1724,6 +1722,7 @@ else initSiteSettings();
       </div>
     </div>
   </div>
+  -->
 
   <div class="card">
     <h2>Расположение досок крышки</h2>
@@ -5123,7 +5122,9 @@ function updateFasteningSummary(){
 function toggleFasteningDropdown(){
   document.getElementById('fasteningDropdownPanel').classList.toggle('open');
 }
-updateFasteningSummary();
+// Переключатель способа крепления временно убран со страницы (по указанию
+// пользователя) - надпись на нём не обновляется, крепление всегда к доскам дна.
+// updateFasteningSummary();
 showRemoveFloorBoardsRow();
 
 // «Убрать подполозные доски» и «Погрузка погрузчиком» - взаимоисключающие.
