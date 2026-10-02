@@ -5279,23 +5279,30 @@ Object.keys(MANUAL_COUNTS).forEach(kind=>{
   showManualCount(kind, saved, saved);
 });
 
-// ГОСТ 10198-91, тип III-1: чертёж «Щит боковой» - вид снаружи. Фото нет,
-// чертёж генерируется (SVG) в масштабе по расчёту: на заднем плане обшивка
-// (белый прямоугольник, без досок - по указанию пользователя), поверх -
-// наружный каркас: горизонтальные брусья на всю длину щита (низ, верх и
-// средний при 2 этажах), стойки между ними (крайние - по краям щита) и
-// раскосины. Оформление - как у сгенерированных щитов II-1
-// (panel-generated.js типа II-1): заливка #d9d9d9, чёрный контур.
+// ГОСТ 10198-91, тип III-1: чертёж щита (бокового или торцевого) - вид
+// снаружи. Фото нет, чертёж генерируется (SVG) в оформлении сгенерированных
+// щитов II-1 (panel-generated.js типа II-1: линии 6px, заливка #d9d9d9), не
+// в масштабе: пропорции кадра - по щиту, но не площе 0.4 и не выше 1.2
+// (высота к ширине), все детали одной ширины - тем толще, чем крупнее кадр и
+// меньше стоек и этажей (по указанию пользователя). На заднем плане
+// обшивка (белый прямоугольник, без досок - по указанию пользователя),
+// поверх - наружный каркас: горизонтальные брусья на всю длину щита (низ,
+// верх и средний при 2 этажах, этажи равной высоты), стойки между ними
+// (крайние - по краям щита, остальные равномерно) и раскосины. Слишком
+// плотно - заглушка вместо чертежа.
 // Раскосины: на нижнем этаже левая половина секций «/», правая «\» (при
 // нечётном числе секций центральная - «/»), на верхнем этаже 2-этажного щита
 // - зеркально; X-образные - встречная раскосина под исходной.
 // Размеры: длина щита (под чертежом), высота (справа), у 2-этажного - высота
 // нижнего этажа (слева, как у II-1), просвет между стойками (в первой секции;
 // не помещается - над чертежом).
-const III1_PANEL_IW = 2200;                // ширина картинки
-const III1_PANEL_MIN_H = 0.15, III1_PANEL_MAX_H = 0.75; // пределы высоты картинки, доли ширины
+const III1_PANEL_IW = 2222;                // ширина картинки
+const III1_PANEL_MIN_RATIO = 0.4, III1_PANEL_MAX_RATIO = 1.2; // пределы высоты кадра, доли ширины
+// Ширина деталей: доля средней стороны кадра, но секция между стойками - не
+// уже 2.5 ширины стойки, этаж - не ниже 5 ширин бруса.
+const III1_PANEL_MEMBER_K = 0.055, III1_PANEL_MIN_BAY = 2.5, III1_PANEL_MIN_FLOOR = 5;
+const III1_PANEL_STROKE = 6;
 const III1_PANEL_FILL = '#d9d9d9';
-const III1_PANEL_BEAM_W = 100;             // ширина брусьев, стоек и раскосин, мм
 const III1_PANEL_LABEL_SCALE = 0.8;
 
 // Раскосина - полоса шириной PW из угла в угол секции l..r × top..bot,
@@ -5319,21 +5326,21 @@ function iii1BraceStrip(l, r, top, bot, rising, PW, fmt){
 
 // lenMm - длина щита, heightMm - высота, frame - каркас из расчёта (count,
 // floors, len - длина стойки, sectionW - просвет между стойками,
-// hasRaskosina), мм.
+// hasRaskosina), мм - для подписей размеров и расстановки деталей.
 function diagramPanelIII1(altText, lenMm, heightMm, frame, xRaskosinaVal, widthPx, labelScale){
   const IW = III1_PANEL_IW;
-  const sx = IW / lenMm;
-  const IH = Math.min(IW*III1_PANEL_MAX_H, Math.max(IW*III1_PANEL_MIN_H, heightMm*sx));
-  const sy = IH / heightMm;
+  const IH = IW * Math.min(III1_PANEL_MAX_RATIO, Math.max(III1_PANEL_MIN_RATIO, heightMm / lenMm));
+  const n = frame.count, stroke = III1_PANEL_STROKE;
   const f = v => v.toFixed(1);
-  const BW = III1_PANEL_BEAM_W;
-  const postW = BW*sx, gapPx = frame.sectionW*sx;
-  if(diagramIsTooDense((frame.hasRaskosina ? gapPx/2 : gapPx), IW)) return diagramTooDense();
-  const stroke = Math.max(2, Math.min(6, BW*Math.min(sx, sy)/14));
+  const postW = Math.min(III1_PANEL_MEMBER_K * (IW + IH) / 2,
+    IW / (n + III1_PANEL_MIN_BAY * (n - 1)),
+    IH / (frame.floors * III1_PANEL_MIN_FLOOR));
+  const barH = postW;
+  const gapPx = (IW - n*postW)/(n-1);
+  if(diagramIsTooDense((frame.hasRaskosina ? gapPx/2 : gapPx) - stroke, IW)) return diagramTooDense();
   const rect = (x1, y1, x2, y2) => `<rect x="${f(x1)}" y="${f(y1)}" width="${f(x2-x1)}" height="${f(y2-y1)}"/>`;
-  const px = i => i*(postW + gapPx);                       // левая кромка i-й стойки
-  const barTop = k => k*(BW + frame.len)*sy;                // верх k-го бруса сверху
-  const barH = BW*sy;
+  const px = i => i*(postW + gapPx);                        // левая кромка i-й стойки
+  const barTop = k => k*(IH - barH)/frame.floors;           // верх k-го бруса сверху
 
   // Обшивка - белый прямоугольник.
   const skin = `<rect x="0" y="0" width="${f(IW)}" height="${f(IH)}" fill="#fff"/>`;
@@ -5373,7 +5380,7 @@ function diagramPanelIII1(altText, lenMm, heightMm, frame, xRaskosinaVal, widthP
   // 2 этажа - ещё высота нижнего этажа (брус + стойка) слева, как у II-1.
   // Подпись не помещается между наконечниками - левее стрелки.
   if(frame.floors === 2){
-    const yMid = barTop(1) + barH, text = dimLabel(BW + frame.len)+' мм';
+    const yMid = barTop(1) + barH, text = dimLabel(100 + frame.len)+' мм'; // брус 100 мм + стойка
     const labelLen = (text.length*8.2 + 16) * ls * k, headLen = 9 * photoStrokeScale(IW);
     const lx = IH - yMid >= labelLen + 2*headLen + 6*k ? -off : -off - 14*ls*k;
     records.push(
@@ -5400,14 +5407,23 @@ function diagramPanelIII1(altText, lenMm, heightMm, frame, xRaskosinaVal, widthP
   return renderDiagram(img, altText, IW, IH, records, widthPx, photoStrokeScale(IW), labelScale);
 }
 
+// ГОСТ 10198-91, тип III-1: чертёж «Щит торцевой» - щит по ширине груза,
+// высотой с груз (общий генератор - panel.js).
+function diagramTorecIII1(calc, widthPx){
+  return diagramPanelIII1('Щит торцевой - схема расположения деталей', calc.W, calc.H, calc.torecFrame,
+    calc.xRaskosina, widthPx, III1_PANEL_LABEL_SCALE);
+}
+
+// ГОСТ 10198-91, тип III-1: чертёж «Щит боковой» - щит на всю наружную
+// длину ящика, высотой с груз (общий генератор - panel.js).
 function diagramBokIII1(calc, widthPx){
   return diagramPanelIII1('Щит боковой - схема расположения деталей', calc.outerL, calc.H, calc.bokFrame,
     calc.xRaskosina, widthPx, III1_PANEL_LABEL_SCALE);
 }
 
 // ГОСТ 10198-91, тип III-1: вывод результата расчёта - плитки «Итог»,
-// спецификация (таблица по каждому узлу; из чертежей пока только боковой
-// щит - diagrams/bok.js), болты, пергамин и предупреждения.
+// спецификация (таблица по каждому узлу; из чертежей пока только щиты -
+// diagrams/), болты, пергамин и предупреждения.
 // calc - результат computeGost10198III1 (compute/compute.js).
 
 // Общий вид ящика (плитка «Итог» и печать). Своего чертежа у III-1 пока нет -
@@ -5493,7 +5509,7 @@ function renderBoardTables(calc, manualOverrides){
   let html = '';
   html += renderPartBlock('Дно', renderPartTable(calc.dno, 'dno', manualOverrides));
   html += renderPartBlock('Крышка', renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
-  html += renderPartBlock('Щит торцевой (2 шт.)', renderPartTable(calc.endPanel, 'endPanel', manualOverrides));
+  html += renderPartBlockDiagram('Щит торцевой (2 шт.)', diagramTorecIII1(calc, III1_PANEL_WIDTH), renderPartTable(calc.endPanel, 'endPanel', manualOverrides));
   html += renderPartBlockDiagram('Щит боковой (2 шт.)', diagramBokIII1(calc, III1_PANEL_WIDTH), renderPartTable(calc.bokovoy, 'bokovoy', manualOverrides));
   // Болты и пергамин - под всеми узлами, попадают и в печать.
   html += `<div class="part-title bolts-part">Болты<button type="button" class="btn-secondary btn-small part-title-action screen-only" onclick="setBoltsRemoved(true)">Убрать</button></div>`
@@ -5595,7 +5611,7 @@ function buildPrintHtml(){
     <img class="print-watermark" src="${LOGO_B64}" alt="">
 
     <h1>ГОСТ 10198-91 · тип III-1${boxNameHtml()}</h1>
-    <div class="print-subtitle">Каркасно-щитовой неразборный плотный ящик</div>
+    <div class="print-subtitle">Каркасно-щитовой разборный плотный ящик</div>
 
     <div class="part-title">Общий вид ящика</div>
     <div class="spec-row-diagram">
