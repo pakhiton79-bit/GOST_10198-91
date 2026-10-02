@@ -1222,14 +1222,19 @@
   .fine-thickness summary:hover{color:var(--accent);}
   .fine-thickness-body{margin-top:14px;}
   .fine-thickness-body .option-hint{font-size:12px;color:var(--ink-soft);margin-bottom:14px;}
+  /* 4 колонки (ряд - дно, ряд - щиты и крышка), на узком экране - 2 (пары
+     того же узла), но не 3 - иначе ряды узлов разъезжаются. */
   .fine-thickness-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    grid-template-columns:repeat(4,minmax(0,1fr));
     gap:14px 16px;
   }
   .fine-thickness-field{display:flex;flex-direction:column;justify-content:flex-end;}
+  @media screen and (max-width:960px){
+    .fine-thickness-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
   @media screen and (max-width:640px){
-    .fine-thickness-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    .fine-thickness-grid{gap:12px;}
   }
   .fine-thickness-hint{display:block;margin-top:2px;font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;}
   .fine-thickness-field input[type=number]{padding:10px 12px;font-size:15px;}
@@ -5873,13 +5878,16 @@ Object.keys(MANUAL_COUNTS).forEach(kind=>{
 // деталей - ещё главнее (по указанию пользователя). Каркас - одна толщина и
 // у стоек, и у раскосин. Учёт в расчёте - fineThickness в compute/compute.js.
 // Значения запоминаются в localStorage; группа открыта, если есть хоть одно.
+// Порядок - по узлам ящика (по указанию пользователя - логично
+// расположить): 1-й ряд - дно снизу вверх, 2-й - щиты (каркас и обшивка) и
+// крышка. Сетка - 4 или 2 колонки (style.css), чтобы ряды не разъезжались.
 const FINE_THICKNESS_FIELDS = [
-  { key: 'frame',     label: 'Каркас (стойки и раскосины)' },
   { key: 'skid',      label: 'Полозья' },
   { key: 'sub',       label: 'Подполозные доски' },
-  { key: 'skin',      label: 'Доски обшивки' },
-  { key: 'floor',     label: 'Доски дна' },
   { key: 'endBeam',   label: 'Торцовые брусья дна' },
+  { key: 'floor',     label: 'Доски дна' },
+  { key: 'frame',     label: 'Каркас (стойки и раскосины)' },
+  { key: 'skin',      label: 'Доски обшивки' },
   { key: 'crossBeam', label: 'Поперечные брусья крышки' },
   { key: 'longBeam',  label: 'Продольные брусья крышки', hint: 'при досках крышки поперёк ящика' },
 ];
