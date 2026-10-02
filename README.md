@@ -144,8 +144,9 @@ from a branch → папка `/docs`).
   `bokovoy.js`, `bolts.js` (болты), `logic.js` (таблицы III-1),
   `gost-tables.js` (таблицы дна, копия), `helpers.js`.
 - `src/iii1/options.js`, `manual-counts.js`, `calc-iii1.js`,
-  `render-iii1.js` (таблицы узлов, болты, пергамин; чертежи пока только у
-  щитов - `diagrams/`: `panel.js` - общий генератор, `torec.js`, `bok.js`),
+  `render-iii1.js` (таблицы узлов, болты, пергамин; чертежи - `diagrams/`:
+  `dno.js` - изометрия дна, щиты - `panel.js` (общий генератор), `torec.js`,
+  `bok.js`; крышки пока нет),
   `print-iii1.js`.
 
 Плюс:
