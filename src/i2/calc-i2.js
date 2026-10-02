@@ -3,8 +3,8 @@
 // обёртку calculate() из common-calc-state.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
-// по 2 шт.; лента обшивки и пергамин в объём не входят).
-const I2_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0, parchment:0};
+// по 2 шт.; лента обшивки в объём не входит).
+const I2_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0};
 
 // Ручные толщины из таблицы: только ячейки толщины, которые пользователь
 // действительно правил (data-user-edited) - иначе нетронутая ячейка
@@ -35,7 +35,6 @@ function buildCalcInput(){
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addEndTape: document.getElementById('addEndTape').checked,
-    addParchment: document.getElementById('addParchment').checked,
     plankLayoutMode,
     plankLayoutValue,
     manualOverrides,

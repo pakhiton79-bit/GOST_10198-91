@@ -153,13 +153,6 @@ function endTapeRows(g) {
   return [{ name: 'Обшивочная лента', l: Math.ceil(((W + T.bokBoard * 2) + (H + T.krBoard + T.dnoBoard)) * 2 - 1e-9), qty: 2 }];
 }
 
-// Пергамин: площадь внутренних поверхностей ящика 2×(Д×Ш + Д×В + Ш×В), м²,
-// вверх до 0.01. В объём не входит.
-function parchmentRows(g) {
-  const { L, W, H } = g;
-  return [{ name: 'Пергамин', area: Math.ceil(2 * (L * W + L * H + W * H) / 1e6 * 100 - 1e-9) / 100 }];
-}
-
 // Промежутки обшивки по щитам (для чертежей): { qty, gap, share } или
 // null - щит сплошной (см. gapBoards).
 function boardGapsByPanel(g) {

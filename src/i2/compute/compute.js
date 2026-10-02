@@ -101,11 +101,11 @@ function sumVolume(rows) {
 
 // input: { L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths,
 //   removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape,
-//   addParchment, plankLayoutMode, plankLayoutValue, manualOverrides,
+//   plankLayoutMode, plankLayoutValue, manualOverrides,
 //   woodDensity, boardGapPercent - доля промежутков между досками обшивки,
 //   % }.
 function computeGost10198I2(input) {
-  const { L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, addParchment, plankLayoutMode, plankLayoutValue, woodDensity } = input;
+  const { L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, woodDensity } = input;
   const manualOverrides = input.manualOverrides || {};
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
 
@@ -239,7 +239,6 @@ function computeGost10198I2(input) {
     drawPlankT: { dno: T.bokBoard, kryshka: T.krPlanka, bokovoy: T.krBoard, bokovoyBottom: skidEnabled ? skidT : T.dnoPlanka },
     standardPlankCount, standardPlankGap,
     endTape: addEndTape ? endTapeRows(g) : [],
-    parchment: addParchment ? parchmentRows(g) : [],
     // Промежутки обшивки по щитам: { qty, gap, share } или null - щит сплошной.
     boardGaps,
   };
