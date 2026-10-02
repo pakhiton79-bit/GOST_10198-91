@@ -2939,8 +2939,8 @@ const RASKOSINA_MIN_H = 600;  // п.1.7.7: раскосы - при внутре�
 const TWO_FLOORS_H = 2000;    // п.1.6.16: средние продольные брусья - при внутренней высоте 2000 мм и более
 
 // fillspace - ширина щита под стойки, panelH - высота каркаса щита (высота
-// груза без бруса крышки над щитом), H - высота груза (внутренняя высота
-// ящика), beamW - ширина горизонтальных брусьев.
+// груза), H - высота груза (внутренняя высота ящика), beamW - ширина
+// горизонтальных брусьев.
 // Стойка: 1 этаж - panelH без 2 горизонтальных брусьев, 2 этажа - без 3,
 // пополам.
 // Раскосы - при H свыше 600 мм или по галочке «Добавить раскосины»
@@ -3003,8 +3003,7 @@ function tooManyPostsText(n) {
 }
 
 // ГОСТ 10198-91, тип III-1: щит торцевой (расчёт на 1 щит, щитов 2). Щит -
-// по ширине груза, между боковыми щитами; сверху над ним - поперечный брус
-// крышки.
+// по ширине груза, между боковыми щитами, высотой с груз.
 
 // c - контекст расчёта; s - согласованные размеры; frame - каркас (frame.js);
 // rask - толщина и ширина раскосины.
@@ -3017,8 +3016,8 @@ function buildEndPanel(c, s, frame, rask) {
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Доски обшивки - на всю высоту щита, занимают ширину груза.
-  const boardLen = H - s.lidBeamT;
+  // Доски обшивки - на всю высоту груза, занимают ширину груза.
+  const boardLen = H;
   const fb = fillBoards(W, c.roundBoardWidths);
   if (fb.warn) warnings.push('Доска обшивки торца: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска обшивки торца: одна доска уже менее 100 мм.');
@@ -3047,7 +3046,7 @@ function buildEndPanel(c, s, frame, rask) {
 }
 
 // ГОСТ 10198-91, тип III-1: щит боковой (расчёт на 1 щит, щитов 2). Щит -
-// на всю наружную длину ящика; сверху над ним - продольный брус крышки.
+// на всю наружную длину ящика, высотой с груз.
 
 // Опорная планка крышки (п.1.8.2): ширина 50-75 мм - берём 75 мм (по
 // указанию пользователя), длина - длина груза.
@@ -3064,8 +3063,8 @@ function buildBokovoy(c, s, frame, rask) {
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Доски обшивки - на всю высоту щита, занимают наружную длину ящика.
-  const boardLen = H - s.lidBeamT;
+  // Доски обшивки - на всю высоту груза, занимают наружную длину ящика.
+  const boardLen = H;
   const fb = fillBoards(s.len, c.roundBoardWidths);
   if (fb.warn) warnings.push('Доска обшивки бока: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска обшивки бока: одна доска уже менее 100 мм.');
@@ -3274,12 +3273,11 @@ function computeGost10198III1(input) {
   const dno = buildDno(c, s, s.sub.l <= 0 || forkliftFail);
   const kryshka = buildKryshka(c, s);
 
-  // Каркасы щитов. Высота щита - высота груза без бруса крышки над щитом
-  // (продольный над боковым, поперечный над торцевым - одной толщины).
+  // Каркасы щитов. Высота щита - высота груза.
   // Торцевой щит - по ширине груза, боковой - по наружной длине ящика.
   // Штатное число стоек считается всегда - его клиент показывает центром
   // ползунков ручной настройки.
-  const panelH = H - s.lidBeamT;
+  const panelH = H;
   const torecSpace = W, bokSpace = s.len;
   const torecManual = input.torecPostCount > 0, bokManual = input.bokPostCount > 0;
   const frameArgs = [panelH, H, s.beamW, input.addRaskosina];
