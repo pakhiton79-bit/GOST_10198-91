@@ -145,8 +145,8 @@ from a branch → папка `/docs`).
   `gost-tables.js` (таблицы дна, копия), `helpers.js`.
 - `src/iii1/options.js`, `manual-counts.js`, `calc-iii1.js`,
   `render-iii1.js` (таблицы узлов, болты, пергамин; чертежи - `diagrams/`:
-  `dno.js` - изометрия дна, щиты - `panel.js` (общий генератор), `torec.js`,
-  `bok.js`; крышки пока нет),
+  `dno.js` - изометрия дна, `kryshka.js` - крышка снизу, щиты - `panel.js`
+  (общий генератор), `torec.js`, `bok.js`),
   `print-iii1.js`.
 
 Плюс:

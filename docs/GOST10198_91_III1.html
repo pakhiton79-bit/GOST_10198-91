@@ -1757,11 +1757,11 @@ else initSiteSettings();
       <div class="option-group-title">Брусья крышки</div>
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина поперечного и продольного брусьев крышки уменьшается на 4 мм. Отступ от стенки до крайнего поперечного бруса - на 2 мм больше</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина поперечного и продольного брусьев крышки уменьшается на 4 мм</span></span>
       </label>
       <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
-        <span>Настроить число поперечных брусьев<span class="option-hint">Брусья - равномерно по длине крышки, отступы от стенок равны промежуткам между брусьями (при «Оптимизировать размеры» - на 2 мм больше). Штатно - наименьшее число, при котором расстояния между краями брусьев и отступы не больше 700 мм</span></span>
+        <span>Настроить число поперечных брусьев<span class="option-hint">Крайние брусья - по концам крышки, остальные равномерно между ними. Штатно - наименьшее число, при котором расстояния между краями брусьев не больше 700 мм</span></span>
       </label>
       <div id="crossBeamsRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
         <div class="modal-slider-row">
@@ -2739,34 +2739,30 @@ function endBeamBoltDiameter(mass, skidCount) {
 const BEAM_W = 100;               // ширина стоек, горизонтальных брусьев щитов, брусьев крышки и продольного бруса дна
 const CROSS_BEAM_MAX_GAP = 700;   // промежуток между краями поперечных брусьев крышки (и от стенки до крайнего), по указанию пользователя
 const CROSS_BEAM_AXIS_MIN = 500, CROSS_BEAM_AXIS_MAX = 800; // настройка расстояния между осями поперечных брусьев крышки (п.1.8.1)
-const CROSS_BEAM_OPT_EDGE = 2;    // «Оптимизировать размеры»: отступ от стенки до крайнего бруса больше на 2 мм
 const LONG_BEAM_COUNT = 2;        // продольные брусья крышки
 const ITERATIONS = 4;
 
-// Поперечные брусья крышки (n шт. шириной w) - равномерно по длине груза L:
-// отступ от стенки до крайнего (edge) равен промежутку между краями соседних
-// (gap), при «Оптимизировать размеры» отступ больше на edgeAdd. axis -
-// расстояние между осями соседних.
-function crossBeamLayout(L, w, n, edgeAdd) {
-  const edge = (L - n * w) / (n + 1) + edgeAdd;
-  const gap = (L - n * w - 2 * edge) / (n - 1);
-  return { edge, gap, axis: gap + w };
+// Поперечные брусья крышки (n шт. шириной w) по длине крышки len (наружная
+// длина ящика): крайние - вровень с концами крышки, остальные - равномерно
+// между ними (по указанию пользователя). gap - промежуток между краями
+// соседних, axis - расстояние между осями.
+function crossBeamLayout(len, w, n) {
+  const gap = (len - n * w) / (n - 1);
+  return { gap, axis: gap + w };
 }
 
 // Число поперечных брусьев крышки: заданное вручную (c.lidCrossBeamCount) -
 // целое не меньше 2; по расстоянию между осями (c.lidCrossBeamAxis, 500-800
 // мм) - наименьшее, при котором оно не больше заданного; штатно -
-// наименьшее (не меньше 2), при котором и отступы, и промежутки между
-// краями брусьев ≤ 700 мм.
-function crossBeamCounts(c, edgeAdd) {
-  const { L } = c;
-  const standard = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP + edgeAdd) / (CROSS_BEAM_MAX_GAP + BEAM_W - edgeAdd)));
+// наименьшее (не меньше 2), при котором промежутки между краями брусьев
+// ≤ 700 мм.
+function crossBeamCounts(c, len) {
+  const standard = Math.max(2, Math.ceil((len + CROSS_BEAM_MAX_GAP) / (CROSS_BEAM_MAX_GAP + BEAM_W) - 1e-9));
   if (c.lidCrossBeamCount > 0) return { standard, count: Math.max(2, Math.round(c.lidCrossBeamCount)), axisSet: 0 };
   if (c.lidCrossBeamAxis > 0) {
     const axisSet = Math.min(CROSS_BEAM_AXIS_MAX, Math.max(CROSS_BEAM_AXIS_MIN, c.lidCrossBeamAxis));
-    let n = 2;
-    while (n < 1000 && crossBeamLayout(L, BEAM_W, n, edgeAdd).axis > axisSet + 1e-9) n++;
-    return { standard, count: n, axisSet };
+    const count = Math.max(2, Math.ceil((len - BEAM_W) / axisSet - 1e-9) + 1);
+    return { standard, count, axisSet };
   }
   return { standard, count: standard, axisSet: 0 };
 }
@@ -2836,16 +2832,15 @@ function stabilizeSizes(c) {
     dnoBeamT = ov('tDnoBeam', bokFrameT, 'Толщина продольного бруса дна');
   }
 
-  const edgeAdd = c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0;
-  const cross = crossBeamCounts(c, edgeAdd);
+  const cross = crossBeamCounts(c, len);
 
   return {
     frameGost, stojkaExceeded, torFrameT, bokFrameT, len, outerW, outerH,
     skid, skidTableInfo, polozSimpleExceeded, sub, skidSpace,
     beamW: BEAM_W, lidBeamT, dnoBeamT,
     crossBeamCount: cross.count, standardCrossBeamCount: cross.standard, crossBeamAxisSet: cross.axisSet,
-    crossBeamLayout: crossBeamLayout(L, BEAM_W, cross.count, edgeAdd),
-    crossBeamMaxGap: CROSS_BEAM_MAX_GAP, crossBeamEdgeAdd: edgeAdd,
+    crossBeamLayout: crossBeamLayout(len, BEAM_W, cross.count),
+    crossBeamMaxGap: CROSS_BEAM_MAX_GAP,
     longBeamCount: LONG_BEAM_COUNT,
     floorBoardT, floorBoardExceeded,
   };
@@ -3222,30 +3217,24 @@ function computeGost10198III1(input) {
   // --- 2. Согласование размеров ---
   const s = stabilizeSizes(c);
 
-  // Поперечные брусья крышки - равномерно: отступ от стенки до крайнего бруса
-  // (crossEdge) равен промежутку между краями соседних (crossGap), при
-  // «Оптимизировать размеры» отступ больше на 2 мм. Отступ меньше толщины
-  // обшивки + каркаса: при числе, заданном вручную, - блокировка, штатно (2
-  // бруса) - предупреждение. Ручное число с промежутком больше 700 мм -
-  // предупреждение (при заданном расстоянии между осями - нет: оно
-  // 500-800 мм по п.1.8.1). maxCrossBeamCount - наибольшее число брусьев без
-  // блокировки (край ползунка у клиента).
+  // Поперечные брусья крышки: крайние - вровень с концами крышки, остальные
+  // - равномерно между ними. Промежуток между краями соседних (crossGap)
+  // меньше 0 - брусья не помещаются: при числе, заданном вручную, -
+  // блокировка. Ручное число с промежутком больше 700 мм - предупреждение
+  // (при заданном расстоянии между осями - нет: оно 500-800 мм по п.1.8.1).
+  // maxCrossBeamCount - наибольшее число брусьев без блокировки (край
+  // ползунка у клиента).
   const crossManual = input.lidCrossBeamCount > 0;
-  const crossN = s.crossBeamCount, crossW = s.beamW, crossAdd = s.crossBeamEdgeAdd;
-  const crossEdge = s.crossBeamLayout.edge, crossGap = s.crossBeamLayout.gap;
-  const crossHardMin = skin.value + s.torFrameT;
-  const crossMinGap = crossHardMin - crossAdd;
-  const maxCrossBeamCount = Math.max(2, Math.floor((L - crossMinGap) / (crossW + crossMinGap) + 1e-9));
-  if (crossEdge < crossHardMin) {
+  const crossN = s.crossBeamCount, crossGap = s.crossBeamLayout.gap;
+  const maxCrossBeamCount = Math.max(2, Math.floor(s.len / s.beamW + 1e-9));
+  if (crossGap < 0) {
     if (crossManual) {
-      return { error: `${tooManyCrossBeamsText(crossN)} в крышке: отступ от стенки до крайнего бруса ${Math.round(crossEdge)} мм меньше толщины обшивки и каркаса (${Math.round(crossHardMin)} мм) - уменьшите число брусьев. Расчёт не выполняется.` };
+      return { error: `${tooManyCrossBeamsText(crossN)} в крышке длиной ${Math.round(s.len)} мм - уменьшите число брусьев. Расчёт не выполняется.` };
     }
-    warnings.push(`Отступ от стенки до крайнего поперечного бруса крышки ${Math.round(crossEdge)} мм меньше толщины обшивки и каркаса (${Math.round(crossHardMin)} мм) даже при 2 брусьях.`);
+    warnings.push(`Поперечные брусья крышки не помещаются по длине крышки (${Math.round(s.len)} мм) даже при 2 брусьях.`);
   }
   if (crossManual && crossGap > s.crossBeamMaxGap) {
     warnings.push(`Расстояние между краями поперечных брусьев крышки ${Math.round(crossGap)} мм больше ${s.crossBeamMaxGap} мм.`);
-  } else if (crossManual && crossEdge > s.crossBeamMaxGap) {
-    warnings.push(`Отступ от стенки до крайнего поперечного бруса крышки ${Math.round(crossEdge)} мм больше ${s.crossBeamMaxGap} мм.`);
   }
   if (s.polozSimpleExceeded) {
     warnings.push('Масса вне диапазона табл. полозьев со сплошным основанием (500–20000 кг) - сечение полоза принято по крайнему значению.');
@@ -3349,7 +3338,7 @@ function computeGost10198III1(input) {
     W, L, H, skin, torFrameT: s.torFrameT, bokFrameT: s.bokFrameT, lidBeamT: s.lidBeamT,
     torecFrame, bokFrame, panelH,
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
-    edgeDistCross: Math.round(crossEdge), gapDistCross: Math.round(crossGap), axisDistCross: Math.round(s.crossBeamLayout.axis),
+    gapDistCross: Math.round(crossGap), axisDistCross: Math.round(s.crossBeamLayout.axis),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
     standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
@@ -5161,9 +5150,9 @@ if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checke
 // блокируется (из последнего расчёта; до первого расчёта - штатное ±3),
 // расстояния - 500-800 мм с шагом 50. Расстановку считает расчёт: крайние
 // стойки - по краям щита, остальные равномерно между ними; брусья крышки -
-// равномерно, отступы от стенок равны промежуткам (при «Оптимизировать
-// размеры» - на 2 мм больше). Центр ползунка при включении - штатное число
-// из последнего расчёта (до первого расчёта - 3), расстояния - 700 мм.
+// крайние по концам крышки, остальные равномерно между ними. Центр
+// ползунка при включении - штатное число из последнего расчёта (до первого
+// расчёта - 3), расстояния - 700 мм.
 // Галочки числа и расстояния брусьев крышки взаимоисключающие.
 const MANUAL_COUNT_DEFAULT_CENTER = 3;
 const CROSS_AXIS_STEPS = [500, 550, 600, 650, 700, 750, 800];
@@ -5546,6 +5535,73 @@ function diagramDnoIII1(calc, widthPx){
   return diagramDnoIII1Generated(skidCount, hasSub, calc.outerL, calc.outerW, inset, inset / endW, widthPx, III1_PANEL_LABEL_SCALE);
 }
 
+// ГОСТ 10198-91, тип III-1: чертёж «Крышка» - вид снизу, генерируется (SVG)
+// в стиле сгенерированной крышки II-1 (js/ii1/diagrams/kryshka.js): форма
+// всегда одна, доски крышки - белый прямоугольник без досок (наружная длина
+// × ширина груза), продольные брусья (2 шт.) - светло-серые, вровень с
+// длинными краями, на всю длину; поперечные - тёмно-серые, между
+// продольными впритык (по указанию пользователя), крайние - по концам
+// крышки, остальные - равномерно между ними (как в расчёте). Ширина бруса -
+// условная; слишком плотно - заглушка.
+// Размеры: наружная длина, ширина крышки, промежуток между поперечными
+// брусьями.
+const KRYSHKA_III1 = { IW: 1200, IH: 820, x0: 10, x1: 1190, y0: 40, y1: 780 };
+const KRYSHKA_III1_BEAM = 74;      // ширина бруса на чертеже
+const KRYSHKA_III1_STROKE = 5.5;
+
+function diagramKryshkaIII1Generated(crossCount, gapMm, lenVal, widthVal, widthPx, labelScale){
+  const G = KRYSHKA_III1, BW = KRYSHKA_III1_BEAM;
+  if(!(crossCount >= 2)) return diagramTooDense();
+  const f = v => v.toFixed(1);
+  const rect = (x0, y0, x1, y1, fill) => `<rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}" fill="${fill}"/>`;
+  // Поперечные брусья: крайние - по концам, промежутки равные; много
+  // брусьев - уже (промежуток не меньше 0.6 бруса).
+  const span = G.x1 - G.x0;
+  const beamW = Math.min(BW, span / (crossCount + 0.6 * (crossCount - 1)));
+  const gapPx = (span - crossCount * beamW) / (crossCount - 1);
+  if(diagramIsTooDense(gapPx - KRYSHKA_III1_STROKE, G.IW)) return diagramTooDense();
+  const bx = i => G.x0 + i * (beamW + gapPx);       // левая кромка i-го бруса
+
+  let shapes = rect(G.x0, G.y0, G.x1, G.y1, '#fff');
+  shapes += rect(G.x0, G.y0, G.x1, G.y0 + BW, '#d9d9d9');
+  shapes += rect(G.x0, G.y1 - BW, G.x1, G.y1, '#d9d9d9');
+  for(let i = 0; i < crossCount; i++) shapes += rect(bx(i), G.y0 + BW, bx(i) + beamW, G.y1 - BW, '#a6a6a6');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${G.IW}" height="${G.IH}" viewBox="0 0 ${G.IW} ${G.IH}">`
+    + `<rect width="100%" height="100%" fill="#fff"/>`
+    + `<g stroke="#000" stroke-width="${KRYSHKA_III1_STROKE}">${shapes}</g></svg>`;
+  const img = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+
+  const rec = [
+    // Наружная длина - сверху.
+    {type:'line', x1:G.x0, y1:G.y0, x2:G.x0, y2:-70},
+    {type:'line', x1:G.x1, y1:G.y0, x2:G.x1, y2:-70},
+    {type:'double', x1:G.x0, y1:-50, x2:G.x1, y2:-50, lx:(G.x0 + G.x1) / 2, ly:-50, text:dimLabel(lenVal)+' мм'},
+    // Ширина крышки - справа.
+    {type:'line', x1:G.x1, y1:G.y0, x2:G.x1 + 110, y2:G.y0},
+    {type:'line', x1:G.x1, y1:G.y1, x2:G.x1 + 110, y2:G.y1},
+    {type:'double', x1:G.x1 + 85, y1:G.y0, x2:G.x1 + 85, y2:G.y1, lx:G.x1 + 85, ly:(G.y0 + G.y1) / 2, text:dimLabel(widthVal)+' мм', vertical:true},
+  ];
+  // Промежуток между 1-м и 2-м поперечными брусьями: внутри, если подпись
+  // помещается между наконечниками, иначе - перемычка и выноска снизу.
+  const x1 = bx(0) + beamW, x2 = bx(1), mid = (x1 + x2) / 2, y = (G.y0 + G.y1) / 2;
+  const text = dimLabel(gapMm)+' мм';
+  const k = G.IW / (widthPx || DIAGRAM_DEFAULT_WIDTH), ls = labelScale || 1;
+  const labelW = (text.length * 8.2 + 16) * ls * k, headLen = 9 * photoStrokeScale(G.IW);
+  if(x2 - x1 >= labelW + 2 * headLen + 6 * k){
+    rec.push({type:'double', x1, y1:y, x2, y2:y, lx:mid, ly:y, text});
+  } else {
+    rec.push({type:'line', x1, y1:y, x2, y2:y});
+    rec.push({type:'single', x1:mid, y1:G.IH + 90, x2:mid, y2:y, lx:mid, ly:G.IH + 106, text});
+  }
+  return renderDiagram(img, 'Крышка - схема расположения деталей (вид снизу)', G.IW, G.IH, rec, widthPx, photoStrokeScale(G.IW), labelScale);
+}
+
+function diagramKryshkaIII1(calc, widthPx){
+  const row = (calc.kryshka || []).find(r => r.name === 'Поперечный брус крышки');
+  const n = row ? Math.round(parseFloat(row.qty)) : calc.crossBeamCount;
+  return diagramKryshkaIII1Generated(n, calc.gapDistCross, calc.outerL, calc.W, widthPx, III1_PANEL_LABEL_SCALE);
+}
+
 // ГОСТ 10198-91, тип III-1: чертёж «Щит боковой» - щит на всю наружную
 // длину ящика, высотой с груз (общий генератор - panel.js).
 function diagramBokIII1(calc, widthPx){
@@ -5554,8 +5610,8 @@ function diagramBokIII1(calc, widthPx){
 }
 
 // ГОСТ 10198-91, тип III-1: вывод результата расчёта - плитки «Итог»,
-// спецификация (таблица по каждому узлу; из чертежей пока только щиты -
-// diagrams/), болты, пергамин и предупреждения.
+// спецификация (таблица и чертёж по каждому узлу - diagrams/), болты,
+// пергамин и предупреждения.
 // calc - результат computeGost10198III1 (compute/compute.js).
 
 // Общий вид ящика (плитка «Итог» и печать). Своего чертежа у III-1 пока нет -
@@ -5640,7 +5696,7 @@ function applyBoltsRemoved(){
 function renderBoardTables(calc, manualOverrides){
   let html = '';
   html += renderPartBlockDiagram('Дно', diagramDnoIII1(calc, III1_PANEL_WIDTH), renderPartTable(calc.dno, 'dno', manualOverrides));
-  html += renderPartBlock('Крышка', renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
+  html += renderPartBlockDiagram('Крышка', diagramKryshkaIII1(calc, III1_PANEL_WIDTH), renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlockDiagram('Щит торцевой (2 шт.)', diagramTorecIII1(calc, III1_PANEL_WIDTH), renderPartTable(calc.endPanel, 'endPanel', manualOverrides));
   html += renderPartBlockDiagram('Щит боковой (2 шт.)', diagramBokIII1(calc, III1_PANEL_WIDTH), renderPartTable(calc.bokovoy, 'bokovoy', manualOverrides));
   // Болты и пергамин - под всеми узлами, попадают и в печать.

@@ -258,7 +258,7 @@ III1_SHELL = III1_DIR / "shell.html"
 # Тип III-1 - отдельная копия II-1 со своими таблицами; файлы разложены так
 # же, как в gost_backend: compute/ - расчёт (backend/src/iii1), остальное -
 # интерфейс (frontend/public/js/iii1). Чертежи (diagrams/): дно (dno.js),
-# щиты (panel.js - общий генератор, torec.js, bok.js); крышки пока нет.
+# крышка (kryshka.js), щиты (panel.js - общий генератор, torec.js, bok.js).
 III1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
@@ -286,6 +286,7 @@ III1_PARTS = {
     "/*__III1_PANEL_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "panel.js",
     "/*__III1_TOREC_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "torec.js",
     "/*__III1_DNO_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "dno.js",
+    "/*__III1_KRYSHKA_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "kryshka.js",
     "/*__III1_BOK_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "bok.js",
     "/*__III1_RENDER_JS__*/": III1_DIR / "render-iii1.js",
     "/*__III1_PRINT_JS__*/": III1_DIR / "print-iii1.js",
