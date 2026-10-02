@@ -28,12 +28,14 @@ const TYPES = [
   {
     name: 'Тип I-3',
     file: 'GOST10198_91POLOZIA.html',
-    image: 'data:image/png;base64,__IMG:box.png__'
+    image: 'data:image/png;base64,__IMG:box.png__',
+    badge: 'Требуется проверка'
   },
   {
     name: 'Тип II-1',
     file: 'GOST10198_91_II1.html',
-    image: 'data:image/png;base64,__IMG:box_ii1.png__'
+    image: 'data:image/png;base64,__IMG:box_ii1.png__',
+    badge: 'Требуется проверка'
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];
