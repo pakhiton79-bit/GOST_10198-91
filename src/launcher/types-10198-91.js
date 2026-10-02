@@ -36,6 +36,12 @@ const TYPES = [
     file: 'GOST10198_91_II1.html',
     image: 'data:image/png;base64,__IMG:box_ii1.png__',
     badge: 'Требуется проверка'
+  },
+  {
+    name: 'Тип III-1',
+    file: 'GOST10198_91_III1.html',
+    image: 'data:image/png;base64,__IMG:box_iii1.png__',
+    badge: 'Требуется проверка'
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];

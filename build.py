@@ -29,6 +29,12 @@ src/ii1/shell.html - свой HTML-каркас с плейсхолдером н
 чертежи, src/ii1/*.js - интерфейс.
   - GOST10198_91_II1.html
 
+== Тип III-1 ==
+src/iii1/shell.html - отдельная копия II-1 со своими таблицами (список -
+III1_PARTS ниже): src/iii1/compute/ - расчёт, src/iii1/*.js - интерфейс.
+Чертежей узлов пока нет.
+  - GOST10198_91_III1.html
+
 == Тип I-1 ==
 src/i1/shell.html - свой HTML-каркас с плейсхолдером на каждый файл I-1
 (список - I1_PARTS ниже): src/i1/compute/ - расчёт, src/i1/diagrams/ -
@@ -247,6 +253,43 @@ II1_VARIANTS = [
     {"out_name": "GOST10198_91_II1.html"},
 ]
 
+III1_DIR = SRC_DIR / "iii1"
+III1_SHELL = III1_DIR / "shell.html"
+# Тип III-1 - отдельная копия II-1 со своими таблицами; файлы разложены так
+# же, как в gost_backend: compute/ - расчёт (backend/src/iii1), остальное -
+# интерфейс (frontend/public/js/iii1). Чертежей узлов пока нет.
+III1_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__III1_HELPERS_JS__*/": III1_DIR / "compute" / "helpers.js",
+    "/*__III1_GOST_TABLES_JS__*/": III1_DIR / "compute" / "gost-tables.js",
+    "/*__III1_LOGIC_JS__*/": III1_DIR / "compute" / "logic.js",
+    "/*__III1_SIZING_JS__*/": III1_DIR / "compute" / "sizing.js",
+    "/*__III1_DNO_JS__*/": III1_DIR / "compute" / "dno.js",
+    "/*__III1_KRYSHKA_JS__*/": III1_DIR / "compute" / "kryshka.js",
+    "/*__III1_FRAME_JS__*/": III1_DIR / "compute" / "frame.js",
+    "/*__III1_END_PANEL_JS__*/": III1_DIR / "compute" / "end-panel.js",
+    "/*__III1_BOKOVOY_JS__*/": III1_DIR / "compute" / "bokovoy.js",
+    "/*__III1_BOLTS_JS__*/": III1_DIR / "compute" / "bolts.js",
+    "/*__III1_COMPUTE_JS__*/": III1_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__III1_OPTIONS_JS__*/": III1_DIR / "options.js",
+    "/*__III1_MANUAL_COUNTS_JS__*/": III1_DIR / "manual-counts.js",
+    "/*__III1_RENDER_JS__*/": III1_DIR / "render-iii1.js",
+    "/*__III1_PRINT_JS__*/": III1_DIR / "print-iii1.js",
+    "/*__III1_CALC_JS__*/": III1_DIR / "calc-iii1.js",
+}
+III1_VARIANTS = [
+    {"out_name": "GOST10198_91_III1.html"},
+]
+
 LAUNCHER_DIR = SRC_DIR / "launcher"
 
 # Уровень 1 - стартовая страница (список ГОСТов).
@@ -331,6 +374,8 @@ def main():
         build_one(I2_SHELL, I2_PARTS, variant)
     for variant in II1_VARIANTS:
         build_one(II1_SHELL, II1_PARTS, variant)
+    for variant in III1_VARIANTS:
+        build_one(III1_SHELL, III1_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
         build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
     for variant in TYPES_VARIANTS:

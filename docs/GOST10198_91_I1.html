@@ -3743,6 +3743,8 @@ function readTableEdits(){
 // изменённых строк - вызывающая сторона при >0 пересчитывает производные
 // итоги (норма времени, масса ящика). Та же функция - на сервере
 // (applyTableEdits в backend/src/helpers.js бэкенд-репозитория).
+// Разделы - строки свободного текста (лента обшивки, пергамин, болты).
+const TABLE_TEXT_SECTIONS = ['endTape', 'parchment', 'bolts'];
 function applyTableEdits(calc, edits, sections){
   if(!edits || typeof edits !== 'object') return 0;
   const num = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
@@ -3765,7 +3767,7 @@ function applyTableEdits(calc, edits, sections){
         r.edited[role] = true;
         changed = true;
       });
-      if((sec === 'endTape' || sec === 'parchment') && typeof e.text === 'string'){ r.text = e.text; r.edited = r.edited || {}; r.edited.text = true; changed = true; }
+      if(TABLE_TEXT_SECTIONS.includes(sec) && typeof e.text === 'string'){ r.text = e.text; r.edited = r.edited || {}; r.edited.text = true; changed = true; }
       if(!changed) return;
       delta += (rowVol(r) - before) * sections[sec];
       applied++;
