@@ -903,6 +903,14 @@
     line-height:1.6;
   }
 
+  /* Красное уведомление «тип ещё не готов» над результатами (III-1). */
+  .note-danger{
+    color:var(--error);
+    background:rgba(194,59,44,.08);
+    border-left-color:var(--error);
+    margin:0 0 16px;
+  }
+
   .disclaimer{
     font-size:12px;
     color:var(--ink-soft);
@@ -1830,6 +1838,7 @@ else initSiteSettings();
   </div>
 
   <div id="results">
+    <div class="note note-danger" id="notReadyNote"><b>Тип III-1 ещё не готов.</b> Расчёт проводится, но методика и спецификация ещё в работе - результат нельзя использовать в производстве.</div>
     <div class="note" id="warningsTop" style="margin-bottom:16px;"></div>
 
     <div class="card">
