@@ -138,7 +138,8 @@ from a branch → папка `/docs`).
 
 - `src/iii1/shell.html` - HTML-каркас (список частей - `III1_PARTS` в `build.py`).
 - `src/iii1/compute/` - расчёт: `compute.js` (`computeGost10198III1`),
-  `sizing.js` (стойки Табл. 12, брусья стенок и крышки Табл. 9, полоз, дно),
+  `sizing.js` (каркас щитов, брусья крышки и продольный брус дна по Табл. 12,
+  полоз, дно, число поперечных брусьев крышки),
   `frame.js` (каркас щита), `dno.js`, `kryshka.js`, `end-panel.js`,
   `bokovoy.js`, `bolts.js` (болты), `logic.js` (таблицы III-1),
   `gost-tables.js` (таблицы дна, копия), `helpers.js`.

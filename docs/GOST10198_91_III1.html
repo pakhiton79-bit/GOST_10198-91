@@ -1738,20 +1738,6 @@ else initSiteSettings();
   -->
 
   <div class="card">
-    <h2>Расположение досок крышки</h2>
-    <div class="fastening-option-list">
-      <label>
-        <input type="radio" name="lidLayout" value="longitudinal" checked>
-        <span>Вдоль длины ящика<span class="option-hint">Продольные брусья крышки не требуются</span></span>
-      </label>
-      <label>
-        <input type="radio" name="lidLayout" value="transverse">
-        <span>Поперёк ящика<span class="option-hint">Добавляются внутренние продольные брусья крышки</span></span>
-      </label>
-    </div>
-  </div>
-
-  <div class="card">
     <h2>Дополнительные опции</h2>
     <div class="fastening-option-list">
       <div class="option-group-title">Доски</div>
@@ -1762,7 +1748,7 @@ else initSiteSettings();
       <div class="option-group-title">Брусья крышки</div>
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм; при поперечном расположении досок крышки - и продольного бруса тоже. Отступ от стенки до крайнего поперечного бруса - на 2 мм больше</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина поперечного и продольного брусьев крышки уменьшается на 4 мм. Отступ от стенки до крайнего поперечного бруса - на 2 мм больше</span></span>
       </label>
       <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
@@ -1772,6 +1758,16 @@ else initSiteSettings();
         <div class="modal-slider-row">
           <div class="jump-slider" id="crossBeamsSlider"></div>
           <input type="number" id="crossBeamsInput" step="1" min="2" oninput="onManualCountInputChange('cross')">
+        </div>
+      </div>
+      <label>
+        <input type="checkbox" id="customCrossAxis" onchange="onManualCountCheckboxChange('crossAxis')">
+        <span>Настроить расстояние между поперечными брусьями<span class="option-hint">Расстояние между осями соседних брусьев - от 500 до 800 мм (п.1.8.1). Берётся наименьшее число брусьев, при котором расстояние не больше заданного</span></span>
+      </label>
+      <div id="crossAxisRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
+        <div class="modal-slider-row">
+          <div class="jump-slider" id="crossAxisSlider"></div>
+          <input type="number" id="crossAxisInput" step="1" min="500" max="800" oninput="onManualCountInputChange('crossAxis')">
         </div>
       </div>
       <div class="option-group-title">Стойки каркаса</div>
@@ -2676,6 +2672,8 @@ function skinThickness(bulkCargo) {
 
 // Табл. 12: толщина стоек нештабелируемых ящиков по массе груза и наружной
 // высоте ящика (только эта таблица - по указанию пользователя), ширина 100.
+// По указанию пользователя по ней же - горизонтальные брусья щитов (одна
+// толщина каркаса на щит), брусья крышки и продольный брус дна.
 const T_STOJKI_HEIGHTS = [1000, 1500, 2000, 2500, 3000];
 const TABLE_STOJKI = [
   { maxMass: 4000, t: [25, 25, 32, 32, 40] },
@@ -2694,46 +2692,6 @@ function stojkaSection(mass, outerHmm) {
   return { t: row.t[colIdx], w: 100, exceeded };
 }
 
-// Табл. 9: продольные брусья боковых и торцовых стенок (толщина × ширина) по
-// массе груза и расстоянию между осями основных поперечных брусьев крышки.
-// Брусья рамы крышки - того же сечения (п.1.8.1). Колонка - ближайшее
-// расстояние; меньше 500 мм - колонка 500 и толщина на одну градацию меньше
-// (примечание к таблице).
-const T9_AXIS = [500, 600, 700, 800, 900, 1000];
-const TABLE9 = [
-  { maxMass: 500, s: ['25x100', '25x100', '25x100', '25x100', '25x100', '25x100'] },
-  { maxMass: 1000, s: ['25x100', '25x100', '25x100', '25x100', '32x100', '32x100'] },
-  { maxMass: 2000, s: ['32x100', '32x100', '40x100', '40x100', '40x100', '40x100'] },
-  { maxMass: 4000, s: ['40x100', '50x100', '50x100', '50x100', '50x100', '50x100'] },
-  { maxMass: 6000, s: ['50x100', '60x100', '60x100', '60x100', '60x100', '75x100'] },
-  { maxMass: 8000, s: ['60x100', '60x100', '75x100', '75x100', '75x100', '100x100'] },
-  { maxMass: 10000, s: ['75x100', '75x100', '75x100', '100x100', '100x100', '100x100'] },
-  { maxMass: 12000, s: ['75x100', '75x100', '100x100', '100x100', '100x100', '100x100'] },
-  { maxMass: 14000, s: ['75x100', '100x100', '100x100', '100x100', '100x100', '100x100'] },
-  { maxMass: 16000, s: ['75x100', '100x100', '100x100', '100x100', '100x100', '100x100'] },
-  { maxMass: 20000, s: ['100x100', '100x100', '100x100', '100x100', '100x125', '100x125'] },
-];
-// Ряд толщин для понижения на градацию - толщины пиломатериала, из которых
-// на сайте выбираются толщины «в наличии».
-const THICKNESS_GRADES = [16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250];
-function gradeDown(t) {
-  const lower = THICKNESS_GRADES.filter(g => g < t);
-  return lower.length ? lower[lower.length - 1] : t;
-}
-function beamSection9(mass, axisMm) {
-  let exceeded = false;
-  let row = TABLE9.find(r => mass <= r.maxMass);
-  if (!row) { row = TABLE9[TABLE9.length - 1]; exceeded = true; }
-  let colIdx = 0, best = Infinity;
-  T9_AXIS.forEach((a, i) => {
-    const d = Math.abs(a - axisMm);
-    if (d < best || (d === best && a > T9_AXIS[colIdx])) { best = d; colIdx = i; }
-  });
-  if (axisMm > T9_AXIS[T9_AXIS.length - 1]) exceeded = true;
-  const [t, w] = row.s[colIdx].split('x').map(Number);
-  return { t: axisMm < T9_AXIS[0] ? gradeDown(t) : t, w, exceeded };
-}
-
 // Торцовый брус дна (п.1.6.8) по массе груза, до 20000 кг (как у II-1).
 function endBeamSection(mass) {
   if (mass <= 1000) return { h: 44, w: 100, exceeded: false };
@@ -2745,10 +2703,10 @@ function endBeamSection(mass) {
 }
 
 // Наименьшее число одинаковых элементов шириной memberWidth в пространстве
-// space с шагом осей не более maxAxis (крайние - по краям пространства).
-function minCountBySpan(space, memberWidth, maxAxis) {
-  const span = Math.max(0, space - (memberWidth || 0));
-  return Math.max(2, Math.ceil(span / maxAxis) + 1);
+// space с чистым просветом между соседними не более maxGap (крайние - по
+// краям пространства).
+function minCountByClearGap(space, memberWidth, maxGap) {
+  return Math.max(2, Math.ceil((space + maxGap) / (memberWidth + maxGap) - 1e-9));
 }
 // Чистый просвет между соседними из count элементов шириной memberWidth,
 // равномерно расставленных в пространстве space.
@@ -2762,66 +2720,77 @@ function endBeamBoltDiameter(mass, skidCount) {
   return mass <= 6000 ? 12 : mass <= 10000 ? 16 : 20;
 }
 
-
 // ГОСТ 10198-91, тип III-1: согласование размеров ящика.
 //
-// Толщина стойки зависит от наружной высоты ящика (Табл. 12), наружная
-// высота - от полоза, доски дна и брусьев крышки, а полоз (Табл. 19) - от
-// длины ящика, которая сама зависит от толщины каркаса. Замкнутый круг
-// решается 4 итерациями - за это время значения стабилизируются.
+// Толщина каркаса щитов зависит от наружной высоты ящика (Табл. 12),
+// наружная высота - от полоза и доски дна, а полоз (Табл. 19) - от длины
+// ящика, которая сама зависит от толщины каркаса торцевого щита. Замкнутый
+// круг решается 4 итерациями - за это время значения стабилизируются.
 
+const BEAM_W = 100;               // ширина стоек, горизонтальных брусьев щитов, брусьев крышки и продольного бруса дна
 const CROSS_BEAM_MAX_GAP = 700;   // промежуток между краями поперечных брусьев крышки (и от стенки до крайнего), по указанию пользователя
+const CROSS_BEAM_AXIS_MIN = 500, CROSS_BEAM_AXIS_MAX = 800; // настройка расстояния между осями поперечных брусьев крышки (п.1.8.1)
 const CROSS_BEAM_OPT_EDGE = 2;    // «Оптимизировать размеры»: отступ от стенки до крайнего бруса больше на 2 мм
-const LONG_BEAM_MAX_AXIS = 800;   // шаг осей продольных брусьев крышки
+const LONG_BEAM_COUNT = 2;        // продольные брусья крышки
 const ITERATIONS = 4;
+
+// Поперечные брусья крышки (n шт. шириной w) - равномерно по длине груза L:
+// отступ от стенки до крайнего (edge) равен промежутку между краями соседних
+// (gap), при «Оптимизировать размеры» отступ больше на edgeAdd. axis -
+// расстояние между осями соседних.
+function crossBeamLayout(L, w, n, edgeAdd) {
+  const edge = (L - n * w) / (n + 1) + edgeAdd;
+  const gap = (L - n * w - 2 * edge) / (n - 1);
+  return { edge, gap, axis: gap + w };
+}
+
+// Число поперечных брусьев крышки: заданное вручную (c.lidCrossBeamCount) -
+// целое не меньше 2; по расстоянию между осями (c.lidCrossBeamAxis, 500-800
+// мм) - наименьшее, при котором оно не больше заданного; штатно -
+// наименьшее (не меньше 2), при котором и отступы, и промежутки между
+// краями брусьев ≤ 700 мм.
+function crossBeamCounts(c, edgeAdd) {
+  const { L } = c;
+  const standard = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP + edgeAdd) / (CROSS_BEAM_MAX_GAP + BEAM_W - edgeAdd)));
+  if (c.lidCrossBeamCount > 0) return { standard, count: Math.max(2, Math.round(c.lidCrossBeamCount)), axisSet: 0 };
+  if (c.lidCrossBeamAxis > 0) {
+    const axisSet = Math.min(CROSS_BEAM_AXIS_MAX, Math.max(CROSS_BEAM_AXIS_MIN, c.lidCrossBeamAxis));
+    let n = 2;
+    while (n < 1000 && crossBeamLayout(L, BEAM_W, n, edgeAdd).axis > axisSet + 1e-9) n++;
+    return { standard, count: n, axisSet };
+  }
+  return { standard, count: standard, axisSet: 0 };
+}
 
 // c - контекст расчёта (см. compute.js): входные данные, skinT, ov, round.
 function stabilizeSizes(c) {
   const { L, W, H, MASS, ov, round, skinT } = c;
-  let stojkaT = skinT, stojkaExceeded = false, frameT = skinT;
-  let len = L, outerW = W, skidCalcWidth = W;
+  let frameGost = skinT, stojkaExceeded = false, torFrameT = skinT, bokFrameT = skinT;
+  let lidBeamT = 0, dnoBeamT = 0;
+  let len = L, outerW = W, skidSpace = W;
   let skid = { t: 0, w: 0, count: 0 }, skidTableInfo = null, polozSimpleExceeded = false;
-  let beam9 = { t: 0, w: 100, exceeded: false };
-  let wallBeamT = 0, crossBeamT = 0, crossBeamCount = 0, standardCrossBeamCount = 0, crossBeamAxis = 0;
-  let longBeamT = 0, longBeamCount = 0;
   let floorBoardT = 0, floorBoardExceeded = false;
   let sub = { t: 0, w: 0, l: 0, qty: 0 };
   let outerH = 0;
 
   for (let iter = 0; iter < ITERATIONS; iter++) {
-    // Каркас стенки - стойки (Табл. 12) и продольные брусья (Табл. 9)
-    // встык в одной плоскости: толщина каркаса - большая из двух.
-    len = L + (frameT + skinT) * 2;
-    outerW = W + (frameT + skinT) * 2;
-    skidCalcWidth = W + frameT * 2;
-
-    // Поперечные брусья крышки - равномерно по длине: отступы от стенок
-    // равны промежуткам между брусьями, при «Оптимизировать размеры» отступы
-    // больше на edgeAdd = 2 мм. Штатно - наименьшее число (не меньше 2), при
-    // котором и отступы, и промежутки между краями брусьев ≤ 700 мм; число,
-    // заданное вручную (c.lidCrossBeamCount), - целое не меньше 2.
-    const beamW = beam9.w;
-    const edgeAdd = c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0;
-    standardCrossBeamCount = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP + edgeAdd) / (CROSS_BEAM_MAX_GAP + beamW - edgeAdd)));
-    crossBeamCount = c.lidCrossBeamCount > 0 ? Math.max(2, Math.round(c.lidCrossBeamCount)) : standardCrossBeamCount;
-    // Расстояние между осями поперечных брусьев - колонка Табл. 9. Брусья
-    // рамы крышки и продольные брусья стенок - одного сечения (п.1.8.1).
-    crossBeamAxis = (L + beamW) / (crossBeamCount + 1);
-    beam9 = beamSection9(MASS, crossBeamAxis);
-    wallBeamT = ov('tWallBeam', round(beam9.t), 'Толщина продольного бруса стенки');
-    crossBeamT = ov('t21', round(beam9.t), 'Толщина поперечного бруса крышки');
+    // Каркас снаружи обшивки: длина - по торцевым щитам, ширина - по боковым.
+    len = L + (skinT + torFrameT) * 2;
+    outerW = W + (skinT + bokFrameT) * 2;
+    // Полозья - между продольными брусьями дна.
+    skidSpace = outerW - BEAM_W * 2;
 
     // Полозья: при сплошном жёстком основании - п.1.6.5 и число по ширине,
-    // иначе - Табл. 19 (как у II-1).
+    // иначе - Табл. 19 (как у II-1). Шаг осей полозьев ≤ 1200 мм (п.1.6.2).
     if (c.solidRigidBase) {
       const poloz = polozSection165(MASS);
       polozSimpleExceeded = poloz.exceeded;
       const countDefault = (W > 1100) ? 3 : 2;
-      const minNeeded = minSkidsByWidth162(skidCalcWidth, poloz.w);
+      const minNeeded = minSkidsByWidth162(skidSpace, poloz.w);
       skid = { t: poloz.h, w: poloz.w, count: countDefault < minNeeded ? minNeeded : countDefault };
       skidTableInfo = null;
     } else {
-      const sel = selectSkid19(MASS, len, skidCalcWidth); // толщины «в наличии» - availableThicknesses из ../options.js
+      const sel = selectSkid19(MASS, len, skidSpace); // толщины «в наличии» - availableThicknesses из ../options.js
       skid = { t: sel.h, w: sel.w, count: sel.count };
       skidTableInfo = sel;
     }
@@ -2834,7 +2803,7 @@ function stabilizeSizes(c) {
 
     // Доска дна: при креплении к доскам дна - Табл. 4, иначе - по массе.
     if (c.fasteningType === 'floor_boards') {
-      const distanceMm = skid.count > 1 ? skidCalcWidth / (skid.count - 1) : skidCalcWidth;
+      const distanceMm = skid.count > 1 ? skidSpace / (skid.count - 1) : skidSpace;
       const fb = floorBoardThickness(MASS, L, W, distanceMm);
       floorBoardT = round(fb.value); floorBoardExceeded = fb.exceeded;
     } else {
@@ -2842,48 +2811,51 @@ function stabilizeSizes(c) {
     }
     floorBoardT = ov('floorBoardT', floorBoardT, 'Толщина доски дна');
 
-    // Продольные брусья крышки - только при поперечном расположении досок
-    // (доски лежат на них, поперечные брусья набиты снизу), сечение - Табл. 9.
-    if (c.lidLayout === 'transverse') {
-      longBeamCount = minCountBySpan(W, beam9.w, LONG_BEAM_MAX_AXIS);
-      longBeamT = ov('tLongbeam', round(beam9.t), 'Толщина продольного бруса крышки');
-    } else {
-      longBeamT = 0; longBeamCount = 0;
-    }
+    // Брусья крышки входят во внутреннюю высоту: снаружи над грузом - только
+    // доски крышки.
+    outerH = (c.removeSkidBoards ? 0 : sub.t) + skid.t + floorBoardT + H + skinT;
 
-    outerH = (c.removeSkidBoards ? 0 : sub.t) + skid.t + floorBoardT + H + crossBeamT + longBeamT + skinT;
-
+    // Каркас щита - стойки и горизонтальные брусья одной толщины по Табл. 12
+    // (своя у торцевого и бокового щита). Брусья крышки и продольный брус дна
+    // штатно - как горизонтальный брус бокового щита.
     const stj = stojkaSection(MASS, outerH);
-    stojkaT = ov('tStojka', round(stj.t), 'Толщина стойки');
+    frameGost = round(stj.t);
     stojkaExceeded = stj.exceeded;
-    frameT = Math.max(stojkaT, wallBeamT);
+    torFrameT = ov('tTorFrame', frameGost, 'Толщина каркаса торцевого щита');
+    bokFrameT = ov('tBokFrame', frameGost, 'Толщина каркаса бокового щита');
+    lidBeamT = ov('tLidBeam', bokFrameT, 'Толщина брусьев крышки');
+    dnoBeamT = ov('tDnoBeam', bokFrameT, 'Толщина продольного бруса дна');
   }
 
+  const edgeAdd = c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0;
+  const cross = crossBeamCounts(c, edgeAdd);
+
   return {
-    stojkaT, stojkaExceeded, frameT, len, outerW, outerH,
-    skid, skidTableInfo, polozSimpleExceeded, sub,
-    beamW: beam9.w, beam9Exceeded: beam9.exceeded, crossBeamAxis, wallBeamT,
-    crossBeamT, crossBeamCount, standardCrossBeamCount,
-    crossBeamMaxGap: CROSS_BEAM_MAX_GAP, crossBeamEdgeAdd: c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0,
-    longBeamT, longBeamCount,
+    frameGost, stojkaExceeded, torFrameT, bokFrameT, len, outerW, outerH,
+    skid, skidTableInfo, polozSimpleExceeded, sub, skidSpace,
+    beamW: BEAM_W, lidBeamT, dnoBeamT,
+    crossBeamCount: cross.count, standardCrossBeamCount: cross.standard, crossBeamAxisSet: cross.axisSet,
+    crossBeamLayout: crossBeamLayout(L, BEAM_W, cross.count, edgeAdd),
+    crossBeamMaxGap: CROSS_BEAM_MAX_GAP, crossBeamEdgeAdd: edgeAdd,
+    longBeamCount: LONG_BEAM_COUNT,
     floorBoardT, floorBoardExceeded,
   };
 }
 
-
-// ГОСТ 10198-91, тип III-1: дно - полозья, подполозные доски, торцовые брусья
-// и доски дна.
+// ГОСТ 10198-91, тип III-1: дно - полозья, подполозные доски, доски дна,
+// продольные брусья дна (по краям, на них стоят боковые щиты) и торцовые
+// брусья.
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (sizing.js).
 // subLengthWarn - в таблице ⚠ вместо длины подполозной доски.
 function buildDno(c, s, subLengthWarn) {
-  const { L, W, MASS, ov, round, warnings, removeSkidBoards, removeFloorBoards } = c;
-  const { skid, sub, len } = s;
+  const { W, MASS, ov, round, warnings, removeSkidBoards, removeFloorBoards } = c;
+  const { skid, sub, len, outerW } = s;
   const rows = [];
 
-  // Полоз (t9) и торцовый брус (t11): толщина из «Тонкой настройки» - в
-  // расчёте (skid.t, beam.t), правка ячейки таблицы - только число в
-  // таблице (их сечение - табличная пара толщина×ширина).
+  // Полоз (t9) и торцовый брус (t11): правка ячейки таблицы - только число
+  // в таблице, в расчёт не идёт (их сечение - табличная пара
+  // толщина×ширина).
   rows.push({ name: 'Полоз', t: ov('t9', skid.tGost, 'Толщина полоза'), w: skid.w, l: len, qty: skid.count, overrideKey: 't9' });
   if (!removeSkidBoards) {
     rows.push({ name: 'Подполозная доска', t: sub.t, w: sub.w, l: subLengthWarn ? '⚠' : sub.l, qty: sub.qty, overrideKey: 't10' });
@@ -2895,11 +2867,11 @@ function buildDno(c, s, subLengthWarn) {
   }
   const beamGostT = round(endBeam.h);
   const beam = { t: ov('t11', beamGostT, 'Толщина торцового бруса дна', { cell: false }), w: endBeam.w, l: W, qty: 2 };
-  rows.push({ name: 'Торцовый брус дна', t: ov('t11', beamGostT, 'Толщина торцового бруса дна'), w: beam.w, l: beam.l, qty: beam.qty, overrideKey: 't11' });
 
-  // Доски дна - между торцовыми брусьями, поперёк ящика.
-  const floorT = s.floorBoardT, floorLen = W;
-  const fb = fillBoards(L - beam.w * 2, c.roundBoardWidths);
+  // Доски дна - поперёк ящика на всю наружную ширину, занимают наружную
+  // длину без ширины двух торцовых брусьев.
+  const floorT = s.floorBoardT, floorLen = outerW;
+  const fb = fillBoards(len - beam.w * 2, c.roundBoardWidths);
   if (!removeFloorBoards) {
     if (fb.mainQty > 0) rows.push({ name: 'Доска дна', t: floorT, w: 100, l: floorLen, qty: fb.mainQty, overrideKey: 'floorBoardT' });
     fb.extra.forEach((e, i) => {
@@ -2910,42 +2882,31 @@ function buildDno(c, s, subLengthWarn) {
     if (fb.singleNarrow) warnings.push('Доска дна: одна доска уже менее 100 мм.');
   }
 
+  // Продольные брусья дна - как горизонтальный брус бокового щита.
+  const dnoBeam = { t: s.dnoBeamT, w: s.beamW, l: len, qty: 2 };
+  rows.push({ name: 'Продольный брус дна', t: dnoBeam.t, w: dnoBeam.w, l: dnoBeam.l, qty: dnoBeam.qty, overrideKey: 'tDnoBeam' });
+  rows.push({ name: 'Торцовый брус дна', t: ov('t11', beamGostT, 'Толщина торцового бруса дна'), w: beam.w, l: beam.l, qty: beam.qty, overrideKey: 't11' });
+
   const volume = vol(skid.t, skid.w, len, skid.count) + (removeSkidBoards ? 0 : vol(sub.t, sub.w, sub.l, sub.qty)) + vol(beam.t, beam.w, beam.l, beam.qty)
+    + vol(dnoBeam.t, dnoBeam.w, dnoBeam.l, dnoBeam.qty)
     + (removeFloorBoards ? 0 : (vol(floorT, 100, floorLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(floorT, e.width, floorLen, e.qty), 0)));
 
   return { rows, volume };
 }
 
-
-// ГОСТ 10198-91, тип III-1: крышка - поперечные брусья, продольные брусья
-// (только при поперечном расположении досок: доски лежат на них, поперечные
-// набиты снизу и входят во внутреннюю высоту) и доски. Брусья - сечением по
-// Табл. 9, как продольные брусья стенок (п.1.8.1).
+// ГОСТ 10198-91, тип III-1: крышка - доски обшивки (всегда поперёк ящика),
+// продольные брусья (доски лежат на них) и поперечные брусья (набиты снизу,
+// входят во внутреннюю высоту). Брусья - как горизонтальный брус бокового
+// щита (п.1.8.1), продольные и поперечные - одной толщины.
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (sizing.js).
 function buildKryshka(c, s) {
-  const { L, W, warnings, skinT, optimizeSizes } = c;
+  const { W, warnings, skinT, optimizeSizes } = c;
   const rows = [];
 
-  const crossLen = W - (optimizeSizes ? 4 : 0);
-  rows.push({ name: 'Внутренний поперечный брус', t: s.crossBeamT, w: s.beamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 't21' });
-  let volume = vol(s.crossBeamT, s.beamW, crossLen, s.crossBeamCount);
-
-  // Доски: при поперечном расположении идут поперёк ящика (длина - наружная
-  // ширина) и лежат на продольных брусьях; при продольном - вдоль (длина -
-  // длина ящика).
-  let boardLen, fillspace;
-  if (c.lidLayout === 'transverse') {
-    const longLen = L + s.frameT * 2 - (optimizeSizes ? 4 : 0);
-    rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.beamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
-    volume += vol(s.longBeamT, s.beamW, longLen, s.longBeamCount);
-    boardLen = s.outerW;
-    fillspace = s.len;
-  } else {
-    boardLen = s.len;
-    fillspace = s.outerW;
-  }
-  const fb = fillBoards(fillspace, c.roundBoardWidths);
+  // Доски - поперёк ящика длиной по ширине груза, занимают наружную длину.
+  const boardLen = W;
+  const fb = fillBoards(s.len, c.roundBoardWidths);
   if (fb.mainQty > 0) rows.push({ name: 'Доска крышки', t: skinT, w: 100, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
@@ -2953,34 +2914,46 @@ function buildKryshka(c, s) {
   });
   if (fb.warn) warnings.push('Доска крышки: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска крышки: одна доска уже менее 100 мм.');
-  volume += vol(skinT, 100, boardLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0);
+  let volume = vol(skinT, 100, boardLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0);
+
+  // «Оптимизировать размеры» - брусья короче на 4 мм.
+  const cut = optimizeSizes ? 4 : 0;
+  const crossLen = W + skinT * 2 - cut;
+  rows.push({ name: 'Поперечный брус крышки', t: s.lidBeamT, w: s.beamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 'tLidBeam' });
+  volume += vol(s.lidBeamT, s.beamW, crossLen, s.crossBeamCount);
+
+  const longLen = s.len - cut;
+  rows.push({ name: 'Продольный брус крышки', t: s.lidBeamT, w: s.beamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLidBeam' });
+  volume += vol(s.lidBeamT, s.beamW, longLen, s.longBeamCount);
 
   return { rows, volume };
 }
-
 
 // ГОСТ 10198-91, тип III-1: каркас щита (торцевого или бокового) - стойки,
 // этажи и раскосы.
 
 const STOJKA_W = 100;   // ширина стойки
-const MAX_AXIS = 800;   // шаг осей стоек
+const MAX_CLEAR_GAP = 800;   // просвет между краями соседних стоек (по указанию пользователя)
 const MIN_ANGLE = 20, MAX_ANGLE = 60; // допустимый угол раскоса, ° (п.1.7.7)
 const RASKOSINA_MIN_H = 600;  // п.1.7.7: раскосы - при внутренней высоте ящика свыше 600 мм
 const TWO_FLOORS_H = 2000;    // п.1.6.16: средние продольные брусья - при внутренней высоте 2000 мм и более
 
-// fillspace - ширина щита под стойки, panelH - высота щита, H - высота груза
-// (внутренняя высота ящика), beamW - ширина продольных брусьев (Табл. 9).
+// fillspace - ширина щита под стойки, panelH - высота каркаса щита (высота
+// груза без бруса крышки над щитом), H - высота груза (внутренняя высота
+// ящика), beamW - ширина горизонтальных брусьев.
+// Стойка: 1 этаж - panelH без 2 горизонтальных брусьев, 2 этажа - без 3,
+// пополам.
 // Раскосы - при H свыше 600 мм или по галочке «Добавить раскосины»
 // (forceRaskosina). Этажи: 2 при H от 2000 мм или если на 1 этаже угол
-// раскоса при 2 стойках больше 60°. Стоек - не меньше, чем по шагу осей
-// 800 мм, и (при раскосах) столько, чтобы угол раскоса был не меньше 20°
-// (пока есть место). manualCount - число стоек, заданное вручную: крайние -
+// раскоса при 2 стойках больше 60°. Стоек - не меньше, чем по просвету
+// между краями 800 мм, и (при раскосах) столько, чтобы угол раскоса был не
+// меньше 20° (пока есть место). manualCount - число стоек, заданное вручную: крайние -
 // по краям щита, остальные равномерно между ними; не помещаются -
 // sectionW ≤ 0 (проверяет compute.js).
 // Возвращает { count, floors, len (длина стойки), sectionW, hasRaskosina,
 // warn, tooNarrow }.
 function buildFrame(fillspace, panelH, H, beamW, forceRaskosina, manualCount) {
-  const spacingMinCount = minCountBySpan(fillspace, STOJKA_W, MAX_AXIS);
+  const spacingMinCount = minCountByClearGap(fillspace, STOJKA_W, MAX_CLEAR_GAP);
   const sectionW = n => clearGapBySpan(fillspace, STOJKA_W, n);
   const angleDeg = (n, h) => Math.atan2(h, sectionW(n)) * 180 / Math.PI;
   const stojkaLen = fl => fl === 2 ? (panelH - beamW * 3) / 2 : panelH - beamW * 2;
@@ -3029,99 +3002,100 @@ function tooManyPostsText(n) {
   return `${n} стоек не помещаются`;
 }
 
-
-// ГОСТ 10198-91, тип III-1: щит торцевой (расчёт на 1 щит, щитов 2).
+// ГОСТ 10198-91, тип III-1: щит торцевой (расчёт на 1 щит, щитов 2). Щит -
+// по ширине груза, между боковыми щитами; сверху над ним - поперечный брус
+// крышки.
 
 // c - контекст расчёта; s - согласованные размеры; frame - каркас (frame.js);
 // rask - толщина и ширина раскосины.
 function buildEndPanel(c, s, frame, rask) {
-  const { W, warnings, skinT } = c;
-  const stojka = { t: s.stojkaT, w: 100, l: frame.len, qty: frame.count * frame.floors };
-  // Продольные брусья (Табл. 9): низ и верх рамы (+ средний при 2 этажах).
-  const horiz = { t: s.wallBeamT, w: s.beamW, l: W + s.frameT * 2, qty: frame.floors + 1 };
+  const { W, H, warnings, skinT } = c;
+  // Каркас - горизонтальные брусья (низ и верх, + средний при 2 этажах) и
+  // стойки одной толщины (Табл. 12).
+  const horiz = { t: s.torFrameT, w: s.beamW, l: W, qty: frame.floors + 1 };
+  const stojka = { t: s.torFrameT, w: 100, l: frame.len, qty: frame.count * frame.floors };
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Доски обшивки - на каждый этаж, по наружной ширине ящика.
-  const boardLen = s.beamW * 2 + frame.len + s.longBeamT;
-  const fb = fillBoards(s.outerW, c.roundBoardWidths);
-  const boardQty = fb.mainQty * frame.floors;
-  if (fb.warn) warnings.push('Доска торца: остаток - нестандартная ширина (вне 75–99 мм).');
-  if (fb.singleNarrow) warnings.push('Доска торца: одна доска уже менее 100 мм.');
+  // Доски обшивки - на всю высоту щита, занимают ширину груза.
+  const boardLen = H - s.lidBeamT;
+  const fb = fillBoards(W, c.roundBoardWidths);
+  if (fb.warn) warnings.push('Доска обшивки торца: остаток - нестандартная ширина (вне 75–99 мм).');
+  if (fb.singleNarrow) warnings.push('Доска обшивки торца: одна доска уже менее 100 мм.');
 
   // X-образные раскосины: к каждой раскосине - встречная из 2 кусков по
   // (длина - ширина) / 2, та же толщина.
   const withX = c.xRaskosina && frame.hasRaskosina;
   const rows = [
-    { name: 'Стойка', t: stojka.t, w: stojka.w, l: stojka.l, qty: stojka.qty, overrideKey: 'tStojka' },
-    { name: 'Продольный брус', t: horiz.t, w: horiz.w, l: horiz.l, qty: horiz.qty, overrideKey: 'tWallBeam' },
+    { name: 'Горизонтальный брус', t: horiz.t, w: horiz.w, l: horiz.l, qty: horiz.qty, overrideKey: 'tTorFrame' },
+    { name: 'Стойка', t: stojka.t, w: stojka.w, l: stojka.l, qty: stojka.qty, overrideKey: 'tTorFrame' },
   ];
   if (frame.hasRaskosina) rows.push({ name: 'Раскосина', t: rask.t, w: rask.w, l: raskLen, qty: raskQty, overrideKey: 'tRaskosina' });
   if (withX) rows.push({ name: 'Раскосина (дополнительная)', t: rask.t, w: rask.w, l: (raskLen - rask.w) / 2, qty: raskQty * 2, overrideKey: 'tRaskosina' });
-  if (boardQty > 0) rows.push({ name: 'Доска', t: skinT, w: 100, l: boardLen, qty: boardQty, overrideKey: 'skinValue' });
+  if (fb.mainQty > 0) rows.push({ name: 'Доска обшивки', t: skinT, w: 100, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
-    rows.push({ name: 'Доска (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty * frame.floors, overrideKey: 'skinValue' });
+    rows.push({ name: 'Доска обшивки (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty, overrideKey: 'skinValue' });
   });
 
   const volume = vol(stojka.t, stojka.w, stojka.l, stojka.qty) + vol(horiz.t, horiz.w, horiz.l, horiz.qty)
     + vol(rask.t, rask.w, raskLen, raskQty)
-    + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty * frame.floors), 0)
+    + vol(skinT, 100, boardLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0)
     + (withX ? vol(rask.t, rask.w, (raskLen - rask.w) / 2, raskQty * 2) : 0);
 
   return { rows, volume };
 }
 
-
-// ГОСТ 10198-91, тип III-1: щит боковой (расчёт на 1 щит, щитов 2).
+// ГОСТ 10198-91, тип III-1: щит боковой (расчёт на 1 щит, щитов 2). Щит -
+// на всю наружную длину ящика; сверху над ним - продольный брус крышки.
 
 // Опорная планка крышки (п.1.8.2): ширина 50-75 мм - берём 75 мм (по
-// указанию пользователя), сплошная по длине бокового щита, как у II-1.
+// указанию пользователя), длина - длина груза.
 const OPORA_W = 75;
 
 // c - контекст расчёта; s - согласованные размеры; frame - каркас (frame.js);
 // rask - толщина и ширина раскосины.
 function buildBokovoy(c, s, frame, rask) {
-  const { L, warnings, skinT } = c;
-  const stojka = { t: s.stojkaT, w: 100, l: frame.len, qty: frame.count * frame.floors };
-  // Продольные брусья (Табл. 9): низ и верх рамы (+ средний при 2 этажах).
-  const horiz = { t: s.wallBeamT, w: s.beamW, l: L, qty: frame.floors + 1 };
+  const { L, H, warnings, skinT } = c;
+  // Каркас - горизонтальные брусья (низ и верх, + средний при 2 этажах) и
+  // стойки одной толщины (Табл. 12).
+  const horiz = { t: s.bokFrameT, w: s.beamW, l: s.len, qty: frame.floors + 1 };
+  const stojka = { t: s.bokFrameT, w: 100, l: frame.len, qty: frame.count * frame.floors };
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Опорная планка - толщина как у обшивки, длина - как у продольного бруса.
-  const opora = { t: skinT, w: OPORA_W, l: horiz.l, qty: 2 };
+  // Доски обшивки - на всю высоту щита, занимают наружную длину ящика.
+  const boardLen = H - s.lidBeamT;
+  const fb = fillBoards(s.len, c.roundBoardWidths);
+  if (fb.warn) warnings.push('Доска обшивки бока: остаток - нестандартная ширина (вне 75–99 мм).');
+  if (fb.singleNarrow) warnings.push('Доска обшивки бока: одна доска уже менее 100 мм.');
 
-  const boardLen = s.beamW * 2 + frame.len + s.longBeamT;
-  const fb = fillBoards(L, c.roundBoardWidths);
-  const boardQty = fb.mainQty * frame.floors;
-  if (fb.warn) warnings.push('Доска бока: остаток - нестандартная ширина (вне 75–99 мм).');
-  if (fb.singleNarrow) warnings.push('Доска бока: одна доска уже менее 100 мм.');
+  // Опорная планка - толщина как у обшивки.
+  const opora = { t: skinT, w: OPORA_W, l: L, qty: 2 };
 
   // X-образные раскосины: к каждой раскосине - встречная из 2 кусков по
   // (длина - ширина) / 2, та же толщина.
   const withX = c.xRaskosina && frame.hasRaskosina;
   const rows = [
-    { name: 'Стойка', t: stojka.t, w: stojka.w, l: stojka.l, qty: stojka.qty, overrideKey: 'tStojka' },
-    { name: 'Продольный брус', t: horiz.t, w: horiz.w, l: horiz.l, qty: horiz.qty, overrideKey: 'tWallBeam' },
+    { name: 'Горизонтальный брус', t: horiz.t, w: horiz.w, l: horiz.l, qty: horiz.qty, overrideKey: 'tBokFrame' },
+    { name: 'Стойка', t: stojka.t, w: stojka.w, l: stojka.l, qty: stojka.qty, overrideKey: 'tBokFrame' },
   ];
   if (frame.hasRaskosina) rows.push({ name: 'Раскосина', t: rask.t, w: rask.w, l: raskLen, qty: raskQty, overrideKey: 'tRaskosina' });
   if (withX) rows.push({ name: 'Раскосина (дополнительная)', t: rask.t, w: rask.w, l: (raskLen - rask.w) / 2, qty: raskQty * 2, overrideKey: 'tRaskosina' });
-  rows.push({ name: 'Опорная планка', t: opora.t, w: opora.w, l: opora.l, qty: opora.qty, overrideKey: 'skinValue' });
-  if (boardQty > 0) rows.push({ name: 'Доска', t: skinT, w: 100, l: boardLen, qty: boardQty, overrideKey: 'skinValue' });
+  if (fb.mainQty > 0) rows.push({ name: 'Доска обшивки', t: skinT, w: 100, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
-    rows.push({ name: 'Доска (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty * frame.floors, overrideKey: 'skinValue' });
+    rows.push({ name: 'Доска обшивки (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty, overrideKey: 'skinValue' });
   });
+  rows.push({ name: 'Опорная планка', t: opora.t, w: opora.w, l: opora.l, qty: opora.qty, overrideKey: 'skinValue' });
 
   const volume = vol(stojka.t, stojka.w, stojka.l, stojka.qty) + vol(horiz.t, horiz.w, horiz.l, horiz.qty)
     + vol(rask.t, rask.w, raskLen, raskQty) + vol(opora.t, opora.w, opora.l, opora.qty)
-    + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty * frame.floors), 0)
+    + vol(skinT, 100, boardLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0)
     + (withX ? vol(rask.t, rask.w, (raskLen - rask.w) / 2, raskQty * 2) : 0);
 
   return { rows, volume };
 }
-
 
 // ГОСТ 10198-91, тип III-1: болты (не пиломатериал - в объём не входят).
 //   1) Крепление торцовых брусьев дна к полозьям (Табл. 26): диаметр по
@@ -3153,15 +3127,16 @@ function boltRows(mass, s, panelH) {
   ];
 }
 
-
 // ГОСТ 10198-91, тип III-1: расчёт каркасно-щитового плотного разборного
 // ящика с наружным каркасом (на болтах).
 //
 // Порядок расчёта:
 //   1. проверка входных данных, толщина обшивки (16 мм, при насыпном или
 //      незакреплённом грузе 19 мм);
-//   2. согласование размеров: стойки (Табл. 12), продольные брусья стенок и
-//      брусья крышки (Табл. 9), полозья, доска дна (sizing.js);
+//   2. согласование размеров: каркас щитов (Табл. 12; стойки и
+//      горизонтальные брусья щита - одной толщины), брусья крышки и
+//      продольный брус дна (как горизонтальный брус бокового щита), полозья,
+//      доска дна, число поперечных брусьев крышки (sizing.js);
 //   3. узлы: дно (dno.js), крышка (kryshka.js), каркасы щитов (frame.js),
 //      щит торцевой (end-panel.js), щит боковой (bokovoy.js), болты
 //      (bolts.js);
@@ -3209,10 +3184,12 @@ function makeThicknessOverrides(manualOverrides) {
 
 // input: { L, W, H, MASS, fasteningType ('skid' | 'floor_boards'),
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
-//   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
+//   roundBoardWidths, optimizeSizes,
 //   bulkCargo (насыпной или незакреплённый груз), addRaskosina, xRaskosina,
 //   torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
+//   lidCrossBeamAxis (расстояние между осями поперечных брусьев крышки
+//   500-800 мм вручную; нет - штатно; при lidCrossBeamCount не учитывается),
 //   addParchment, manualOverrides, woodDensity }.
 function computeGost10198III1(input) {
   const { L, W, H, MASS, woodDensity } = input;
@@ -3237,21 +3214,18 @@ function computeGost10198III1(input) {
   // --- 2. Согласование размеров ---
   const s = stabilizeSizes(c);
 
-  if (s.beam9Exceeded) {
-    warnings.push('Масса груза или расстояние между поперечными брусьями крышки вне Табл. 9 - сечение продольных брусьев стенок и брусьев крышки принято по крайнему значению.');
-  }
   // Поперечные брусья крышки - равномерно: отступ от стенки до крайнего бруса
   // (crossEdge) равен промежутку между краями соседних (crossGap), при
   // «Оптимизировать размеры» отступ больше на 2 мм. Отступ меньше толщины
   // обшивки + каркаса: при числе, заданном вручную, - блокировка, штатно (2
   // бруса) - предупреждение. Ручное число с промежутком больше 700 мм -
-  // предупреждение. maxCrossBeamCount - наибольшее число брусьев без
+  // предупреждение (при заданном расстоянии между осями - нет: оно
+  // 500-800 мм по п.1.8.1). maxCrossBeamCount - наибольшее число брусьев без
   // блокировки (край ползунка у клиента).
   const crossManual = input.lidCrossBeamCount > 0;
   const crossN = s.crossBeamCount, crossW = s.beamW, crossAdd = s.crossBeamEdgeAdd;
-  const crossEdge = (L - crossN * crossW) / (crossN + 1) + crossAdd;
-  const crossGap = (L - crossN * crossW - 2 * crossEdge) / (crossN - 1);
-  const crossHardMin = skin.value + s.frameT;
+  const crossEdge = s.crossBeamLayout.edge, crossGap = s.crossBeamLayout.gap;
+  const crossHardMin = skin.value + s.torFrameT;
   const crossMinGap = crossHardMin - crossAdd;
   const maxCrossBeamCount = Math.max(2, Math.floor((L - crossMinGap) / (crossW + crossMinGap) + 1e-9));
   if (crossEdge < crossHardMin) {
@@ -3281,7 +3255,7 @@ function computeGost10198III1(input) {
     }
   }
   if (s.stojkaExceeded) {
-    warnings.push('Масса или высота ящика вне Табл. 12 - сечение стоек принято по крайнему значению.');
+    warnings.push('Масса или высота ящика вне Табл. 12 - толщина каркаса щитов принята по крайнему значению.');
   }
   if (s.floorBoardExceeded) {
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 - толщина доски дна принята по крайнему значению.');
@@ -3300,13 +3274,15 @@ function computeGost10198III1(input) {
   const dno = buildDno(c, s, s.sub.l <= 0 || forkliftFail);
   const kryshka = buildKryshka(c, s);
 
-  // Каркасы щитов. Высота щита - без опоры снизу (полоза и доски дна).
+  // Каркасы щитов. Высота щита - высота груза без бруса крышки над щитом
+  // (продольный над боковым, поперечный над торцевым - одной толщины).
+  // Торцевой щит - по ширине груза, боковой - по наружной длине ящика.
   // Штатное число стоек считается всегда - его клиент показывает центром
   // ползунков ручной настройки.
-  const panelHeightFull = H + s.floorBoardT + s.longBeamT;
-  const torecSpace = W + s.frameT * 2, bokSpace = L; // бок - по длине груза
+  const panelH = H - s.lidBeamT;
+  const torecSpace = W, bokSpace = s.len;
   const torecManual = input.torecPostCount > 0, bokManual = input.bokPostCount > 0;
-  const frameArgs = [panelHeightFull, H, s.beamW, input.addRaskosina];
+  const frameArgs = [panelH, H, s.beamW, input.addRaskosina];
   const torecStandard = buildFrame(torecSpace, ...frameArgs);
   const bokStandard = buildFrame(bokSpace, ...frameArgs);
   const torecFrame = torecManual ? buildFrame(torecSpace, ...frameArgs, input.torecPostCount) : torecStandard;
@@ -3341,10 +3317,11 @@ function computeGost10198III1(input) {
   if (bokFrame.len <= 0) {
     return { error: `Внутренняя высота груза ${H} мм слишком мала для каркаса бокового щита - расчёт не выполняется.` };
   }
-  // Раскосина - не тоньше 2/3 толщины стойки, ширина как у стойки (п.1.7.7).
-  const rask = { t: ov('tRaskosina', round(s.stojkaT * 2 / 3), 'Толщина раскосины'), w: 100 };
-  const endPanel = buildEndPanel(c, s, torecFrame, rask);
-  const bokovoy = buildBokovoy(c, s, bokFrame, rask);
+  // Раскосина - не тоньше 2/3 толщины стойки щита, ширина как у стойки
+  // (п.1.7.7).
+  const rask = frameT => ({ t: ov('tRaskosina', round(frameT * 2 / 3), 'Толщина раскосины'), w: 100 });
+  const endPanel = buildEndPanel(c, s, torecFrame, rask(s.torFrameT));
+  const bokovoy = buildBokovoy(c, s, bokFrame, rask(s.bokFrameT));
 
   // --- 4. Итог ---
   const totalVolume = dno.volume + kryshka.volume + 2 * endPanel.volume + 2 * bokovoy.volume;
@@ -3362,15 +3339,15 @@ function computeGost10198III1(input) {
   const result = {
     warnings, dno: dno.rows, kryshka: kryshka.rows, endPanel: endPanel.rows, bokovoy: bokovoy.rows,
     outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
-    W, L, H, skin, t_stojka: s.stojkaT, lidLayout: input.lidLayout,
-    torecFrame, bokFrame, panelHeightFull,
+    W, L, H, skin, torFrameT: s.torFrameT, bokFrameT: s.bokFrameT, lidBeamT: s.lidBeamT,
+    torecFrame, bokFrame, panelH,
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
-    edgeDistCross: Math.round(crossEdge), gapDistCross: Math.round(crossGap),
+    edgeDistCross: Math.round(crossEdge), gapDistCross: Math.round(crossGap), axisDistCross: Math.round(s.crossBeamLayout.axis),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
     standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
     // Болты - отдельный раздел, в объём не входят.
-    bolts: boltRows(MASS, s, panelHeightFull),
+    bolts: boltRows(MASS, s, panelH),
     // Пергамин (галочка «Добавить пергамин») - площадь внутренних поверхностей
     // ящика по размерам груза: 2×(Д×Ш + Д×В + Ш×В), м², вверх до 0.01 (как у
     // других типов). В объём, массу и норму времени не входит.
@@ -3388,7 +3365,6 @@ function computeGost10198III1(input) {
   }
   return result;
 }
-
 
 // Общие для типов I-3 и I-1 функции/данные отрисовки чертежей-фото
 // (используются в src/diagrams.js и src/i1/diagrams.js).
@@ -5163,53 +5139,53 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-function persistRadioGroup(name){
-  const els = Array.from(document.querySelectorAll(`input[name="${name}"]`));
-  if(els.length === 0) return;
-  const key = OPTIONS_STORAGE_PREFIX + name;
-  try{
-    const saved = localStorage.getItem(key);
-    if(saved !== null && els.some(el=>el.value===saved)){
-      els.forEach(el=>{ el.checked = (el.value === saved); });
-    }
-  }catch(e){}
-  els.forEach(el=>el.addEventListener('change', ()=>{
-    if(el.checked){ try{ localStorage.setItem(key, el.value); }catch(e){} }
-  }));
-}
 ['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','optimizeSizes','bulkCargo','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
-persistRadioGroup('lidLayout');
 
 // ГОСТ 10198-91, тип III-1: ручная настройка числа деталей - стоек каркаса
 // (отдельно для торцевого и бокового щита) и поперечных брусьев крышки
-// (галочки «Настроить число …»). У включённой - ползунок и поле для любого
-// значения от 2. Ползунок стоек - штатное число ±3, брусьев крышки - все
-// числа от 2 до наибольшего, при котором расчёт не блокируется (из
-// последнего расчёта; до первого расчёта - штатное ±3). Расстановку считает
-// расчёт: крайние стойки - по краям щита, остальные равномерно между ними;
-// брусья крышки - равномерно, отступы от стенок равны промежуткам (при
-// «Оптимизировать размеры» - на 2 мм больше). Центр ползунка при включении -
-// штатное число из последнего расчёта (до первого расчёта - 3).
+// (галочки «Настроить число …»), а также расстояния между осями поперечных
+// брусьев крышки. У включённой - ползунок и поле для любого значения от 2
+// (расстояние - от 500 до 800 мм). Ползунок стоек - штатное число ±3,
+// брусьев крышки - все числа от 2 до наибольшего, при котором расчёт не
+// блокируется (из последнего расчёта; до первого расчёта - штатное ±3),
+// расстояния - 500-800 мм с шагом 50. Расстановку считает расчёт: крайние
+// стойки - по краям щита, остальные равномерно между ними; брусья крышки -
+// равномерно, отступы от стенок равны промежуткам (при «Оптимизировать
+// размеры» - на 2 мм больше). Центр ползунка при включении - штатное число
+// из последнего расчёта (до первого расчёта - 3), расстояния - 700 мм.
+// Галочки числа и расстояния брусьев крышки взаимоисключающие.
 const MANUAL_COUNT_DEFAULT_CENTER = 3;
+const CROSS_AXIS_STEPS = [500, 550, 600, 650, 700, 750, 800];
 // kind -> id элементов, ключ localStorage, поля штатного и наибольшего
-// (только у брусьев крышки) числа в результате расчёта.
+// (только у брусьев крышки) числа в результате расчёта; у расстояния - свои
+// шаги ползунка (steps), пределы (min, max), значение при включении (center)
+// и взаимоисключающая галочка (exclusive).
 const MANUAL_COUNTS = {
   torec: { checkbox: 'customTorecPosts', row: 'torecPostsRow', slider: 'torecPostsSlider', input: 'torecPostsInput',
            storageKey: OPTIONS_STORAGE_PREFIX + 'torecPostCount', standardField: 'standardTorecPostCount' },
   bok:   { checkbox: 'customBokPosts', row: 'bokPostsRow', slider: 'bokPostsSlider', input: 'bokPostsInput',
            storageKey: OPTIONS_STORAGE_PREFIX + 'bokPostCount', standardField: 'standardBokPostCount' },
   cross: { checkbox: 'customCrossBeams', row: 'crossBeamsRow', slider: 'crossBeamsSlider', input: 'crossBeamsInput',
-           storageKey: OPTIONS_STORAGE_PREFIX + 'crossBeamCount', standardField: 'standardCrossBeamCount', maxField: 'maxCrossBeamCount' },
+           storageKey: OPTIONS_STORAGE_PREFIX + 'crossBeamCount', standardField: 'standardCrossBeamCount', maxField: 'maxCrossBeamCount', exclusive: 'crossAxis' },
+  crossAxis: { checkbox: 'customCrossAxis', row: 'crossAxisRow', slider: 'crossAxisSlider', input: 'crossAxisInput',
+           storageKey: OPTIONS_STORAGE_PREFIX + 'crossBeamAxis', steps: CROSS_AXIS_STEPS, min: 500, max: 800, center: 700, exclusive: 'cross' },
 };
-const manualCount = { torec: null, bok: null, cross: null };   // null - штатно
-const lastStandardCount = { torec: null, bok: null, cross: null };
-const lastMaxCount = { torec: null, bok: null, cross: null };
-const manualCountSliders = { torec: null, bok: null, cross: null };
+const manualCount = { torec: null, bok: null, cross: null, crossAxis: null };   // null - штатно
+const lastStandardCount = { torec: null, bok: null, cross: null, crossAxis: null };
+const lastMaxCount = { torec: null, bok: null, cross: null, crossAxis: null };
+const manualCountSliders = { torec: null, bok: null, cross: null, crossAxis: null };
+
+// Значение поля допустимо: число от 2 (у расстояния - от min до max).
+function manualCountValid(kind, v){
+  const els = MANUAL_COUNTS[kind];
+  return v >= (els.min || 2) && (!els.max || v <= els.max);
+}
 
 function manualCountSteps(kind, center){
+  if(MANUAL_COUNTS[kind].steps) return MANUAL_COUNTS[kind].steps;
   const steps = [];
   if(lastMaxCount[kind] >= 2){
     for(let v=2; v<=lastMaxCount[kind]; v++) steps.push(v);
@@ -5240,21 +5216,30 @@ function showManualCount(kind, value, center){
   rebuildManualCountSlider(kind, center, value);
 }
 
+function hideManualCount(kind){
+  document.getElementById(MANUAL_COUNTS[kind].row).style.display = 'none';
+  manualCount[kind] = null;
+  saveManualCount(kind);
+}
+
 function onManualCountCheckboxChange(kind){
   const els = MANUAL_COUNTS[kind];
   if(document.getElementById(els.checkbox).checked){
-    const center = lastStandardCount[kind] || MANUAL_COUNT_DEFAULT_CENTER;
+    if(els.exclusive){
+      document.getElementById(MANUAL_COUNTS[els.exclusive].checkbox).checked = false;
+      hideManualCount(els.exclusive);
+    }
+    const center = els.center || lastStandardCount[kind] || MANUAL_COUNT_DEFAULT_CENTER;
     showManualCount(kind, center, center);
+    saveManualCount(kind);
   } else {
-    document.getElementById(els.row).style.display = 'none';
-    manualCount[kind] = null;
+    hideManualCount(kind);
   }
-  saveManualCount(kind);
   invalidateCalc();
 }
 function onManualCountInputChange(kind){
   const v = parseInt(document.getElementById(MANUAL_COUNTS[kind].input).value, 10);
-  if(!(v >= 2)) return;
+  if(!manualCountValid(kind, v)) return;
   manualCount[kind] = v;
   if(manualCountSliders[kind]) manualCountSliders[kind].setValue(v);
   saveManualCount(kind);
@@ -5266,6 +5251,7 @@ function onManualCountInputChange(kind){
 function updateManualCountsFromCalc(calc){
   Object.keys(MANUAL_COUNTS).forEach(kind=>{
     const els = MANUAL_COUNTS[kind];
+    if(!els.standardField) return;
     lastStandardCount[kind] = calc[els.standardField];
     if(!els.maxField) return;
     lastMaxCount[kind] = calc[els.maxField];
@@ -5273,11 +5259,14 @@ function updateManualCountsFromCalc(calc){
   });
 }
 
-// Восстановление при открытии страницы.
+// Восстановление при открытии страницы (из взаимоисключающих - первая
+// сохранённая).
 Object.keys(MANUAL_COUNTS).forEach(kind=>{
   let saved = null;
   try{ const raw = localStorage.getItem(MANUAL_COUNTS[kind].storageKey); if(raw) saved = parseInt(raw, 10); }catch(e){}
-  if(!(saved >= 2)) return;
+  if(!manualCountValid(kind, saved)) return;
+  const exclusive = MANUAL_COUNTS[kind].exclusive;
+  if(exclusive && manualCount[exclusive] !== null) return;
   document.getElementById(MANUAL_COUNTS[kind].checkbox).checked = true;
   showManualCount(kind, saved, saved);
 });
@@ -5528,7 +5517,6 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
-    lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     bulkCargo: document.getElementById('bulkCargo').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
@@ -5537,6 +5525,7 @@ function buildCalcInput(){
     torecPostCount: manualCount.torec,
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
+    lidCrossBeamAxis: manualCount.crossAxis,
     manualOverrides,
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
@@ -5582,9 +5571,6 @@ function calculateNow(){
 ['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','bulkCargo','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
-});
-document.querySelectorAll('input[name="lidLayout"]').forEach(el=>{
-  el.addEventListener('change', invalidateCalc);
 });
 
 // Правка ячейки таблицы не пересчитывает сразу: ячейка помечается

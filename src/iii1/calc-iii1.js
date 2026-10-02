@@ -36,7 +36,6 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
-    lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     bulkCargo: document.getElementById('bulkCargo').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
@@ -45,6 +44,7 @@ function buildCalcInput(){
     torecPostCount: manualCount.torec,
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
+    lidCrossBeamAxis: manualCount.crossAxis,
     manualOverrides,
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
@@ -90,9 +90,6 @@ function calculateNow(){
 ['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','bulkCargo','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
-});
-document.querySelectorAll('input[name="lidLayout"]').forEach(el=>{
-  el.addEventListener('change', invalidateCalc);
 });
 
 // Правка ячейки таблицы не пересчитывает сразу: ячейка помечается

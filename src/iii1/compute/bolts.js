@@ -27,4 +27,3 @@ function boltRows(mass, s, panelH) {
     { name: 'Болт крепления торцовых брусьев дна к полозьям', d: endBeamD, qty: endBeamQty },
   ];
 }
-
