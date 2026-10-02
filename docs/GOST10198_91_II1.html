@@ -2964,11 +2964,14 @@ function buildKryshka(c, s) {
 const STOJKA_W = 100;   // ширина стойки
 const MAX_AXIS = 800;   // шаг осей стоек
 const MIN_ANGLE = 20, MAX_ANGLE = 60; // допустимый угол раскосины, °
+const RASKOSINA_MIN_H = 600; // п.1.7.7: раскосины - при внутренней высоте ящика свыше 600 мм
 
-// fillspace - ширина щита под стойки, panelH - высота щита, H - высота груза.
+// fillspace - ширина щита под стойки, panelH - высота щита, H - высота груза
+// (внутренняя высота ящика). Раскосины - только при H свыше 600 мм (п.1.7.7).
 // Этажи: 2 при высоте груза больше 2000 мм или если на 1 этаже угол раскосины
 // при 2 стойках больше 60°. Стоек - не меньше, чем по шагу осей 800 мм, и
-// столько, чтобы угол раскосины был не меньше 20° (пока есть место).
+// (при раскосинах) столько, чтобы угол раскосины был не меньше 20° (пока
+// есть место).
 // manualCount - число стоек, заданное вручную (галочка «Настроить число
 // стоек»): крайние - по краям щита, остальные равномерно между ними; не
 // помещаются - sectionW ≤ 0 (проверяет compute.js).
@@ -2983,18 +2986,20 @@ function buildFrame(fillspace, panelH, H, manualCount) {
     return { count: 2, floors: 1, len: 0, sectionW: 0, hasRaskosina: false, warn: null, tooNarrow: true };
   }
 
+  const needRaskosina = H > RASKOSINA_MIN_H;
   let floors = H > 2000 ? 2 : 1;
-  if (floors === 1 && angleDeg(2, stojkaLen(1)) > MAX_ANGLE) floors = 2;
+  if (needRaskosina && floors === 1 && angleDeg(2, stojkaLen(1)) > MAX_ANGLE) floors = 2;
   const len = stojkaLen(floors);
+  const hasRaskosina = needRaskosina && len > 0;
 
   if (manualCount > 0) {
     const count = Math.max(2, Math.round(manualCount));
-    return { count, floors, len, sectionW: sectionW(count), hasRaskosina: len > 0, warn: null, tooNarrow: false };
+    return { count, floors, len, sectionW: sectionW(count), hasRaskosina, warn: null, tooNarrow: false };
   }
 
   let warn = null;
   let angleCount = 2;
-  if (len > 0) {
+  if (hasRaskosina) {
     while (sectionW(angleCount + 1) > 0 && angleDeg(angleCount, len) < MIN_ANGLE) angleCount++;
     if (angleDeg(angleCount, len) < MIN_ANGLE) {
       warn = `угол раскосины <20° даже при максимуме секций (${angleCount})`;
@@ -3005,7 +3010,7 @@ function buildFrame(fillspace, panelH, H, manualCount) {
   if (sectionW(count) <= 0) {
     return { count, floors, len: 0, sectionW: 0, hasRaskosina: false, warn: null, tooNarrow: true };
   }
-  return { count, floors, len, sectionW: sectionW(count), hasRaskosina: len > 0, warn, tooNarrow: false };
+  return { count, floors, len, sectionW: sectionW(count), hasRaskosina, warn, tooNarrow: false };
 }
 
 // Угол раскосины каркаса к горизонтали, °.
@@ -3783,8 +3788,9 @@ function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameV
 }
 
 // ГОСТ 10198-91, тип II-1: чертёж торцевого/бокового щита на 5 и более
-// стоек - фото есть только для 2-4 стоек (см. TOREC_VARIANTS в torec.js),
-// поэтому он рисуется программно (SVG) в координатах и с геометрией фото на
+// стоек, а также щита без раскосин (внутренняя высота до 600 мм, п.1.7.7) на
+// любое число стоек - фото есть только для 2-4 стоек с раскосинами (см.
+// TOREC_VARIANTS в torec.js), поэтому он рисуется программно (SVG) в координатах и с геометрией фото на
 // 4 стойки того же числа этажей (torec_ii1_{1,2}floor_4posts.jpg): обшивка,
 // брусья, стойки и раскосины шириной 72px, линии 6px, заливка как на фото.
 // Крайние стойки - по краям щита (как на фото), остальные - равномерно между
@@ -3831,7 +3837,8 @@ function ii1BraceStrip(l, r, top, bot, rising, PW, fmt){
 // Чертёж на n стоек и floors этажей: { img, gap } - картинка (data:-URL SVG)
 // и кромки 1-й и 2-й стоек для размера «расстояние между стойками» (формат
 // поля gap у TOREC_VARIANTS); null - стоек так много, что они слились бы.
-function panelGeneratedII1(n, floors, xRaskosinaVal){
+// hasRaskosinaVal = false - щит без раскосин.
+function panelGeneratedII1(n, floors, xRaskosinaVal, hasRaskosinaVal){
   const G = PANEL_GEN_II1[floors];
   const f = v => v.toFixed(1);
   let postW = PANEL_GEN_II1_POST_W;
@@ -3840,7 +3847,7 @@ function panelGeneratedII1(n, floors, xRaskosinaVal){
     postW = (G.frameR - G.frameL)/(n + 1.2*(n-1));
     bay = 1.2*postW;
   }
-  if(diagramIsTooDense(bay / 2 - PANEL_GEN_II1_STROKE, G.IW)) return null; // заглушка
+  if(diagramIsTooDense((hasRaskosinaVal ? bay / 2 : bay) - PANEL_GEN_II1_STROKE, G.IW)) return null; // заглушка
   const px = i => G.frameL + i*(postW + bay); // левая кромка i-й стойки (с 0)
   const rect = (x1, y1, x2, y2) => `<rect x="${f(x1)}" y="${f(y1)}" width="${f(x2-x1)}" height="${f(y2-y1)}"/>`;
   const [sx1, sy1, sx2, sy2] = G.skin;
@@ -3848,7 +3855,7 @@ function panelGeneratedII1(n, floors, xRaskosinaVal){
   for(let fl=0; fl<floors; fl++){
     const top = G.bars[fl][1], bot = G.bars[fl+1][0];
     const upper = floors > 1 && fl === 0; // верхний этаж - зеркально
-    for(let i=0; i<n-1; i++){
+    for(let i=0; hasRaskosinaVal && i<n-1; i++){
       const l = px(i) + postW, r = px(i+1);
       const rising = (i < Math.ceil((n-1)/2)) !== upper;
       if(xRaskosinaVal) shapes += ii1BraceStrip(l, r, top, bot, !rising, postW, f);
@@ -3889,12 +3896,13 @@ function panelGeneratedII1(n, floors, xRaskosinaVal){
 // стойки*3 + длина стойки*2 = panelHeightFull при floors=2), плюс
 // добавляется своя группа E (floorHeightVal = ширина стойки + длина
 // стойки, высота ОДНОГО этажа) - на 1-этажных схемах группы E нет.
-// xRaskosinaVal - X-образные раскосины (фото imgX).
+// xRaskosinaVal - X-образные раскосины (фото imgX); hasRaskosinaVal = false -
+// щит без раскосин (внутренняя высота до 600 мм, п.1.7.7).
 // gapVal - расстояние между кромками соседних стоек (frame.sectionW, ширина
 // стоек учтена), см. postGapRecords.
 // На 5 и более стоек фото нет - чертёж генерируется (см. panelScheme).
-function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale, xRaskosinaVal, gapVal){
-  const v = panelScheme(count, floors, xRaskosinaVal);
+function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale, xRaskosinaVal, gapVal, hasRaskosinaVal){
+  const v = panelScheme(count, floors, xRaskosinaVal, hasRaskosinaVal);
   if(!v) return diagramTooDense();
   const records = v.records(dimLabel(longbeamVal), dimLabel(widthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal))
     .concat(postGapRecords(v, gapVal, widthPxOverride, labelScale));
@@ -3902,16 +3910,17 @@ function diagramTorec(count, floors, longbeamVal, widthVal, skinVal, heightVal, 
 }
 
 // Схема щита на count стоек и floors (1 или 2) этажей: фото из
-// TOREC_VARIANTS (2-4 стойки) или сгенерированный чертёж (5 и более, см.
-// panel-generated.js) - с подписями фото на 4 стойки: у него те же размеры
-// картинки и наружные кромки щита. { img, IW, IH, records, gap }; null -
-// слишком много стоек (вместо чертежа заглушка).
-function panelScheme(count, floors, xRaskosinaVal){
-  if(count <= 4){
+// TOREC_VARIANTS (2-4 стойки с раскосинами) или сгенерированный чертёж (5 и
+// более стоек или щит без раскосин, см. panel-generated.js) - с подписями
+// фото на 4 стойки: у него те же размеры картинки и наружные кромки щита.
+// { img, IW, IH, records, gap }; null - слишком много стоек (вместо чертежа
+// заглушка).
+function panelScheme(count, floors, xRaskosinaVal, hasRaskosinaVal){
+  if(count <= 4 && hasRaskosinaVal){
     const v = TOREC_VARIANTS[floors][count];
     return { img: xRaskosinaVal ? v.imgX : v.img, IW: v.IW, IH: v.IH, records: v.records, gap: v.gap };
   }
-  const v = TOREC_VARIANTS[floors][4], g = panelGeneratedII1(count, floors, xRaskosinaVal);
+  const v = TOREC_VARIANTS[floors][4], g = panelGeneratedII1(count, floors, xRaskosinaVal, hasRaskosinaVal);
   if(!g) return null;
   return { img: g.img, IW: v.IW, IH: v.IH, records: v.records, gap: g.gap };
 }
@@ -4188,8 +4197,8 @@ const TOREC_VARIANTS = {
 // что у торца (panelScheme в torec.js: фото на 2-4 стойки, на 5 и более -
 // сгенерированный чертёж). gapVal - расстояние между стойками бока
 // (bokFrame.sectionW), см. postGapRecords в torec.js.
-function diagramBok(count, floors, longbeamVal, lengthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale, xRaskosinaVal, gapVal){
-  const v = panelScheme(count, floors, xRaskosinaVal);
+function diagramBok(count, floors, longbeamVal, lengthVal, skinVal, heightVal, floorHeightVal, widthPxOverride, labelScale, xRaskosinaVal, gapVal, hasRaskosinaVal){
+  const v = panelScheme(count, floors, xRaskosinaVal, hasRaskosinaVal);
   if(!v) return diagramTooDense();
   const records = v.records(dimLabel(longbeamVal), dimLabel(lengthVal), dimLabel(skinVal), dimLabel(heightVal), dimLabel(floorHeightVal))
     .concat(postGapRecords(v, gapVal, widthPxOverride, labelScale));
@@ -5996,10 +6005,10 @@ function renderBoardTables(calc, manualOverrides){
     diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
     renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Щит торцевой (2 шт.)</div>`,
-    diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW),
+    diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW, calc.torecFrame.hasRaskosina),
     renderPartTable(calc.endPanel, 'endPanel', manualOverrides));
   html += renderPartBlock(`<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div>`,
-    diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam, calc.L, calc.t_stojka, calc.panelHeightFull, 100 + calc.bokFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.bokFrame.sectionW),
+    diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam, calc.L, calc.t_stojka, calc.panelHeightFull, 100 + calc.bokFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.bokFrame.sectionW, calc.bokFrame.hasRaskosina),
     renderPartTable(calc.bokovoy, 'bokovoy', manualOverrides));
   // Пергамин - под всеми узлами, попадает и в печать.
   if(calc.parchment && calc.parchment.length){
