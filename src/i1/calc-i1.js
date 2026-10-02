@@ -1,5 +1,6 @@
-// ГОСТ 10198-91, тип I-1: сбор входных данных, расчёт (computeGost10198I1,
-// compute/compute.js) и вывод результата. Кнопка «Рассчитать» вызывает общую
+// ГОСТ 10198-91, тип I-1 (и I-2): сбор входных данных, расчёт
+// (computeGost10198I1, compute/compute.js; у I-2 - computeGost10198I2, см.
+// I1_VARIANT в options.js) и вывод результата. Кнопка «Рассчитать» вызывает общую
 // обёртку calculate() из common-calc-state.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
@@ -40,6 +41,8 @@ function buildCalcInput(){
     plankLayoutValue,
     manualOverrides,
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
+    // тип I-2: доля промежутков между досками обшивки, % (src/i2/board-gaps.js)
+    ...(typeof readBoardGapPercent === 'function' ? { boardGapPercent: readBoardGapPercent() } : {}),
   };
 }
 
@@ -56,7 +59,7 @@ function calculateNow(){
   const input = buildCalcInput();
   const tableEdits = readTableEdits();
 
-  const calc = computeGost10198I1(input);
+  const calc = I1_VARIANT.compute(input);
   if(calc.error){
     showCalcError(calc.error);
     return;
@@ -102,6 +105,7 @@ function errorFieldsFor(text){
   if(/недостаточна для отступа планок/.test(text)) return plankLayoutMode === 'count' ? ['plankCountInput'] : ['L'];
   if(/Ширина груза/.test(text)) return ['W'];
   if(/раскосины торца/.test(text)) return ['W', 'H'];
+  if(/долю промежутков между досками/.test(text)) return ['boardGapInput'];
   return [];
 }
 

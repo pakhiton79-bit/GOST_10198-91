@@ -20,6 +20,12 @@ const TYPES = [
     image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__'
   },
   {
+    name: 'Тип I-2',
+    file: 'GOST10198_91_I2.html',
+    image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__',
+    badge: 'Ещё не готово'
+  },
+  {
     name: 'Тип I-3',
     file: 'GOST10198_91POLOZIA.html',
     image: 'data:image/png;base64,__IMG:box.png__'

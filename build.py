@@ -163,6 +163,22 @@ I1_VARIANTS = [
     {"out_name": "GOST10198_91_I1.html"},
 ]
 
+# Тип I-2 - тот же ящик, что I-1 (те же файлы src/i1), но обшивка с
+# промежутками: свой каркас src/i2/shell.html, плюс src/i2/compute.js
+# (расчёт), variant.js (ключи и название страницы), board-gaps.js (ползунок
+# доли промежутков).
+I2_DIR = SRC_DIR / "i2"
+I2_SHELL = I2_DIR / "shell.html"
+I2_PARTS = {
+    **I1_PARTS,
+    "/*__I2_COMPUTE_JS__*/": I2_DIR / "compute.js",
+    "/*__I2_VARIANT_JS__*/": I2_DIR / "variant.js",
+    "/*__I2_BOARD_GAPS_JS__*/": I2_DIR / "board-gaps.js",
+}
+I2_VARIANTS = [
+    {"out_name": "GOST10198_91_I2.html"},
+]
+
 II1_DIR = SRC_DIR / "ii1"
 II1_SHELL = II1_DIR / "shell.html"
 # Файлы II-1 разложены так же, как в gost_backend: compute/ - расчёт
@@ -284,6 +300,8 @@ def main():
         build_one(I3_SHELL, I3_PARTS, variant)
     for variant in I1_VARIANTS:
         build_one(I1_SHELL, I1_PARTS, variant)
+    for variant in I2_VARIANTS:
+        build_one(I2_SHELL, I2_PARTS, variant)
     for variant in II1_VARIANTS:
         build_one(II1_SHELL, II1_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
