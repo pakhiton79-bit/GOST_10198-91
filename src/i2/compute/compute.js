@@ -1,13 +1,18 @@
-// ГОСТ 10198-91, тип I-1: расчёт ящика.
+// ГОСТ 10198-91, тип I-2: расчёт ящика. Ящик - как у типа I-1, но доски
+// обшивки всех щитов (дно, крышка, бока, торцы) - с промежутками: крайние по
+// краям щита, остальные равномерно между ними, промежутки - не больше
+// заданной доли поверхности щита (boardGapPercent, 10-50%, обязательна).
 //
 // Порядок расчёта:
-//   1. проверка входных данных;
+//   1. проверка входных данных (в том числе доли промежутков);
 //   2. толщина по ГОСТ (по плотности упаковывания) с понижением на градацию,
 //      если зазор между поясами планок попадает в 400-500 мм;
 //   3. округление до толщины «в наличии» и ручные правки толщин из таблицы;
 //   4. раскладка поясов планок под итоговые толщины;
-//   5. детали узлов (дно, крышка, боковой и торцевой щиты, раскосины);
-//   6. наружные размеры, объём, масса, норма времени, предупреждения.
+//   5. детали узлов (дно, крышка, боковой и торцевой щиты, раскосины),
+//      доски обшивки - с промежутками;
+//   6. наружные размеры, объём, масса, норма времени, промежутки по щитам
+//      (для чертежей), предупреждения.
 // Расчёт идёт в браузере; функции - из helpers.js, thickness.js,
 // plank-layout.js и parts.js этой же папки. Толщины «в наличии»
 // (availableThicknesses, roundUpToAvailable, thicknessLimitExceeded) - из
@@ -103,8 +108,9 @@ function sumVolume(rows) {
 // input: { L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths,
 //   removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape,
 //   addParchment, plankLayoutMode, plankLayoutValue, manualOverrides,
-//   woodDensity }.
-function computeGost10198I1(input) {
+//   woodDensity, boardGapPercent - доля промежутков между досками обшивки,
+//   % }.
+function computeGost10198I2(input) {
   const { L, W, H, MASS, skidEnabled, skidThicknessRaw, roundBoardWidths, removeLidBottomRaskosina, addRaskosina, xRaskosina, addEndTape, addParchment, plankLayoutMode, plankLayoutValue, woodDensity } = input;
   const manualOverrides = input.manualOverrides || {};
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
@@ -113,9 +119,15 @@ function computeGost10198I1(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
+  // Доля промежутков обязательна (по указанию пользователя), значения по
+  // умолчанию нет.
+  const gapPercent = input.boardGapPercent;
+  if (!(gapPercent >= 10 && gapPercent <= 50)) {
+    return { error: 'Укажите долю промежутков между досками обшивки (от 10 до 50%) - расчёт не выполняется.' };
+  }
   const warnings = [];
-  if (MASS < 200) warnings.push('Масса груза вне диапазона типа I-1 (200–1000 кг): менее 200 кг.');
-  if (MASS > 1000) warnings.push('Масса груза вне диапазона типа I-1 (200–1000 кг): более 1000 кг.');
+  if (MASS < 200) warnings.push('Масса груза вне диапазона типа I-2 (200–1000 кг): менее 200 кг.');
+  if (MASS > 1000) warnings.push('Масса груза вне диапазона типа I-2 (200–1000 кг): более 1000 кг.');
 
   const density = packingDensity(MASS, L, W, H);
   // Раскосины: по ГОСТ (высота от 1000, длина больше 5000, плотность больше
@@ -140,7 +152,7 @@ function computeGost10198I1(input) {
     const t = key => (manualOverrides[key] > 0 ? manualOverrides[key] : roundUpToAvailable(w));
     return L + (t('tTorVert') + t('tTorBoard')) * 2;
   };
-  const standardPass = chooseWallThickness(L, H, horizPlankaLen, null, wallThicknessI1(density));
+  const standardPass = chooseWallThickness(L, H, horizPlankaLen, null, wallThicknessI2(density));
   if (standardPass.failedWall !== undefined) return { error: plankLayoutError(boardLenForError(standardPass.failedWall), null) };
   const standardWall = roundUpToAvailable(standardPass.wallRaw);
   const standardPlank = layoutForWall(L, standardWall, null).plank;
@@ -148,7 +160,7 @@ function computeGost10198I1(input) {
   const standardPlankGap = standardPlank.count > 1 ? standardPlank.middle / (standardPlank.count - 1) : 0;
 
   const mainPass = plankOverride
-    ? chooseWallThickness(L, H, horizPlankaLen, plankOverride, wallThicknessI1(density))
+    ? chooseWallThickness(L, H, horizPlankaLen, plankOverride, wallThicknessI2(density))
     : standardPass;
   if (mainPass.failedWall !== undefined) return { error: plankLayoutError(boardLenForError(mainPass.failedWall), plankOverride) };
 
@@ -178,7 +190,7 @@ function computeGost10198I1(input) {
   }
 
   // --- 5. Детали ---
-  const g = { L, W, H, T, skidT, kLen, plankQty, horizPlankaLen, roundBoardWidths };
+  const g = { L, W, H, T, skidT, kLen, plankQty, horizPlankaLen, roundBoardWidths, boardGapShare: gapPercent / 100 };
   const dno = buildDno(g);
   const p = {
     dno: dno.rows,
@@ -218,6 +230,9 @@ function computeGost10198I1(input) {
     warnings.push('Использованы вручную введённые толщины, а не расчётные по ГОСТ - чертежи ниже могут их не точно отражать.');
   }
 
+  const boardGaps = boardGapsByPanel(g);
+  warnings.push(...boardGapWarnings(g, boardGaps));
+
   const result = {
     warnings, dno: p.dno, kryshka: p.kryshka, bokovoy: p.bokovoy, torec: p.torec,
     outerL, outerW, outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
@@ -231,6 +246,8 @@ function computeGost10198I1(input) {
     standardPlankCount, standardPlankGap,
     endTape: addEndTape ? endTapeRows(g) : [],
     parchment: addParchment ? parchmentRows(g) : [],
+    // Промежутки обшивки по щитам: { qty, gap, share } или null - щит сплошной.
+    boardGaps,
   };
 
   // Отрицательное число в любом поле - невозможная геометрия.

@@ -1,10 +1,10 @@
-// ГОСТ 10198-91, тип I-1: сбор входных данных, расчёт (computeGost10198I1,
+// ГОСТ 10198-91, тип I-2: сбор входных данных, расчёт (computeGost10198I2,
 // compute/compute.js) и вывод результата. Кнопка «Рассчитать» вызывает общую
 // обёртку calculate() из common-calc-state.js, та - calculateNow().
 
 // Разделы таблицы деталей и их множители в объёме (щиты торцевой и боковой -
 // по 2 шт.; лента обшивки и пергамин в объём не входят).
-const I1_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0, parchment:0};
+const I2_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2, endTape:0, parchment:0};
 
 // Ручные толщины из таблицы: только ячейки толщины, которые пользователь
 // действительно правил (data-user-edited) - иначе нетронутая ячейка
@@ -40,6 +40,7 @@ function buildCalcInput(){
     plankLayoutValue,
     manualOverrides,
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
+    boardGapPercent: readBoardGapPercent(), // доля промежутков между досками обшивки, % (board-gaps.js)
   };
 }
 
@@ -56,14 +57,14 @@ function calculateNow(){
   const input = buildCalcInput();
   const tableEdits = readTableEdits();
 
-  const calc = computeGost10198I1(input);
+  const calc = computeGost10198I2(input);
   if(calc.error){
     showCalcError(calc.error);
     return;
   }
   // Ручные правки таблицы (ширина, длина, кол-во, текст) - поверх расчёта;
   // объём, норма времени и масса пересчитываются с их учётом.
-  if(applyTableEdits(calc, tableEdits, I1_TABLE_SECTIONS)){
+  if(applyTableEdits(calc, tableEdits, I2_TABLE_SECTIONS)){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
     calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
@@ -102,9 +103,10 @@ function errorFieldsFor(text){
   if(/недостаточна для отступа планок/.test(text)) return plankLayoutMode === 'count' ? ['plankCountInput'] : ['L'];
   if(/Ширина груза/.test(text)) return ['W'];
   if(/раскосины торца/.test(text)) return ['W', 'H'];
+  if(/долю промежутков между досками/.test(text)) return ['boardGapInput'];
   return [];
 }
 
-document.getElementById('boxView').src = BOX_I1_IMG_B64;
+document.getElementById('boxView').src = BOX_I2_IMG_B64;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
 initDensitySettings(WOOD_DENSITY_STORAGE_KEY);

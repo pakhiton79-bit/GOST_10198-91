@@ -22,7 +22,7 @@ const TYPES = [
   {
     name: 'Тип I-2',
     file: 'GOST10198_91_I2.html',
-    image: 'data:image/jpeg;base64,__IMG:box_i1.jpg__',
+    image: 'data:image/jpeg;base64,__IMG:box_i2.jpg__',
     badge: 'Ещё не готово'
   },
   {

@@ -86,18 +86,23 @@ from a branch → папка `/docs`).
   `panel-photos.js` (фото щита на 2-4 планки), `panel-generated.js` (щит на 5+
   планок, SVG), `panel.js` (бок, крышка, дно), `torec.js` (торец).
 
-Тип I-2 (`GOST10198_91_I2.html`) - тот же код I-1, отличие задаётся
-вариантом типа:
+Тип I-2 (`GOST10198_91_I2.html`) - отдельная копия I-1 (с I-1 общего кода
+нет), доски обшивки всех щитов - с промежутками. Файлы разложены так же, как
+у I-1 и в gost_backend (`compute/` - как `backend/src/i2`, остальное - как
+`frontend/public/js/i2`):
 
-- `src/i2/shell.html` - каркас страницы I-1 + карточка «Промежутки между
-  досками обшивки» (список частей - `I2_PARTS` в `build.py`: части I-1 и
-  три файла ниже).
-- `src/i2/compute.js` - `computeGost10198I2` = `computeGost10198I1` с
-  вариантом `{ name: 'I-2', boardGaps: true }` (доски по 100 мм с
-  промежутками - `gapBoards` в `src/i1/compute/parts.js`).
-- `src/i2/variant.js` - `BOX_VARIANT` (ключ `i2` для localStorage, название,
-  функция расчёта); подключается до `src/i1/options.js`, у I-1 его нет.
-- `src/i2/board-gaps.js` - ползунок и поле доли промежутков (запоминается).
+- `src/i2/shell.html` - HTML-каркас (список частей - `I2_PARTS` в `build.py`),
+  с карточкой «Промежутки между досками обшивки».
+- `src/i2/compute/` - расчёт: `compute.js` (`computeGost10198I2`, доля
+  промежутков обязательна), `parts.js` (доски с промежутками - `gapBoards`,
+  промежутки по щитам и предупреждения), `thickness.js`, `plank-layout.js`,
+  `helpers.js`.
+- `src/i2/options.js`, `src/i2/plank-layout.js` - опции и пояса планок (как у I-1).
+- `src/i2/board-gaps.js` - ползунок и поле доли промежутков (10-50%, запоминается).
+- `src/i2/calc-i2.js`, `render-i2.js`, `print-i2.js` - расчёт, вывод, печать.
+- `src/i2/diagrams/` - чертежи (все рисуются SVG, фото не нужны):
+  `sizing.js` (размеры на экране), `boards.js` (3 доски с промежутком и его
+  размер), `panel-generated.js` и `panel.js` (бок, крышка, дно), `torec.js`.
 
 Тип II-1 (`GOST10198_91_II1.html`, каркасно-щитовой ящик). Файлы разложены
 так же, как в gost_backend (`compute/` — как `backend/src/ii1`, остальное —

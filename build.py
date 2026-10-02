@@ -36,6 +36,12 @@ src/i1/shell.html - свой HTML-каркас с плейсхолдером н�
 общие с типом I-3.
   - GOST10198_91_I1.html
 
+== Тип I-2 ==
+src/i2/shell.html - отдельная копия I-1 с обшивкой из досок с промежутками;
+раскладка та же (список - I2_PARTS ниже): src/i2/compute/ - расчёт,
+src/i2/diagrams/ - чертежи, src/i2/*.js - интерфейс.
+  - GOST10198_91_I2.html
+
 == Стартовые страницы (2 уровня) ==
 Уровень 1 - список ГОСТов (src/launcher/launcher.src.html + src/launcher/
 gosts.js) -> уровень 2 - список типов тары внутри выбранного ГОСТа
@@ -163,17 +169,38 @@ I1_VARIANTS = [
     {"out_name": "GOST10198_91_I1.html"},
 ]
 
-# Тип I-2 - тот же ящик, что I-1 (те же файлы src/i1), но обшивка с
-# промежутками: свой каркас src/i2/shell.html, плюс src/i2/compute.js
-# (расчёт), variant.js (ключи и название страницы), board-gaps.js (ползунок
-# доли промежутков).
 I2_DIR = SRC_DIR / "i2"
 I2_SHELL = I2_DIR / "shell.html"
+# Тип I-2 - отдельная копия I-1 (обшивка с промежутками между досками),
+# файлы разложены так же: compute/ - расчёт (backend/src/i2), остальное -
+# интерфейс и чертежи (frontend/public/js/i2).
 I2_PARTS = {
-    **I1_PARTS,
-    "/*__I2_COMPUTE_JS__*/": I2_DIR / "compute.js",
-    "/*__I2_VARIANT_JS__*/": I2_DIR / "variant.js",
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__I2_HELPERS_JS__*/": I2_DIR / "compute" / "helpers.js",
+    "/*__I2_THICKNESS_JS__*/": I2_DIR / "compute" / "thickness.js",
+    "/*__I2_PLANK_LAYOUT_CALC_JS__*/": I2_DIR / "compute" / "plank-layout.js",
+    "/*__I2_PARTS_JS__*/": I2_DIR / "compute" / "parts.js",
+    "/*__I2_COMPUTE_JS__*/": I2_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__I2_DIAGRAM_SIZING_JS__*/": I2_DIR / "diagrams" / "sizing.js",
+    "/*__I2_DIAGRAM_BOARDS_JS__*/": I2_DIR / "diagrams" / "boards.js",
+    "/*__I2_DIAGRAM_PANEL_GENERATED_JS__*/": I2_DIR / "diagrams" / "panel-generated.js",
+    "/*__I2_DIAGRAM_PANEL_JS__*/": I2_DIR / "diagrams" / "panel.js",
+    "/*__I2_DIAGRAM_TOREC_JS__*/": I2_DIR / "diagrams" / "torec.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__I2_OPTIONS_JS__*/": I2_DIR / "options.js",
+    "/*__I2_PLANK_LAYOUT_UI_JS__*/": I2_DIR / "plank-layout.js",
     "/*__I2_BOARD_GAPS_JS__*/": I2_DIR / "board-gaps.js",
+    "/*__I2_RENDER_JS__*/": I2_DIR / "render-i2.js",
+    "/*__I2_PRINT_JS__*/": I2_DIR / "print-i2.js",
+    "/*__I2_CALC_JS__*/": I2_DIR / "calc-i2.js",
 }
 I2_VARIANTS = [
     {"out_name": "GOST10198_91_I2.html"},
