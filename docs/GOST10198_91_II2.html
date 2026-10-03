@@ -1825,6 +1825,10 @@ else initSiteSettings();
       </div>
       <div class="option-group-title">Раскосины</div>
       <label>
+        <input type="checkbox" id="addRaskosina">
+        <span>Добавить раскосины<span class="option-hint">По ГОСТ раскосины ставятся при внутренней высоте ящика свыше 600 мм; галочка добавляет их и при меньшей высоте</span></span>
+      </label>
+      <label>
         <input type="checkbox" id="xRaskosina">
         <span>X-образные раскосины</span>
       </label>
@@ -2923,7 +2927,8 @@ const MIN_ANGLE = 20, MAX_ANGLE = 60; // допустимый угол раск�
 const RASKOSINA_MIN_H = 600; // п.1.7.7: раскосины - при внутренней высоте ящика свыше 600 мм
 
 // fillspace - ширина щита под стойки, panelH - высота щита, H - высота груза
-// (внутренняя высота ящика). Раскосины - только при H свыше 600 мм (п.1.7.7).
+// (внутренняя высота ящика). Раскосины - при H свыше 600 мм (п.1.7.7) или по
+// галочке «Добавить раскосины» (forceRaskosina) и при меньшей высоте.
 // Этажи: 2 при высоте груза больше 2000 мм или если на 1 этаже угол раскосины
 // при 2 стойках больше 60°. Стоек - не меньше, чем по шагу осей 800 мм, и
 // (при раскосинах) столько, чтобы угол раскосины был не меньше 20° (пока
@@ -2933,7 +2938,7 @@ const RASKOSINA_MIN_H = 600; // п.1.7.7: раскосины - при внутр
 // помещаются - sectionW ≤ 0 (проверяет compute.js).
 // Возвращает { count, floors, len (длина стойки), sectionW, hasRaskosina,
 // warn, tooNarrow }.
-function buildFrame(fillspace, panelH, H, manualCount) {
+function buildFrame(fillspace, panelH, H, manualCount, forceRaskosina) {
   const spacingMinCount = minCountBySpan(fillspace, STOJKA_W, MAX_AXIS);
   const sectionW = n => clearGapBySpan(fillspace, STOJKA_W, n);
   const angleDeg = (n, h) => Math.atan2(h, sectionW(n)) * 180 / Math.PI;
@@ -2942,7 +2947,7 @@ function buildFrame(fillspace, panelH, H, manualCount) {
     return { count: 2, floors: 1, len: 0, sectionW: 0, hasRaskosina: false, warn: null, tooNarrow: true };
   }
 
-  const needRaskosina = H > RASKOSINA_MIN_H;
+  const needRaskosina = H > RASKOSINA_MIN_H || !!forceRaskosina;
   let floors = H > 2000 ? 2 : 1;
   if (needRaskosina && floors === 1 && angleDeg(2, stojkaLen(1)) > MAX_ANGLE) floors = 2;
   const len = stojkaLen(floors);
@@ -3302,7 +3307,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 // input: { L, W, H, MASS, fasteningType ('skid' | 'floor_boards'),
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
 //   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
-//   xRaskosina, torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
+//   xRaskosina, addRaskosina (раскосины и при высоте до 600 мм), torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
 //   boardGapMax (наибольший промежуток между досками обшивки, мм), fineThickness ({ frame, skid, sub, skin, floor, endBeam,
 //   crossBeam, longBeam } - толщины из «Тонкой настройки», мм; нет - по расчёту),
@@ -3407,10 +3412,10 @@ function computeGost10198II2(input) {
   // показывает центром ползунков ручной настройки.
   const torecSpace = W + s.stojkaT * 2, bokSpace = L; // бок - по длине груза
   const torecManual = input.torecPostCount > 0, bokManual = input.bokPostCount > 0;
-  const torecStandard = buildFrame(torecSpace, panelHeightFull, H);
-  const bokStandard = buildFrame(bokSpace, panelHeightFull, H);
-  const torecFrame = torecManual ? buildFrame(torecSpace, panelHeightFull, H, input.torecPostCount) : torecStandard;
-  const bokFrame = bokManual ? buildFrame(bokSpace, panelHeightFull, H, input.bokPostCount) : bokStandard;
+  const torecStandard = buildFrame(torecSpace, panelHeightFull, H, 0, input.addRaskosina);
+  const bokStandard = buildFrame(bokSpace, panelHeightFull, H, 0, input.addRaskosina);
+  const torecFrame = torecManual ? buildFrame(torecSpace, panelHeightFull, H, input.torecPostCount, input.addRaskosina) : torecStandard;
+  const bokFrame = bokManual ? buildFrame(bokSpace, panelHeightFull, H, input.bokPostCount, input.addRaskosina) : bokStandard;
   if (torecFrame.tooNarrow) {
     return { error: `Ширина груза ${W} мм слишком мала для минимум двух стоек торцевого щита (по 100мм) - расчёт не выполняется.` };
   }
@@ -6238,7 +6243,7 @@ function persistRadioGroup(name){
     if(el.checked){ try{ localStorage.setItem(key, el.value); }catch(e){} }
   }));
 }
-['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','optimizeSizes','xRaskosina'].forEach(persistCheckbox);
+['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','optimizeSizes','addRaskosina','xRaskosina'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -6676,6 +6681,7 @@ function buildCalcInput(){
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addRaskosina: document.getElementById('addRaskosina').checked,
     boardGapMax: readBoardGapMax(), // наибольший промежуток между досками обшивки, мм (board-gaps.js)
     torecPostCount: manualCount.torec,
     bokPostCount: manualCount.bok,
@@ -6723,7 +6729,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes'].forEach(id=>{
+['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });

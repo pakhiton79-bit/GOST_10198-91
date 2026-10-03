@@ -39,6 +39,7 @@ function buildCalcInput(){
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addRaskosina: document.getElementById('addRaskosina').checked,
     addParchment: document.getElementById('addParchment').checked,
     torecPostCount: manualCount.torec,
     bokPostCount: manualCount.bok,
@@ -86,7 +87,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','addParchment'].forEach(id=>{
+['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });
