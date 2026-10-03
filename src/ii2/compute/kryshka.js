@@ -2,21 +2,9 @@
 // (только при поперечном расположении досок) и доски с промежутками (как у
 // II-1, ../ii1/kryshka.js).
 //
-// Доски крышки при поперечном расположении и доски боковых щитов - одной
-// раскладкой (lidSideBoards в boards.js, по указанию пользователя: доски
-// бока продолжают линии досок крышки, все доски одной ширины 100 мм). Если
-// так не выходит - крышка раскладывается сама по себе (с промежутками по
-// своей длине или сплошь). При продольном расположении - с промежутками по
-// наружной ширине (так же, как торцевой щит).
-
-// Раскладка досок крышки (вид результата - как у fillGapBoards).
-function lidBoards(c, s, fillspace) {
-  if (c.lidLayout === 'transverse') {
-    const ls = lidSideBoards(s.len, (s.len - c.L) / 2, c.boardGapMax);
-    if (ls) return { mainQty: ls.lid.qty, extra: [], warn: false, singleNarrow: false, gap: ls.lid };
-  }
-  return fillGapBoards(fillspace, c.roundBoardWidths, c.boardGapMax, 'Крышка', c.warnings);
-}
+// При поперечном расположении доски крышки раскладываются по наружной
+// длине ящика - так же, как доски боковых щитов (bokovoy.js), поэтому линии
+// досок бока продолжают крышку; при продольном - по наружной ширине.
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (../ii1/sizing.js).
 function buildKryshka(c, s) {
@@ -41,7 +29,7 @@ function buildKryshka(c, s) {
     boardLen = s.len;
     fillspace = s.outerW;
   }
-  const fb = lidBoards(c, s, fillspace);
+  const fb = fillGapBoards(fillspace, c.roundBoardWidths, c.boardGapMax, 'Крышка', warnings);
   if (fb.mainQty > 0) rows.push({ name: 'Доска крышки', t: skinT, w: BOARD_W, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';

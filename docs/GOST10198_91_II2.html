@@ -3006,43 +3006,6 @@ function gapBoards(span, maxGap) {
   return { qty, gap: (span - qty * BOARD_W) / (qty - 1), share: (span - qty * BOARD_W) / span };
 }
 
-// Доски крышки поперёк ящика и боковых щитов - одной раскладкой (по
-// указанию пользователя: доски бока продолжают линии досок крышки, все доски
-// одной ширины 100 мм, пусть и меняется их число). Крышка (длина len) - как
-// обычный щит с промежутками: крайние доски по краям, остальные равномерно;
-// боковой щит (от edge до len - edge, edge - толщина торцевого щита) - те же
-// доски крышки, что целиком над ним; от края бокового щита до его первой
-// доски - промежуток sideEdge. Число досок крышки - наименьшее, при котором
-// и промежутки между досками, и sideEdge не больше заданного; если sideEdge
-// так не уменьшить (заданный промежуток меньше ~100 мм минус толщина
-// торцевого щита) - наименьшее по одним промежуткам, sideEdge больше
-// заданного (об этом - предупреждение у бокового щита). { lid: { qty, gap,
-// share }, side: { qty, gap, share, edge } } или null - на боковой щит не
-// приходится и 2 досок (тогда крышка и бок раскладываются каждый сам по
-// себе).
-function lidSideBoards(len, edge, maxGap) {
-  len = Math.round(len);
-  const side = len - 2 * edge;
-  let fallback = null;
-  for (let qty = 2; qty * BOARD_W < len; qty++) {
-    const gap = (len - qty * BOARD_W) / (qty - 1);
-    if (gap > maxGap + 1e-9) continue;
-    const pitch = BOARD_W + gap;
-    const first = Math.ceil((edge - 1e-9) / pitch);          // первая доска целиком над боком
-    const last = Math.floor((len - edge - BOARD_W + 1e-9) / pitch);
-    const sideQty = last - first + 1;
-    if (sideQty < 2) continue;
-    const sideEdge = first * pitch - edge;
-    const res = {
-      lid: { qty, gap, share: (len - qty * BOARD_W) / len },
-      side: { qty: sideQty, gap, share: (side - sideQty * BOARD_W) / side, edge: sideEdge },
-    };
-    if (sideEdge <= maxGap + 1e-9) return res;
-    if (!fallback) fallback = res;
-  }
-  return fallback;
-}
-
 // Замена fillBoards (тот же вид результата: mainQty, extra, warn,
 // singleNarrow) - с промежутками; gap - промежутки ({ qty, gap, share }) или
 // null - щит сплошной. panelName и warnings - для предупреждения о щите без
@@ -3106,21 +3069,9 @@ function buildDno(c, s, subLengthWarn) {
 // (только при поперечном расположении досок) и доски с промежутками (как у
 // II-1, ../ii1/kryshka.js).
 //
-// Доски крышки при поперечном расположении и доски боковых щитов - одной
-// раскладкой (lidSideBoards в boards.js, по указанию пользователя: доски
-// бока продолжают линии досок крышки, все доски одной ширины 100 мм). Если
-// так не выходит - крышка раскладывается сама по себе (с промежутками по
-// своей длине или сплошь). При продольном расположении - с промежутками по
-// наружной ширине (так же, как торцевой щит).
-
-// Раскладка досок крышки (вид результата - как у fillGapBoards).
-function lidBoards(c, s, fillspace) {
-  if (c.lidLayout === 'transverse') {
-    const ls = lidSideBoards(s.len, (s.len - c.L) / 2, c.boardGapMax);
-    if (ls) return { mainQty: ls.lid.qty, extra: [], warn: false, singleNarrow: false, gap: ls.lid };
-  }
-  return fillGapBoards(fillspace, c.roundBoardWidths, c.boardGapMax, 'Крышка', c.warnings);
-}
+// При поперечном расположении доски крышки раскладываются по наружной
+// длине ящика - так же, как доски боковых щитов (bokovoy.js), поэтому линии
+// досок бока продолжают крышку; при продольном - по наружной ширине.
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (../ii1/sizing.js).
 function buildKryshka(c, s) {
@@ -3145,7 +3096,7 @@ function buildKryshka(c, s) {
     boardLen = s.len;
     fillspace = s.outerW;
   }
-  const fb = lidBoards(c, s, fillspace);
+  const fb = fillGapBoards(fillspace, c.roundBoardWidths, c.boardGapMax, 'Крышка', warnings);
   if (fb.mainQty > 0) rows.push({ name: 'Доска крышки', t: skinT, w: BOARD_W, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
@@ -3172,10 +3123,13 @@ function buildEndPanel(c, s, frame, rask) {
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Доски обшивки - на каждый этаж, по наружной ширине ящика, с
-  // промежутками.
+  // Доски обшивки - на каждый этаж, с промежутками: по наружной ширине
+  // ящика; при поперечном расположении досок крышки доски бока закрывают
+  // торцы торцевого щита (bokovoy.js), и доски торца - между ними (ширина
+  // груза + 2 стойки).
   const boardLen = 100 * 2 + frame.len + s.longBeamT;
-  const fb = fillGapBoards(s.outerW, c.roundBoardWidths, c.boardGapMax, 'Щит торцевой', warnings);
+  const span = c.lidLayout === 'transverse' ? W + s.stojkaT * 2 : s.outerW;
+  const fb = fillGapBoards(span, c.roundBoardWidths, c.boardGapMax, 'Щит торцевой', warnings);
   const boardQty = fb.mainQty * frame.floors;
   if (fb.warn) warnings.push('Доска торца: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска торца: одна доска уже менее 100 мм.');
@@ -3206,20 +3160,14 @@ function buildEndPanel(c, s, frame, rask) {
 
 // ГОСТ 10198-91, тип II-2: щит боковой (расчёт на 1 щит, щитов 2) - как у
 // II-1 (../ii1/bokovoy.js), доски обшивки - с промежутками (boards.js). При
-// поперечном расположении досок крышки - те доски крышки, что целиком над
-// боковым щитом (lidSideBoards: линии досок бока продолжают крышку); от
-// края щита до первой доски - промежуток edge.
+// поперечном расположении досок крышки доски бока идут по всей наружной
+// длине ящика (закрывают торцы торцевых щитов) и раскладываются так же,
+// как доски крышки, - линии досок бока продолжают крышку, крайние доски -
+// по краям (по указанию пользователя); иначе - по длине груза, как у II-1.
 
-// Раскладка досок бокового щита (вид результата - как у fillGapBoards).
-function sideBoards(c, s) {
-  const ls = c.lidLayout === 'transverse' ? lidSideBoards(s.len, (s.len - c.L) / 2, c.boardGapMax) : null;
-  if (ls) {
-    if (ls.side.edge > c.boardGapMax + 1e-9) {
-      c.warnings.push(`Щит боковой: от края щита до первой доски ${Math.round(ls.side.edge)} мм - больше заданного промежутка (доски бока продолжают линии досок крышки, ближе к краю доска не встаёт).`);
-    }
-    return { mainQty: ls.side.qty, extra: [], warn: false, singleNarrow: false, gap: ls.side };
-  }
-  return fillGapBoards(c.L, c.roundBoardWidths, c.boardGapMax, 'Щит боковой', c.warnings);
+// Ширина обшивки бокового щита: поперёк - наружная длина ящика, иначе - длина груза.
+function sideSpan(c, s) {
+  return c.lidLayout === 'transverse' ? s.len : c.L;
 }
 
 // c - контекст расчёта; s - согласованные размеры; frame - каркас (frame.js);
@@ -3238,7 +3186,7 @@ function buildBokovoy(c, s, frame, rask) {
   const opora = { t: skinT, w: Math.min(75, Math.max(50, Math.floor(STOJKA_W - s.crossBeamT))), l: horiz.l, qty: 2 };
 
   const boardLen = 100 * 2 + frame.len + s.longBeamT;
-  const fb = sideBoards(c, s);
+  const fb = fillGapBoards(sideSpan(c, s), c.roundBoardWidths, c.boardGapMax, 'Щит боковой', warnings);
   const boardQty = fb.mainQty * frame.floors;
   if (fb.warn) warnings.push('Доска бока: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска бока: одна доска уже менее 100 мм.');
@@ -3273,8 +3221,9 @@ function buildBokovoy(c, s, frame, rask) {
 // боковые) - с промежутками (boards.js): доски по 100 мм, крайние - по
 // краям щита, остальные равномерно, промежуток между соседними - не больше
 // заданного (boardGapMax, 10-150 мм, обязательно). При поперечном
-// расположении досок крышки доски боковых щитов продолжают её линии
-// (lidSideBoards в boards.js, все доски по 100 мм). Пергамина нет (как у I-2, I-4). Согласование размеров,
+// расположении досок крышки доски боковых щитов идут по всей наружной длине
+// ящика и раскладываются так же, как крышка (линии продолжаются), доски
+// торцевых щитов - между ними (bokovoy.js, end-panel.js). Пергамина нет (как у I-2, I-4). Согласование размеров,
 // каркасы щитов и таблицы - общие с II-1 (../ii1/sizing.js, frame.js,
 // logic.js).
 //
@@ -3522,10 +3471,8 @@ function computeGost10198II2(input) {
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
     standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
-    // Промежутки между досками обшивки по щитам: { qty, gap, share } (у
-    // бокового щита при досках крышки поперёк - и edge, промежуток от края
-    // щита до первой доски) или null - щит сплошной (у дна - и когда доски
-    // убраны).
+    // Промежутки между досками обшивки по щитам: { qty, gap, share } или
+    // null - щит сплошной (у дна - и когда доски убраны).
     boardGaps: { dno: dno.boardGap, kryshka: kryshka.boardGap, torec: endPanel.boardGap, bokovoy: bokovoy.boardGap },
   };
 
@@ -3684,7 +3631,7 @@ function diagramTooDense(){
 // досок на чертеже - сколько поместится (может отличаться от расчётного),
 // промежуток - в реальной доле к доске (не уже DRAWN_BOARD_MIN_GAP_PX),
 // крайние доски - по краям отрезка.
-const DRAWN_MEMBER_PX = 8, DRAWN_BOARD_MIN_GAP_PX = 1.6;
+const DRAWN_MEMBER_PX = 14, DRAWN_BOARD_MIN_GAP_PX = 2.5;
 // Единиц картинки IW×IH на 1px экрана: на странице чертёж увеличивается до
 // ~290×240px (см. common-diagram-fit.js).
 function diagramScreenScale(IW, IH){
@@ -3696,13 +3643,11 @@ function drawnMemberWidth(k){
 }
 // [начало, конец] досок на отрезке a..b картинки (k - единиц картинки на 1px
 // экрана, diagramScreenScale). gapMm - промежуток между досками по расчёту
-// (null - щит сплошной, доски вплотную); edgeMm - промежуток от края отрезка
-// до крайней доски по расчёту (0 - крайние по краям). Размеры в мм - к доске
-// 100 мм.
-function drawnBoardStrips(a, b, k, gapMm, edgeMm){
+// (null - щит сплошной, доски вплотную), мм - к доске 100 мм. Крайние доски -
+// по краям отрезка.
+function drawnBoardStrips(a, b, k, gapMm){
   const bw = drawnMemberWidth(k);
-  const e = edgeMm > 0 ? bw * edgeMm / 100 : 0;
-  const a1 = a + e, span = b - e - a1;
+  const a1 = a, span = b - a;
   if(span <= 0) return [];
   if(gapMm == null){
     const n = Math.max(1, Math.round(span / bw)), w = span / n;
@@ -4336,10 +4281,10 @@ const TOREC_VARIANTS = {
 // каркас и брусья поверх - белые (как у I-4).
 const II2_BOARD_FILL = '#d9d9d9';
 
-// [начало, конец] досок на отрезке a..b: boardGap - промежутки ({ gap, edge })
+// [начало, конец] досок на отрезке a..b: boardGap - промежутки ({ gap, ... })
 // или null - сплошь; k - единиц картинки на 1px экрана (diagramScreenScale).
 function ii2BoardStrips(a, b, boardGap, k){
-  return drawnBoardStrips(a, b, k, boardGap ? boardGap.gap : null, boardGap && boardGap.edge > 0 ? boardGap.edge : 0);
+  return drawnBoardStrips(a, b, k, boardGap ? boardGap.gap : null);
 }
 
 // SVG-прямоугольники досок: vertical - доски стоят (полосы по x на
@@ -4595,7 +4540,7 @@ function diagramKryshkaII2(calc){
 const II2_PANEL_WIDTH = 260, II2_PANEL_LABEL_SCALE = 0.8;
 
 // Картинка щита: n стоек, floors этажей; boardGap - промежутки досок
-// обшивки ({ gap, edge } или null - сплошь). { img, gap, strips } или null -
+// обшивки ({ gap, ... } или null - сплошь). { img, gap, strips } или null -
 // стоек так много, что они слились бы (заглушка).
 function ii2PanelImage(n, floors, xRaskosinaVal, hasRaskosinaVal, boardGap){
   const G = PANEL_GEN_II1[floors];
@@ -4642,8 +4587,7 @@ function ii2PanelImage(n, floors, xRaskosinaVal, hasRaskosinaVal, boardGap){
 // Щит: frame - каркас (calc.torecFrame / bokFrame), widthVal - подпись
 // ширины (у бока - длина груза), skinVal - подпись отступа слева (у торца -
 // толщина обшивки, у бока - толщина стойки, как у II-1), boardGap -
-// промежутки ({ qty, gap, share, edge - от края до крайней доски } или null -
-// сплошь).
+// промежутки ({ qty, gap, share } или null - сплошь).
 function ii2PanelDiagram(calc, frame, widthVal, skinVal, boardGap, alt){
   const floors = frame.floors, v4 = TOREC_VARIANTS[floors][4];
   const g = ii2PanelImage(frame.count, floors, calc.xRaskosina, frame.hasRaskosina, boardGap);
