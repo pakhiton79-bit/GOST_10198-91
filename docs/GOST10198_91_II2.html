@@ -3069,9 +3069,8 @@ function buildDno(c, s, subLengthWarn) {
 // (только при поперечном расположении досок) и доски с промежутками (как у
 // II-1, ../ii1/kryshka.js).
 //
-// При поперечном расположении доски крышки раскладываются по наружной
-// длине ящика - так же, как доски боковых щитов (bokovoy.js), поэтому линии
-// досок бока продолжают крышку; при продольном - по наружной ширине.
+// При поперечном расположении доски крышки раскладываются по наружной длине
+// ящика, при продольном - по наружной ширине (так же, как торцевой щит).
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (../ii1/sizing.js).
 function buildKryshka(c, s) {
@@ -3123,13 +3122,10 @@ function buildEndPanel(c, s, frame, rask) {
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Доски обшивки - на каждый этаж, с промежутками: по наружной ширине
-  // ящика; при поперечном расположении досок крышки доски бока закрывают
-  // торцы торцевого щита (bokovoy.js), и доски торца - между ними (ширина
-  // груза + 2 стойки).
+  // Доски обшивки - на каждый этаж, по наружной ширине ящика, с
+  // промежутками.
   const boardLen = 100 * 2 + frame.len + s.longBeamT;
-  const span = c.lidLayout === 'transverse' ? W + s.stojkaT * 2 : s.outerW;
-  const fb = fillGapBoards(span, c.roundBoardWidths, c.boardGapMax, 'Щит торцевой', warnings);
+  const fb = fillGapBoards(s.outerW, c.roundBoardWidths, c.boardGapMax, 'Щит торцевой', warnings);
   const boardQty = fb.mainQty * frame.floors;
   if (fb.warn) warnings.push('Доска торца: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска торца: одна доска уже менее 100 мм.');
@@ -3159,16 +3155,9 @@ function buildEndPanel(c, s, frame, rask) {
 
 
 // ГОСТ 10198-91, тип II-2: щит боковой (расчёт на 1 щит, щитов 2) - как у
-// II-1 (../ii1/bokovoy.js), доски обшивки - с промежутками (boards.js). При
-// поперечном расположении досок крышки доски бока идут по всей наружной
-// длине ящика (закрывают торцы торцевых щитов) и раскладываются так же,
-// как доски крышки, - линии досок бока продолжают крышку, крайние доски -
-// по краям (по указанию пользователя); иначе - по длине груза, как у II-1.
-
-// Ширина обшивки бокового щита: поперёк - наружная длина ящика, иначе - длина груза.
-function sideSpan(c, s) {
-  return c.lidLayout === 'transverse' ? s.len : c.L;
-}
+// II-1 (../ii1/bokovoy.js, конструктив тот же - по указанию пользователя),
+// доски обшивки - с промежутками (boards.js), на длину груза + толщину
+// стойки торцевого щита с каждой стороны.
 
 // c - контекст расчёта; s - согласованные размеры; frame - каркас (frame.js);
 // rask - толщина и ширина раскосины.
@@ -3186,7 +3175,7 @@ function buildBokovoy(c, s, frame, rask) {
   const opora = { t: skinT, w: Math.min(75, Math.max(50, Math.floor(STOJKA_W - s.crossBeamT))), l: horiz.l, qty: 2 };
 
   const boardLen = 100 * 2 + frame.len + s.longBeamT;
-  const fb = fillGapBoards(sideSpan(c, s), c.roundBoardWidths, c.boardGapMax, 'Щит боковой', warnings);
+  const fb = fillGapBoards(L + s.stojkaT * 2, c.roundBoardWidths, c.boardGapMax, 'Щит боковой', warnings);
   const boardQty = fb.mainQty * frame.floors;
   if (fb.warn) warnings.push('Доска бока: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска бока: одна доска уже менее 100 мм.');
@@ -3221,9 +3210,8 @@ function buildBokovoy(c, s, frame, rask) {
 // боковые) - с промежутками (boards.js): доски по 100 мм, крайние - по
 // краям щита, остальные равномерно, промежуток между соседними - не больше
 // заданного (boardGapMax, 10-150 мм, обязательно). При поперечном
-// расположении досок крышки доски боковых щитов идут по всей наружной длине
-// ящика и раскладываются так же, как крышка (линии продолжаются), доски
-// торцевых щитов - между ними (bokovoy.js, end-panel.js). Пергамина нет (как у I-2, I-4). Согласование размеров,
+// расположении досок крышки - конструктив тот же, что у II-1 (доски бока - на
+// длину груза + 2 стойки торцевого щита, доски торца - по наружной ширине). Пергамина нет (как у I-2, I-4). Согласование размеров,
 // каркасы щитов и таблицы - общие с II-1 (../ii1/sizing.js, frame.js,
 // logic.js).
 //
@@ -4590,15 +4578,11 @@ function ii2PanelImage(n, floors, xRaskosinaVal, hasRaskosinaVal, boardGap, over
 }
 
 // Выступ досок обшивки за каркас с каждой стороны, мм - как в расчёте
-// (end-panel.js, bokovoy.js): при досках крышки поперёк доски бока идут по
-// всей наружной длине (выступ - стойка + обшивка торцевого щита), доски
-// торца - между боками (вровень с каркасом); при досках вдоль доски бока -
-// по длине груза (вровень), доски торца - по наружной ширине (выступ -
-// обшивка бока).
+// (end-panel.js, bokovoy.js; конструктив - как у II-1): доски бока - на
+// длину груза + стойку торцевого щита с каждой стороны (выступ - стойка),
+// доски торца - по наружной ширине (выступ - обшивка бока).
 function ii2PanelOverhang(calc, isBok){
-  const transverse = calc.lidLayout === 'transverse';
-  if(isBok) return transverse ? (calc.outerL - calc.L) / 2 : 0;
-  return transverse ? 0 : (calc.outerW - (calc.W + calc.t_stojka * 2)) / 2;
+  return isBok ? calc.t_stojka : (calc.outerW - (calc.W + calc.t_stojka * 2)) / 2;
 }
 
 // Щит: frame - каркас (calc.torecFrame / bokFrame), widthVal - подпись длины
