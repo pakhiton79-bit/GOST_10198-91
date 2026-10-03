@@ -23,6 +23,13 @@ src/i3/shell.html - свой HTML-каркас с плейсхолдером н�
 переключатель на самой странице (fasteningType), а не отдельные сборки.
   - GOST10198_91POLOZIA.html
 
+== Тип I-4 ==
+src/i4/shell.html - отдельная копия I-3, доски обшивки с промежутками (как
+у I-2), без пергамина (список - I4_PARTS ниже): src/i4/compute/ - расчёт
+(таблицы ГОСТ - общие с I-3), src/i4/diagrams/ - чертежи (все генерируемые),
+src/i4/*.js - интерфейс.
+  - GOST10198_91_I4.html
+
 == Тип II-1 ==
 src/ii1/shell.html - свой HTML-каркас с плейсхолдером на каждый файл II-1
 (список - II1_PARTS ниже): src/ii1/compute/ - расчёт, src/ii1/diagrams/ -
@@ -31,8 +38,8 @@ src/ii1/shell.html - свой HTML-каркас с плейсхолдером н
 
 == Тип III-1 ==
 src/iii1/shell.html - отдельная копия II-1 со своими таблицами (список -
-III1_PARTS ниже): src/iii1/compute/ - расчёт, src/iii1/*.js - интерфейс.
-Чертежей узлов пока нет.
+III1_PARTS ниже): src/iii1/compute/ - расчёт, src/iii1/diagrams/ - чертежи
+(все генерируемые), src/iii1/*.js - интерфейс.
   - GOST10198_91_III1.html
 
 == Тип I-1 ==
@@ -138,6 +145,53 @@ I3_PARTS = {
 }
 I3_VARIANTS = [
     {"out_name": "GOST10198_91POLOZIA.html"},
+]
+
+# Тип I-4 - отдельная копия I-3, обшивка с промежутками (как у I-2); файлы
+# разложены так же, как в gost_backend: compute/ - расчёт (backend/src/i4),
+# остальное - интерфейс и чертежи (frontend/public/js/i4). Таблицы ГОСТ -
+# общие с I-3 (src/i3/compute).
+I4_DIR = SRC_DIR / "i4"
+I4_SHELL = I4_DIR / "shell.html"
+I4_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__I4_HELPERS_JS__*/": I3_DIR / "compute" / "helpers.js",
+    "/*__I4_SECTIONS_JS__*/": I3_DIR / "compute" / "sections.js",
+    "/*__I4_TABLE19_JS__*/": I3_DIR / "compute" / "data" / "table19.js",
+    "/*__I4_TABLE4_JS__*/": I3_DIR / "compute" / "data" / "table4.js",
+    "/*__I4_TABLE14_JS__*/": I3_DIR / "compute" / "data" / "table14.js",
+    "/*__I4_PLANK_LAYOUT_CALC_JS__*/": I4_DIR / "compute" / "plank-layout.js",
+    "/*__I4_BOARDS_CALC_JS__*/": I4_DIR / "compute" / "boards.js",
+    "/*__I4_DNO_JS__*/": I4_DIR / "compute" / "dno.js",
+    "/*__I4_KRYSHKA_JS__*/": I4_DIR / "compute" / "kryshka.js",
+    "/*__I4_END_PANEL_JS__*/": I4_DIR / "compute" / "end-panel.js",
+    "/*__I4_BOKOVOY_JS__*/": I4_DIR / "compute" / "bokovoy.js",
+    "/*__I4_COMPUTE_JS__*/": I4_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__I4_DIAGRAM_GENERATED_JS__*/": I4_DIR / "diagrams" / "generated.js",
+    "/*__I4_DIAGRAM_BOARDS_JS__*/": I4_DIR / "diagrams" / "boards.js",
+    "/*__I4_DIAGRAM_DNO_JS__*/": I4_DIR / "diagrams" / "dno.js",
+    "/*__I4_DIAGRAM_KRYSHKA_JS__*/": I4_DIR / "diagrams" / "kryshka.js",
+    "/*__I4_DIAGRAM_END_PANEL_JS__*/": I4_DIR / "diagrams" / "end-panel.js",
+    "/*__I4_DIAGRAM_BOKOVOY_JS__*/": I4_DIR / "diagrams" / "bokovoy.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__I4_OPTIONS_JS__*/": I4_DIR / "options.js",
+    "/*__I4_BOARD_GAPS_JS__*/": I4_DIR / "board-gaps.js",
+    "/*__I4_PLANK_LAYOUT_UI_JS__*/": I4_DIR / "plank-layout.js",
+    "/*__I4_BEAMS_JS__*/": I4_DIR / "beams.js",
+    "/*__I4_RENDER_JS__*/": I4_DIR / "render-i4.js",
+    "/*__I4_PRINT_JS__*/": I4_DIR / "print-i4.js",
+    "/*__I4_CALC_JS__*/": I4_DIR / "calc-i4.js",
+}
+I4_VARIANTS = [
+    {"out_name": "GOST10198_91_I4.html"},
 ]
 
 I1_DIR = SRC_DIR / "i1"
@@ -374,6 +428,8 @@ def build_one(shell, parts, variant):
 def main():
     for variant in I3_VARIANTS:
         build_one(I3_SHELL, I3_PARTS, variant)
+    for variant in I4_VARIANTS:
+        build_one(I4_SHELL, I4_PARTS, variant)
     for variant in I1_VARIANTS:
         build_one(I1_SHELL, I1_PARTS, variant)
     for variant in I2_VARIANTS:
