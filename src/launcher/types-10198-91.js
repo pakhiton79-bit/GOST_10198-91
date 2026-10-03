@@ -34,7 +34,7 @@ const TYPES = [
   {
     name: 'Тип I-4',
     file: 'GOST10198_91_I4.html',
-    image: 'data:image/png;base64,__IMG:box.png__',
+    image: 'data:image/png;base64,__IMG:box_i4.png__',
     badge: 'Не готово',
     badgeDanger: true
   },

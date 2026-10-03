@@ -1,10 +1,10 @@
 // ГОСТ 10198-91, тип I-4: вывод результата расчёта - плитки «Итог»,
-// спецификация (чертёж + таблица по каждому узлу), лента обшивки, пергамин и
+// спецификация (чертёж + таблица по каждому узлу), лента обшивки и
 // предупреждения.
 // calc - результат computeGost10198I4 (compute/compute.js).
 
 // Общий вид ящика (плитка «Итог» и печать).
-const BOX_IMG_B64  = "data:image/png;base64,__IMG:box.png__";
+const BOX_IMG_B64  = "data:image/png;base64,__IMG:box_i4.png__"; // общий вид ящика I-4 (присланный пользователем)
 
 function renderSummary(calc){
   document.getElementById('outDims').innerHTML = `${calc.outerL} × ${calc.outerW} × ${calc.outerH} <span>мм</span>`;
