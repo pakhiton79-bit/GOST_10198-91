@@ -3476,17 +3476,22 @@ function diagramTooDense(){
   return diagramStub(DIAGRAM_TOO_DENSE_TEXT);
 }
 
-// Доски обшивки на чертежах типов с промежутками (I-4, II-2) - одной
-// ширины на экране на всех чертежах крышки и щитов (по указанию
-// пользователя): DRAWN_BOARD_PX экранных пикселей при обычном размере
-// чертежа, число досок на чертеже - сколько поместится (может отличаться от
-// расчётного). Промежуток - в реальной доле к доске (не уже
-// DRAWN_BOARD_MIN_GAP_PX), крайние доски - по краям отрезка.
-const DRAWN_BOARD_PX = 7, DRAWN_BOARD_MIN_GAP_PX = 1.6;
+// Детали на чертежах крышки и щитов типов с промежутками (I-4, II-2) -
+// доски обшивки, планки, раскосины, стойки и брусья - одной ширины на
+// экране на всех этих чертежах (по указанию пользователя): DRAWN_MEMBER_PX
+// экранных пикселей при обычном размере чертежа (drawnMemberWidth). Число
+// досок на чертеже - сколько поместится (может отличаться от расчётного),
+// промежуток - в реальной доле к доске (не уже DRAWN_BOARD_MIN_GAP_PX),
+// крайние доски - по краям отрезка.
+const DRAWN_MEMBER_PX = 8, DRAWN_BOARD_MIN_GAP_PX = 1.6;
 // Единиц картинки IW×IH на 1px экрана: на странице чертёж увеличивается до
 // ~290×240px (см. common-diagram-fit.js).
 function diagramScreenScale(IW, IH){
   return Math.max(IW / 290, IH / 240);
+}
+// Ширина детали в единицах картинки (k - diagramScreenScale).
+function drawnMemberWidth(k){
+  return DRAWN_MEMBER_PX * k;
 }
 // [начало, конец] досок на отрезке a..b картинки (k - единиц картинки на 1px
 // экрана, diagramScreenScale). gapMm - промежуток между досками по расчёту
@@ -3494,7 +3499,7 @@ function diagramScreenScale(IW, IH){
 // до крайней доски по расчёту (0 - крайние по краям). Размеры в мм - к доске
 // 100 мм.
 function drawnBoardStrips(a, b, k, gapMm, edgeMm){
-  const bw = DRAWN_BOARD_PX * k;
+  const bw = drawnMemberWidth(k);
   const e = edgeMm > 0 ? bw * edgeMm / 100 : 0;
   const a1 = a + e, span = b - e - a1;
   if(span <= 0) return [];
@@ -3844,21 +3849,28 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
   // длинная крышка превращалась в узкую полосу).
   const Wv = 850, Lu = Wv * Math.min(2.5, Math.max(1.4, lidLen / lidW));
   const k = Lu / lidLen;                            // единиц чертежа на 1 мм вдоль длины
+  const up = [-8, -26], thick = [7, 20];            // подъём брусьев над крышкой, толщина крышки
+  const low = [thick[0]*2, thick[1]*2], lowEnd = [thick[0]*3.5, thick[1]*3.5]; // планки под крышкой
+  const pt = (u, v, d) => [u*eu[0] + v*ev[0] + (d?d[0]:0), u*eu[1] + v*ev[1] + (d?d[1]:0)];
+  // Масштаб чертежа (единиц на 1px экрана) - по крышке с концами планок:
+  // планки, брусья и доски - шириной детали на экране (drawnMemberWidth в
+  // common-diagrams.js; кромки досок и планок на изометрии почти
+  // перпендикулярны осям, поэтому ширина в единицах u/v - та же).
+  const lidBox = [pt(0,-0.13*Wv,lowEnd), pt(Lu,-0.13*Wv,lowEnd), pt(0,1.13*Wv,low), pt(Lu,1.13*Wv,low), pt(0,0,up), pt(Lu,Wv,up), pt(0,Wv,up)];
+  const lidK = diagramScreenScale(Math.max(...lidBox.map(q=>q[0])) - Math.min(...lidBox.map(q=>q[0])),
+    Math.max(...lidBox.map(q=>q[1])) - Math.min(...lidBox.map(q=>q[1])));
+  const mw = drawnMemberWidth(lidK);
   // Как на фото крышки (по уточнению пользователя): пояса-планки - снизу, из-под
   // крышки видны только их концы за передней и задней кромками; сверху -
-  // внутренние поперечные брусья. Ширина планки/бруса на чертеже - не меньше,
-  // чем на фото (схема, не в масштабе: при реальных 100 мм на длинной крышке они
-  // были бы нитками), но не шире, чем позволяет промежуток между соседними.
+  // внутренние поперечные брусья. Ширина планки/бруса - mw, но не шире, чем
+  // позволяет промежуток между соседними.
   const minGapU = P > 1 ? plankGapMm*k : Lu;       // plankGapMm - шаг поясов по осям
-  const pw = Math.min(Math.max(100*k, 120), 0.55*minGapU);
-  const bw = B > 0 ? Math.min(Math.max(100*k, 120), 0.55*(Lu/(B+1))) : 0;
+  const pw = Math.min(mw, 0.55*minGapU);
+  const bw = B > 0 ? Math.min(mw, 0.55*(Lu/(B+1))) : 0;
   // Планки/брусья слились бы - заглушка (размер картинки - по проекции крышки).
   const gaps = [P > 1 ? plankGapMm*k - pw : Infinity, B > 1 ? ((crossBeamWidthMm||100) + beamGapMm)*k - bw : Infinity];
   const IWe = Lu*0.9507 + Wv*0.4406, IHe = Lu*0.3101 + Wv*0.8977;
   if(diagramIsTooDense(Math.min(...gaps) - i3stroke(IWe, IHe), IWe)) return diagramTooDense();
-  const up = [-8, -26], thick = [7, 20];            // подъём брусьев над крышкой, толщина крышки
-  const low = [thick[0]*2, thick[1]*2], lowEnd = [thick[0]*3.5, thick[1]*3.5]; // планки под крышкой
-  const pt = (u, v, d) => [u*eu[0] + v*ev[0] + (d?d[0]:0), u*eu[1] + v*ev[1] + (d?d[1]:0)];
   const polys = [];                                 // [точки] в порядке отрисовки
   const quad = (u0, u1, v0, v1, d) => [pt(u0,v0,d), pt(u1,v0,d), pt(u1,v1,d), pt(u0,v1,d)];
   const box = (u0, u1, v0, v1) => {                 // брус сверху: боковые грани + верх
@@ -3875,11 +3887,6 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
   }
   // крышка - доски вдоль длины (от дальней к ближней): передняя и левая
   // грани толщины + верх; доски - светло-серые (как на щитах).
-  // Ширина доски на экране - как на щитах: масштаб - по уже построенным
-  // планкам и плоскости крышки (доски и брусья внутри них).
-  const lidBox = polys.flat().concat([pt(0,0), pt(Lu,0), pt(Lu,Wv,up), pt(0,Wv,up), pt(0,0,thick)]);
-  const lidK = diagramScreenScale(Math.max(...lidBox.map(q=>q[0])) - Math.min(...lidBox.map(q=>q[0])),
-    Math.max(...lidBox.map(q=>q[1])) - Math.min(...lidBox.map(q=>q[1])));
   const lidStrips = i4BoardStrips(0, Wv, boardGap, lidK);
   const boardPolyFrom = polys.length;
   lidStrips.slice().reverse().forEach(([v0, v1])=>{
@@ -4089,7 +4096,9 @@ function diagramKryshkaFor(calc){
 
 // ГОСТ 10198-91, тип I-4: чертёж «Щит торцевой» - всегда генерируемый (SVG,
 // функции generated.js), т.к. на фото торца I-3 обшивка сплошная: рамка из
-// планок и раскосины поверх досок с промежутками (boards.js).
+// планок и раскосины поверх досок с промежутками (boards.js). Планки,
+// раскосины и доски - одной ширины на экране (drawnMemberWidth в
+// common-diagrams.js).
 
 // --- Щит торцевой: N секций, 1 или 2 этажа ---
 // Wmm - длина горизонтальной планки (ширина груза), Htot - высота рамы (H+t12),
@@ -4098,11 +4107,17 @@ function diagramKryshkaFor(calc){
 // ({ qty, gap, share }) или null - доски вплотную (см. boards.js).
 function diagramEndPanelGen(Wmm, Htot, sections, floors, xMode, floorSpanVal, hasBraces, boardGap){
   const N = Math.max(1, Math.round(sections)), F = floors === 2 ? 2 : 1;
-  const IH = F === 2 ? 1200 : 800, hp = 90, vw = 90; // гор. и верт. планки - одной ширины
-  const innerH = (IH - hp*(F+1)) / F;
+  const IH = F === 2 ? 1200 : 800;
   const realSecW = (Wmm - 100*(N+1)) / N, realInH = F === 2 ? (Htot - 300)/2 : Htot - 200;
-  const sw = innerH * i3aspect(realSecW, realInH);
-  const IW = Math.round((N+1)*vw + N*sw);
+  // Гор. и верт. планки - шириной детали на экране: масштаб чертежа зависит
+  // от его ширины, а она - от ширины планок; нескольких проходов хватает.
+  let hp = 90, vw = 90, innerH, sw, IW;
+  for(let it=0; it<5; it++){
+    innerH = (IH - hp*(F+1)) / F;
+    sw = innerH * i3aspect(realSecW, realInH);
+    IW = Math.round((N+1)*vw + N*sw);
+    if(it < 4) hp = vw = drawnMemberWidth(diagramScreenScale(IW, IH));
+  }
   if(diagramIsTooDense(Math.min(sw, innerH) / 2 - i3stroke(IW, IH), IW)) return diagramTooDense(); // секций так много, что планки слились бы
   const vx = i => i*(vw + sw);                      // левый край i-й вертикальной планки
   // Обшивка - доски с промежутками под рамкой.
@@ -4143,7 +4158,7 @@ function diagramEndPanelGen(Wmm, Htot, sections, floors, xMode, floorSpanVal, ha
   // верхней планки (под планкой его не видно).
   const gi = strips.findIndex((st, i) => i + 1 < strips.length && st[1] >= hp);
   if(boardGap && gi >= 0){
-    const k = IW / 260;
+    const k = Math.max(IW / 260, IH / 240); // единиц картинки на 1px экрана (узкий высокий чертёж - мельче 260px)
     records.push(...i4BoardGapRecords(vw, -Math.max(70, 10*k), strips[gi][1], strips[gi+1][0], Math.max(60, 9*k), Math.max(15, 3*k), boardGap.gap, k, -1));
   }
   const title = `Щит торцевой (${F} эт., ${N} секц.${hasBraces === false ? ', без раскосин' : xMode ? ', X-раскосины' : ''}) - схема расположения деталей`;
@@ -4167,9 +4182,13 @@ function diagramEndPanelFor(calc){
 // вплотную (см. boards.js).
 function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankCount, floors, xMode, upperSpanVal, midPlankWidthVal, sectionWmm, lidBoardTVal, hasBraces, plankGapVal, boardGap){
   const P = Math.max(2, Math.round(plankCount)), F = floors === 2 ? 2 : 1;
-  const PH = floors === 2 ? 1300 : 800, pw = 100, stub = 100, hp = 100; // средняя планка - той же ширины
+  const PH = floors === 2 ? 1300 : 800, stub = 100;
+  // Планки (и средняя у 2 этажей) - шириной детали на экране
+  // (drawnMemberWidth в common-diagrams.js, как доски и раскосины): масштаб
+  // чертежа зависит от его ширины, а она - от ширины планок; ширина
+  // подбирается несколькими проходами (см. цикл ниже).
+  let pw = 100, hp = 100;
   const ovh = 80;                                   // напуск планок ниже щита (на полоз)
-  const innerH = F === 2 ? (PH - hp)/2 : PH;
   const realInH = F === 2 ? (heightPlusFloorVal - (midPlankWidthVal||100))/2 : heightPlusFloorVal;
   // Ширина секции - по реальной пропорции, но весь чертёж не длиннее ~4
   // (2 этажа - ~2.4) своих высот: иначе у очень длинного щита (10+ м) чертёж
@@ -4179,11 +4198,16 @@ function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloo
   // 966×1361): по замечанию пользователя, при 2 планках (особенно на 2 этажах)
   // чертёж выходил узким и высоким и занимал много места по вертикали.
   const minIW = (F === 2 ? 966/1361 : 874/733) * (45 + PH + 80);
-  const sw = Math.max(1.2*pw, (minIW - 2*stub - P*pw) / (P-1),
-    Math.min(innerH * i3aspect(sectionWmm - 100, realInH), (maxIW - 2*stub - P*pw) / (P-1)));
-  const panelW = 2*stub + P*pw + (P-1)*sw;
   const up = 45;                                    // планки чуть выступают над щитом (как в I-1)
-  const IW = Math.round(panelW), IH = up + PH + ovh;
+  const IH = up + PH + ovh;
+  let innerH, sw, IW;
+  for(let it=0; it<5; it++){
+    innerH = F === 2 ? (PH - hp)/2 : PH;
+    sw = Math.max(1.2*pw, (minIW - 2*stub - P*pw) / (P-1),
+      Math.min(innerH * i3aspect(sectionWmm - 100, realInH), (maxIW - 2*stub - P*pw) / (P-1)));
+    IW = Math.round(2*stub + P*pw + (P-1)*sw);
+    if(it < 4) pw = hp = drawnMemberWidth(diagramScreenScale(IW, IH));
+  }
   if(diagramIsTooDense((hasBraces === false ? sw : Math.min(sw, innerH) / 2) - i3stroke(IW, IH), IW)) return diagramTooDense(); // планок так много, что они слились бы
   const px = i => stub + i*(pw + sw);
   // Доски бока - с промежутками.

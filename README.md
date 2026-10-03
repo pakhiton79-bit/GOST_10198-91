@@ -129,8 +129,9 @@ from a branch → папка `/docs`).
 - `src/i4/calc-i4.js`, `render-i4.js`, `print-i4.js` - расчёт, вывод, печать.
 - `src/i4/diagrams/` - чертежи (все рисуются SVG: на фото I-3 обшивка
   сплошная): `generated.js` (общие функции, как у I-3), `boards.js` (доски
-  одной ширины на экране - `drawnBoardStrips` в `common-diagrams.js`, и
-  размер промежутка), `dno.js` (изометрия дна), `kryshka.js`,
+  с промежутками и их размер; доски, планки, раскосины и брусья - одной
+  ширины на экране: `drawnMemberWidth`, `drawnBoardStrips` в
+  `common-diagrams.js`), `dno.js` (изометрия дна), `kryshka.js`,
   `end-panel.js`, `bokovoy.js`.
 
 Тип II-1 (`GOST10198_91_II1.html`, каркасно-щитовой ящик). Файлы разложены
