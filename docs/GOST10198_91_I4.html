@@ -1759,12 +1759,12 @@ else initSiteSettings();
     <div class="card">
       <h2>Промежутки между досками обшивки</h2>
       <div class="modal-field">
-        <label id="boardGapLabel" for="boardGapInput">Доля промежутков, % поверхности щита</label>
+        <label id="boardGapLabel" for="boardGapInput">Наибольший промежуток между досками, мм</label>
         <div class="modal-slider-row">
           <div class="jump-slider" id="boardGapSlider" aria-labelledby="boardGapLabel"></div>
-          <input type="number" id="boardGapInput" step="1" min="10" max="50" placeholder="10-50" oninput="onBoardGapInputChange()">
+          <input type="number" id="boardGapInput" step="1" min="10" max="100" placeholder="10-100" oninput="onBoardGapInputChange()">
         </div>
-        <div class="option-hint board-gap-hint">Обязательно для типа I-4. Доски по 100 мм на всех щитах: крайние - по краям щита, остальные равномерно между ними, промежутки - не больше указанной доли и не больше 100 мм.</div>
+        <div class="option-hint board-gap-hint">Обязательно для типа I-4. Доски по 100 мм на всех щитах: крайние - по краям щита, остальные равномерно между ними, промежуток между соседними - не больше указанного.</div>
       </div>
     </div>
 
@@ -2833,36 +2833,24 @@ function plankLayout(len, override, minEdge) {
   return countPlankLayout(len, override.value, minEdge);
 }
 
-// ГОСТ 10198-91, тип I-4: обшивка щитов досками с промежутками (как у типа
-// I-2): доски по 100 мм, крайние - по краям щита, остальные равномерно между
-// ними; их наименьшее число, при котором промежутки занимают не больше
-// заданной доли (boardGapShare, 0.1..0.5) ширины щита и каждый промежуток не
-// больше 100 мм (по указанию пользователя). Если промежутков не выходит (не
-// помещаются и 2 доски по 100 мм или доля слишком мала) - щит обшивается
-// сплошь, как у I-3 (основные по 100 мм + дополнительные на остаток), и
-// выдаётся предупреждение.
+// ГОСТ 10198-91, тип I-4: обшивка щитов досками с промежутками: доски по
+// 100 мм, крайние - по краям щита, остальные равномерно между ними; их
+// наименьшее число, при котором промежуток между соседними досками не больше
+// заданного (boardGapMax, 10-100 мм - по указанию пользователя). Если
+// промежутков не выходит (не помещаются и 2 доски по 100 мм) - щит
+// обшивается сплошь, как у I-3 (основные по 100 мм + дополнительные на
+// остаток), и выдаётся предупреждение.
 
 const BOARD_W = 100;
-const MAX_GAP = 100;   // наибольший промежуток между досками, мм
+const GAP_MIN = 10, GAP_MAX = 100; // пределы настройки наибольшего промежутка, мм
 
-// { qty, gap - промежуток между соседними досками, мм; share - его доля } или
-// null - промежутков не выйдет.
-function gapBoards(span, share) {
+// { qty, gap - промежуток между соседними досками, мм; share - доля
+// промежутков в ширине щита } или null - промежутков не выйдет.
+function gapBoards(span, maxGap) {
   span = Math.round(span);
-  // по доле и по наибольшему промежутку: (span - qty*100)/(qty-1) <= 100
-  const qty = Math.max(2, Math.ceil(span * (1 - share) / BOARD_W - 1e-9), Math.ceil((span + MAX_GAP) / (BOARD_W + MAX_GAP) - 1e-9));
+  // (span - qty*100) / (qty-1) <= maxGap
+  const qty = Math.max(2, Math.ceil((span + maxGap) / (BOARD_W + maxGap) - 1e-9));
   if (qty * BOARD_W >= span) return null;
-  return { qty, gap: (span - qty * BOARD_W) / (qty - 1), share: (span - qty * BOARD_W) / span };
-}
-
-// Ближайший вариант с промежутками, когда gapBoards их не дал: наибольшее
-// число досок по 100 мм, при котором промежуток ещё есть (доля тогда больше
-// заданной); null - не помещаются и 2 доски.
-function gapBoardsNearest(span) {
-  span = Math.round(span);
-  let qty = Math.floor(span / BOARD_W);
-  if (qty * BOARD_W >= span) qty--;
-  if (qty < 2) return null;
   return { qty, gap: (span - qty * BOARD_W) / (qty - 1), share: (span - qty * BOARD_W) / span };
 }
 
@@ -2870,12 +2858,10 @@ function gapBoardsNearest(span) {
 // singleNarrow) - с промежутками; gap - промежутки ({ qty, gap, share }) или
 // null - щит сплошной. panelName и warnings - для предупреждения о щите без
 // промежутков.
-function fillGapBoards(span, roundBoardWidths, share, panelName, warnings) {
-  const gb = gapBoards(span, share);
+function fillGapBoards(span, roundBoardWidths, maxGap, panelName, warnings) {
+  const gb = gapBoards(span, maxGap);
   if (gb) return { mainQty: gb.qty, extra: [], warn: false, singleNarrow: false, gap: gb };
-  const near = gapBoardsNearest(span);
-  const alt = near ? ` (с промежутками вышло бы ${near.qty} досок, ${Math.round(near.share * 100)}% поверхности)` : '';
-  warnings.push(`${panelName}: при доле промежутков не больше ${Math.round(share * 100)}% промежутков между досками нет - доски по 100 мм закрывают щит целиком${alt}.`);
+  warnings.push(`${panelName}: промежутков между досками нет - доски по 100 мм закрывают щит целиком.`);
   return { ...fillBoards(span, roundBoardWidths), gap: null };
 }
 
@@ -2970,7 +2956,7 @@ function buildDno(c) {
   const t12 = removeFloorBoards ? 0 : ov('t12Value', round(floorGostT), 'Толщина доски дна');
   const floorLen = W;
   // Доски дна - с промежутками (boards.js); убраны - без предупреждений.
-  const fb = fillGapBoards(L - beam.w * 2, c.roundBoardWidths, c.boardGapShare, 'Дно', removeFloorBoards ? [] : warnings);
+  const fb = fillGapBoards(L - beam.w * 2, c.roundBoardWidths, c.boardGapMax, 'Дно', removeFloorBoards ? [] : warnings);
   if (!removeFloorBoards) {
     if (fb.mainQty > 0) rows.push({ name: 'Доска дна', t: t12, w: 100, l: floorLen, qty: fb.mainQty, overrideKey: 't12Value' });
     fb.extra.forEach((e, i) => {
@@ -3040,7 +3026,7 @@ function buildKryshka(c, len, outerW) {
   if (planks.error) return { error: planks.error };
   rows.push({ name: 'Планка', t: wall, w: PLANK_W, l: width, qty: planks.count, overrideKey: 'wallValue' });
 
-  const fb = fillGapBoards(W + wall * 2, c.roundBoardWidths, c.boardGapShare, 'Крышка', warnings);
+  const fb = fillGapBoards(W + wall * 2, c.roundBoardWidths, c.boardGapMax, 'Крышка', warnings);
   if (fb.mainQty > 0) rows.push({ name: 'Доска крышки', t: wall, w: 100, l: len, qty: fb.mainQty, overrideKey: 'wallValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
@@ -3104,7 +3090,7 @@ function buildEndPanel(c, t12) {
   const vertQty = (sections + 1) * floors;
   const rask = { l: Math.sqrt(Math.pow(sectionWidth(sections), 2) + Math.pow(vertLen, 2)), qty: hasRaskosina ? sections * floors : 0 };
 
-  const fb = fillGapBoards(hFull, c.roundBoardWidths, c.boardGapShare, 'Щит торцевой', warnings);
+  const fb = fillGapBoards(hFull, c.roundBoardWidths, c.boardGapMax, 'Щит торцевой', warnings);
   if (fb.warn) warnings.push('Доска торца: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска торца: одна доска уже менее 100 мм.');
 
@@ -3163,7 +3149,7 @@ function buildBokovoy(c, p) {
   const plankFull = hFull + overhang;
   const vert = { l: floors === 2 ? (plankFull - PLANK_W) / 2 : plankFull, qty: plankQty * floors };
 
-  const fb = fillGapBoards(hFull, c.roundBoardWidths, c.boardGapShare, 'Щит боковой', warnings);
+  const fb = fillGapBoards(hFull, c.roundBoardWidths, c.boardGapMax, 'Щит боковой', warnings);
   if (fb.warn) warnings.push('Доска бока: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска бока: одна доска уже менее 100 мм.');
 
@@ -3200,14 +3186,13 @@ function buildBokovoy(c, p) {
 
 // ГОСТ 10198-91, тип I-4: расчёт ящика. Ящик - как у типа I-3 (отдельная
 // копия), но доски обшивки всех щитов (дно, крышка, бока, торцы) - с
-// промежутками, как у типа I-2: крайние по краям щита, остальные равномерно
-// между ними, промежутки - не больше заданной доли поверхности щита
-// (boardGapPercent, 10-50%, обязательна) и не больше 100 мм (см. boards.js). Пергамина нет
-// (решетчатый ящик). Толщина стенок - та же, что у I-3 (п.1.6.15 - общий для
-// I-3 и I-4).
+// промежутками: крайние по краям щита, остальные равномерно между ними,
+// промежуток между соседними досками - не больше заданного (boardGapMax,
+// 10-100 мм, обязательно; см. boards.js). Пергамина нет (решетчатый ящик).
+// Толщина стенок - та же, что у I-3 (п.1.6.15 - общий для I-3 и I-4).
 //
 // Порядок расчёта:
-//   1. проверка входных данных (в том числе доли промежутков);
+//   1. проверка входных данных (в том числе наибольшего промежутка);
 //   2. толщина стенок (п.1.6.15) с округлением до «в наличии»;
 //   3. узлы: дно (dno.js), крышка (kryshka.js), щит торцевой (end-panel.js),
 //      щит боковой (bokovoy.js);
@@ -3249,7 +3234,7 @@ function makeThicknessOverrides(manualOverrides) {
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
 //   xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity,
-//   boardGapPercent - доля промежутков между досками обшивки, % }.
+//   boardGapMax - наибольший промежуток между досками обшивки, мм }.
 function computeGost10198I4(input) {
   const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
@@ -3259,10 +3244,10 @@ function computeGost10198I4(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
-  // Доля промежутков обязательна (как у I-2), значения по умолчанию нет.
-  const gapPercent = input.boardGapPercent;
-  if (!(gapPercent >= 10 && gapPercent <= 50)) {
-    return { error: 'Укажите долю промежутков между досками обшивки (от 10 до 50%) - расчёт не выполняется.' };
+  // Наибольший промежуток обязателен, значения по умолчанию нет.
+  const gapMax = input.boardGapMax;
+  if (!(gapMax >= GAP_MIN && gapMax <= GAP_MAX)) {
+    return { error: `Укажите наибольший промежуток между досками обшивки (от ${GAP_MIN} до ${GAP_MAX} мм) - расчёт не выполняется.` };
   }
   const warnings = [];
   if (L <= 1200 || W <= 800) {
@@ -3284,7 +3269,7 @@ function computeGost10198I4(input) {
   }
 
   // Контекст для узлов: входные данные + толщина стенок и общие функции.
-  const c = { ...input, variant: input.fasteningType, wall, ov, round, warnings, boardGapShare: gapPercent / 100 };
+  const c = { ...input, variant: input.fasteningType, wall, ov, round, warnings, boardGapMax: gapMax };
 
   // --- 3. Узлы ---
   const dno = buildDno(c);
@@ -5823,24 +5808,24 @@ function persistCheckbox(id){
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
 
-// ГОСТ 10198-91, тип I-4: «Доля промежутков между досками» обшивки - ползунок
-// (10-50% с шагом 5) и поле для любого целого от 10 до 50. Обязательна (по
-// указанию пользователя): значения по умолчанию нет, пока его не выбрали,
-// расчёт блокируется (ошибку выдаёт расчёт, поле подсвечивается, см.
-// errorFieldsFor в calc-i4.js). Доски - по 100 мм, крайние по краям
-// щита, остальные равномерно между ними, промежутки - не больше этой доли
-// поверхности щита. Значение запоминается в localStorage при каждом
+// ГОСТ 10198-91, тип I-4: «Наибольший промежуток между досками» обшивки -
+// ползунок (10-100 мм с шагом 10) и поле для любого целого от 10 до 100.
+// Обязателен (по указанию пользователя): значения по умолчанию нет, пока его
+// не выбрали, расчёт блокируется (ошибку выдаёт расчёт, поле подсвечивается,
+// см. errorFieldsFor в calc-i4.js). Доски - по 100 мм, крайние по краям
+// щита, остальные равномерно между ними, промежуток между соседними - не
+// больше этого значения. Значение запоминается в localStorage при каждом
 // изменении.
-const BOARD_GAP_MIN = 10, BOARD_GAP_MAX = 50;
-const BOARD_GAP_STEPS = [10, 15, 20, 25, 30, 35, 40, 45, 50];
-const BOARD_GAP_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'boardGapPercent';
-let boardGapPercent = null; // null - не выбрано
+const BOARD_GAP_MIN = 10, BOARD_GAP_MAX = 100;
+const BOARD_GAP_STEPS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+const BOARD_GAP_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'boardGapMax';
+let boardGapMax = null; // null - не выбрано
 
-function readBoardGapPercent(){
-  return boardGapPercent;
+function readBoardGapMax(){
+  return boardGapMax;
 }
-function setBoardGapPercent(v, fromSlider){
-  boardGapPercent = v;
+function setBoardGapMax(v, fromSlider){
+  boardGapMax = v;
   const sliderEl = document.getElementById('boardGapSlider');
   sliderEl.classList.toggle('jump-slider-empty', v === null);
   if(!fromSlider && v !== null) boardGapSlider.setValue(v);
@@ -5849,22 +5834,22 @@ function setBoardGapPercent(v, fromSlider){
 }
 function onBoardGapInputChange(){
   const v = parseInt(document.getElementById('boardGapInput').value, 10);
-  setBoardGapPercent(v >= BOARD_GAP_MIN && v <= BOARD_GAP_MAX ? v : null, false);
+  setBoardGapMax(v >= BOARD_GAP_MIN && v <= BOARD_GAP_MAX ? v : null, false);
 }
 
 const boardGapSlider = createJumpSlider(document.getElementById('boardGapSlider'), BOARD_GAP_STEPS, v=>{
   document.getElementById('boardGapInput').value = v;
-  setBoardGapPercent(v, true);
+  setBoardGapMax(v, true);
 });
 
-// Щелчок по ползунку без выбранного значения в его же текущую точку (10%)
+// Щелчок по ползунку без выбранного значения в его же текущую точку (10 мм)
 // ползунок не считает изменением - значение берётся из него явно.
 document.getElementById('boardGapSlider').addEventListener('pointerdown', ()=>{
   setTimeout(()=>{
-    if(boardGapPercent !== null) return;
+    if(boardGapMax !== null) return;
     const v = Number(document.getElementById('boardGapSlider').getAttribute('aria-valuenow'));
     document.getElementById('boardGapInput').value = v;
-    setBoardGapPercent(v, true);
+    setBoardGapMax(v, true);
   }, 0);
 });
 
@@ -5873,7 +5858,7 @@ document.getElementById('boardGapSlider').addEventListener('pointerdown', ()=>{
   let saved = null;
   try{ const raw = localStorage.getItem(BOARD_GAP_STORAGE_KEY); if(raw) saved = parseInt(raw, 10); }catch(e){}
   if(saved >= BOARD_GAP_MIN && saved <= BOARD_GAP_MAX){
-    boardGapPercent = saved;
+    boardGapMax = saved;
     document.getElementById('boardGapInput').value = saved;
     boardGapSlider.setValue(saved);
   } else {
@@ -6399,7 +6384,7 @@ function buildCalcInput(){
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addEndTape: document.getElementById('addEndTape').checked,
-    boardGapPercent: readBoardGapPercent(), // доля промежутков между досками обшивки, % (board-gaps.js)
+    boardGapMax: readBoardGapMax(), // наибольший промежуток между досками обшивки, мм (board-gaps.js)
     plankLayoutMode,
     plankLayoutValue,
     beamGapValue,
@@ -6486,7 +6471,7 @@ function errorFieldsFor(text){
   if(/Расстояние между планками/.test(text)) return ['plankGapInput'];
   if(/пояс\S* планок не помеща/.test(text)) return ['plankCountInput'];
   if(/недостаточна для отступа планок/.test(text)) return plankLayoutMode === 'count' ? ['plankCountInput'] : [];
-  if(/долю промежутков между досками/.test(text)) return ['boardGapInput'];
+  if(/наибольший промежуток между досками/.test(text)) return ['boardGapInput'];
   return [];
 }
 
