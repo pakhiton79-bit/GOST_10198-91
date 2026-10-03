@@ -1756,10 +1756,6 @@ else initSiteSettings();
       </label>
       <div class="option-group-title">Брусья крышки</div>
       <label>
-        <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина поперечного и продольного брусьев крышки уменьшается на 4 мм</span></span>
-      </label>
-      <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
         <span>Настроить число поперечных брусьев<span class="option-hint">Крайние брусья - по концам крышки, остальные равномерно между ними. Штатно - наименьшее число, при котором расстояния между краями брусьев не больше 700 мм</span></span>
       </label>
@@ -2909,7 +2905,7 @@ function buildDno(c, s, subLengthWarn) {
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (sizing.js).
 function buildKryshka(c, s) {
-  const { W, warnings, skinT, optimizeSizes } = c;
+  const { W, warnings, skinT } = c;
   const rows = [];
 
   // Доски - поперёк ящика длиной по ширине груза, занимают наружную длину.
@@ -2923,14 +2919,11 @@ function buildKryshka(c, s) {
   if (fb.warn) warnings.push('Доска крышки: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска крышки: одна доска уже менее 100 мм.');
   let volume = vol(skinT, 100, boardLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0);
-
-  // «Оптимизировать размеры» - брусья короче на 4 мм.
-  const cut = optimizeSizes ? 4 : 0;
-  const crossLen = W + skinT * 2 - cut;
+  const crossLen = W + skinT * 2;
   rows.push({ name: 'Поперечный брус крышки', t: s.lidBeamT, w: s.beamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 'tLidBeam' });
   volume += vol(s.lidBeamT, s.beamW, crossLen, s.crossBeamCount);
 
-  const longLen = s.len - cut;
+  const longLen = s.len;
   rows.push({ name: 'Продольный брус крышки', t: s.lidBeamT, w: s.beamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLidBeam' });
   volume += vol(s.lidBeamT, s.beamW, longLen, s.longBeamCount);
 
@@ -3191,7 +3184,7 @@ function makeThicknessOverrides(manualOverrides) {
 
 // input: { L, W, H, MASS, fasteningType ('skid' | 'floor_boards'),
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
-//   roundBoardWidths, optimizeSizes,
+//   roundBoardWidths,
 //   bulkCargo (насыпной или незакреплённый груз), addRaskosina, xRaskosina,
 //   torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
@@ -5140,7 +5133,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','optimizeSizes','bulkCargo','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
+['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','roundBoardWidths','bulkCargo','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -5873,7 +5866,6 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: document.getElementById('roundBoardWidths').checked,
-    optimizeSizes: document.getElementById('optimizeSizes').checked,
     bulkCargo: document.getElementById('bulkCargo').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
@@ -5924,7 +5916,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','bulkCargo','addRaskosina','addParchment'].forEach(id=>{
+['solidRigidBase','roundBoardWidths','removeFloorBoards','bulkCargo','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });

@@ -1778,7 +1778,7 @@ else initSiteSettings();
       <div class="option-group-title">Брусья крышки</div>
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм; при поперечном расположении досок крышки - и продольного бруса тоже. Отступ от стенки до крайнего поперечного бруса - на 2 мм больше</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм; при поперечном расположении досок крышки - и продольного бруса тоже. Отступ от стенки до крайнего поперечного бруса - на 2 мм больше</span></span>
       </label>
       <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
@@ -2961,7 +2961,7 @@ function buildKryshka(c, s) {
   const { L, W, warnings, skinT, optimizeSizes } = c;
   const rows = [];
 
-  const crossLen = W - (optimizeSizes ? 4 : 0);
+  const crossLen = W - (optimizeSizes ? 2 : 0);
   rows.push({ name: 'Внутренний поперечный брус', t: s.crossBeamT, w: s.crossBeamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 't21' });
   let volume = vol(s.crossBeamT, s.crossBeamW, crossLen, s.crossBeamCount);
 
@@ -2970,7 +2970,7 @@ function buildKryshka(c, s) {
   // длина ящика).
   let boardLen, fillspace;
   if (c.lidLayout === 'transverse') {
-    const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 4 : 0);
+    const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 2 : 0);
     rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.longBeamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
     volume += vol(s.longBeamT, s.longBeamW, longLen, s.longBeamCount);
     boardLen = s.outerW;
@@ -3389,13 +3389,9 @@ function computeGost10198II1(input) {
     k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT, lidLayout: input.lidLayout,
     torecFrame, bokFrame, panelHeightFull,
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
-    // Толщина обшивки и рамы на чертеже крышки: +2 мм при «Оптимизировать
-    // размеры» (только чертёж).
-    t32Display: input.optimizeSizes ? skin.value + 2 : skin.value,
     // Отступ от стенки до крайнего поперечного бруса и расстояние между
     // краями соседних (на чертеже крышки).
     edgeDistCross: Math.round(crossEdge), gapDistCross: Math.round(crossGap),
-    sideFrameDisplay: s.stojkaT + skin.value + (input.optimizeSizes ? 2 : 0),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
     standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
@@ -3802,12 +3798,10 @@ function crossBeamWidth(kryshkaRows){
   return w > 0 ? w : 100;
 }
 
-// torecBoardVal - толщина доски торца (t32Display, с косметическим +2мм при
-// «Оптимизировать размеры» - см. calc-ii1.js); отсутствует на чертеже при
+// torecBoardVal - толщина доски торца; отсутствует на чертеже при
 // продольных=0 (как на фото - доска торца там не подписывается вовсе, по
 // самой инструкции). sideFrameVal - толщина стойки +
-// толщина доски обшивки бока (sideFrameDisplay - та же косметическая +2мм
-// надбавка при «Оптимизировать размеры», по аналогии с torecBoardVal).
+// толщина доски обшивки бока.
 // widthVal/lengthVal - наружные ширина/длина ящика (outerW/k9Base).
 // edgeDistVal - расстояние от стенки до края крайнего поперечного бруса
 // (calc.edgeDistCross), gapDistVal - между краями соседних брусьев
@@ -6044,7 +6038,7 @@ function renderBoardTables(calc, manualOverrides){
     diagramDno(calc.t_stojka, calc.skin.value, torecW, calc.k9Base, dnoSkidCount(calc.dno)),
     renderPartTable(calc.dno, 'dno', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Крышка</div>`,
-    diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.t32Display, calc.sideFrameDisplay, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
+    diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.skin.value, calc.t_stojka + calc.skin.value, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
     renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Щит торцевой (2 шт.)</div>`,
     diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW, calc.torecFrame.hasRaskosina),

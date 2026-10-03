@@ -3311,7 +3311,7 @@ function computeGost10198I4(input) {
     outerL, outerW, outerH, totalVolume, normaVremeni,
     // Параметры чертежей.
     k9Base: len, t41: wall, t40: wall, torecFrameThickness: wall + wall,
-    W, L, t30: wall, t32: wall, t40Display: input.optimizeSizes ? wall + 2 : wall,
+    W, L, t30: wall, t32: wall,
     edgeDistKryshka: planks.edgeDist, l21: beams.count, w21: kryshka.beamW, l19: planks.count, bokSectionW: sectionW, plankGap: planks.gap,
     beamEdgeDist: beams.edgeDist, beamGap: beams.gap, standardBeamCount: beams.standardCount,
     standardPlankCount: kryshka.standardPlanks.count, standardPlankGap: kryshka.standardPlanks.gap,
@@ -4049,7 +4049,7 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
 // Чертёж крышки для результата расчёта. I-4: всегда генерируемый - на фото
 // I-3 обшивка сплошная.
 function diagramKryshkaFor(calc){
-  return diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40Display, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap, calc.boardGaps.kryshka);
+  return diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap, calc.boardGaps.kryshka);
 }
 
 // ГОСТ 10198-91, тип I-4: чертёж «Щит торцевой» - всегда генерируемый (SVG,
