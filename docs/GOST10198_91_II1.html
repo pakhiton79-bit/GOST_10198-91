@@ -1778,11 +1778,11 @@ else initSiteSettings();
       <div class="option-group-title">Брусья крышки</div>
       <label>
         <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм; при поперечном расположении досок крышки - и продольного бруса тоже. Отступ от стенки до крайнего поперечного бруса - на 2 мм больше</span></span>
+        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм; при поперечном расположении досок крышки - и продольного бруса тоже.</span></span>
       </label>
       <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
-        <span>Настроить число поперечных брусьев<span class="option-hint">Брусья - равномерно по длине крышки, отступы от стенок равны промежуткам между брусьями (при «Оптимизировать размеры» - на 2 мм больше). Штатно - наименьшее число, при котором расстояния между краями брусьев и отступы не больше 700 мм</span></span>
+        <span>Настроить число поперечных брусьев<span class="option-hint">Брусья - равномерно по длине крышки, отступы от стенок равны промежуткам между брусьями. Штатно - наименьшее число, при котором расстояния между краями брусьев и отступы не больше 700 мм</span></span>
       </label>
       <div id="crossBeamsRow" class="modal-field" style="display:none;margin:6px 0 0 26px;">
         <div class="modal-slider-row">
@@ -2812,7 +2812,6 @@ function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
 
 const CROSS_BEAM_W = 100;         // ширина поперечного бруса крышки (Табл. 14 - всегда 100 мм)
 const CROSS_BEAM_MAX_GAP = 700;   // расстояние между краями поперечных брусьев крышки (и от стенки до крайнего)
-const CROSS_BEAM_OPT_EDGE = 2;    // «Оптимизировать размеры»: отступ от стенки до крайнего бруса больше на 2 мм
 const LONG_BEAM_MAX_AXIS = 800;   // шаг осей продольных брусьев крышки
 const ITERATIONS = 4;
 
@@ -2834,18 +2833,16 @@ function stabilizeSizes(c) {
     skidCalcWidth = W + stojkaT * 2;
 
     // Поперечные брусья крышки - равномерно по длине: отступы от стенок
-    // равны промежуткам между брусьями, при «Оптимизировать размеры» отступы
-    // больше на edgeAdd = 2 мм (промежутки соответственно меньше, см.
-    // compute.js). Штатно - наименьшее число (не меньше 2), при котором и
-    // отступы, и промежутки между краями брусьев ≤ 700 мм:
-    // (L - n·100) / (n + 1) + edgeAdd ≤ 700  =>  n ≥ (L - 700 + edgeAdd) / (800 - edgeAdd).
+    // равны промежуткам между брусьями («Оптимизировать размеры» их не
+    // меняет - по указанию пользователя). Штатно - наименьшее число (не
+    // меньше 2), при котором и отступы, и промежутки между краями брусьев
+    // ≤ 700 мм: (L - n·100) / (n + 1) ≤ 700  =>  n ≥ (L - 700) / 800.
     // Число, заданное вручную (c.lidCrossBeamCount), - целое не меньше 2,
     // проверки отступа - в compute.js.
     const crossBeamRaw = crossBeamThickness(MASS, outerW);
     crossBeamExceeded = crossBeamRaw.exceeded;
     crossBeamT = ov('t21', round(crossBeamRaw.value), 'Толщина поперечного бруса крышки');
-    const edgeAdd = c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0;
-    standardCrossBeamCount = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP + edgeAdd) / (CROSS_BEAM_MAX_GAP + CROSS_BEAM_W - edgeAdd)));
+    standardCrossBeamCount = Math.max(2, Math.ceil((L - CROSS_BEAM_MAX_GAP) / (CROSS_BEAM_MAX_GAP + CROSS_BEAM_W)));
     crossBeamCount = c.lidCrossBeamCount > 0 ? Math.max(2, Math.round(c.lidCrossBeamCount)) : standardCrossBeamCount;
 
     // Полозья: при сплошном жёстком основании - п.1.6.5 и число по ширине,
@@ -2904,7 +2901,7 @@ function stabilizeSizes(c) {
     stojkaT, stojkaExceeded, len, outerW, outerH,
     skid, skidTableInfo, polozSimpleExceeded, sub,
     crossBeamT, crossBeamW: CROSS_BEAM_W, crossBeamCount, standardCrossBeamCount, crossBeamExceeded,
-    crossBeamMaxGap: CROSS_BEAM_MAX_GAP, crossBeamEdgeAdd: c.optimizeSizes ? CROSS_BEAM_OPT_EDGE : 0,
+    crossBeamMaxGap: CROSS_BEAM_MAX_GAP,
     longBeamT, longBeamW, longBeamCount, longBeamExceeded,
     floorBoardT, floorBoardExceeded,
   };
@@ -3266,19 +3263,17 @@ function computeGost10198II1(input) {
     warnings.push('Масса или ширина ящика вне Табл. 14 - поперечный брус крышки принят по крайнему значению.');
   }
   // Поперечные брусья крышки - равномерно: отступ от стенки до крайнего бруса
-  // (crossEdge) равен промежутку между краями соседних (crossGap), при
-  // «Оптимизировать размеры» отступ больше на 2 мм, промежутки - меньше.
+  // (crossEdge) равен промежутку между краями соседних (crossGap).
   // Отступ меньше толщины обшивки + стойки: при числе, заданном вручную, -
   // блокировка, штатно (2 бруса) - предупреждение. Ручное число с
   // расстоянием больше 700 мм - предупреждение. maxCrossBeamCount -
   // наибольшее число брусьев без блокировки (край ползунка у клиента).
   const crossManual = input.lidCrossBeamCount > 0;
-  const crossN = s.crossBeamCount, crossW = s.crossBeamW, crossAdd = s.crossBeamEdgeAdd;
-  const crossEdge = (L - crossN * crossW) / (crossN + 1) + crossAdd;
+  const crossN = s.crossBeamCount, crossW = s.crossBeamW;
+  const crossEdge = (L - crossN * crossW) / (crossN + 1);
   const crossGap = (L - crossN * crossW - 2 * crossEdge) / (crossN - 1);
   const crossHardMin = skin.value + s.stojkaT;
-  const crossMinGap = crossHardMin - crossAdd; // отступ без надбавки, при котором крайний брус ещё не заходит на стенку
-  const maxCrossBeamCount = Math.max(2, Math.floor((L - crossMinGap) / (crossW + crossMinGap) + 1e-9));
+  const maxCrossBeamCount = Math.max(2, Math.floor((L - crossHardMin) / (crossW + crossHardMin) + 1e-9));
   if (crossEdge < crossHardMin) {
     if (crossManual) {
       return { error: `${tooManyCrossBeamsText(crossN)} в крышке: отступ от стенки до крайнего бруса ${Math.round(crossEdge)} мм меньше толщины обшивки и стойки (${Math.round(crossHardMin)} мм) - уменьшите число брусьев. Расчёт не выполняется.` };
@@ -3400,6 +3395,12 @@ function computeGost10198II1(input) {
     // Отступ от стенки до крайнего поперечного бруса и расстояние между
     // краями соседних (на чертеже крышки).
     edgeDistCross: Math.round(crossEdge), gapDistCross: Math.round(crossGap),
+    // Выступ досок крышки за брусья на чертеже крышки (подписи): за торцы
+    // поперечных - стойка + обшивка бока, за концы продольных - обшивка
+    // торца; при «Оптимизировать размеры» - на 2 мм больше (по указанию
+    // пользователя).
+    lidOverhangCross: s.stojkaT + skin.value + (input.optimizeSizes ? 2 : 0),
+    lidOverhangLong: skin.value + (input.optimizeSizes ? 2 : 0),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
     standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
@@ -3842,16 +3843,17 @@ function crossBeamWidth(kryshkaRows){
   return w > 0 ? w : 100;
 }
 
-// torecBoardVal - толщина доски торца; отсутствует на чертеже при
-// продольных=0 (как на фото - доска торца там не подписывается вовсе, по
-// самой инструкции). sideFrameVal - толщина стойки +
-// толщина доски обшивки бока.
+// torecBoardVal - выступ досок крышки за концы продольных брусьев (толщина
+// доски торца, при «Оптимизировать размеры» +2 мм - calc.lidOverhangLong);
+// отсутствует на чертеже при продольных=0 (как на фото - доска торца там не
+// подписывается вовсе, по самой инструкции). sideFrameVal - выступ досок за
+// торцы поперечных брусьев (толщина стойки + доски обшивки бока, при
+// «Оптимизировать размеры» +2 мм - calc.lidOverhangCross).
 // widthVal/lengthVal - наружные ширина/длина ящика (outerW/k9Base).
 // edgeDistVal - расстояние от стенки до края крайнего поперечного бруса
 // (calc.edgeDistCross), gapDistVal - между краями соседних брусьев
 // (calc.gapDistCross): брусья делят длину крышки на (count+1) равных
-// промежутков (при «Оптимизировать размеры» крайние на 2 мм больше), а не
-// flush-edge, как у стоек каркаса.
+// промежутков, а не flush-edge, как у стоек каркаса.
 function diagramKryshka(longbeamCount, crossBeamCount, torecBoardVal, sideFrameVal, widthVal, lengthVal, widthPxOverride, edgeDistVal, crossBeamW, gapDistVal){
   const g = kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, gapDistVal, crossBeamW);
   if(!g) return diagramTooDense();
@@ -5868,8 +5870,7 @@ persistRadioGroup('lidLayout');
 // числа от 2 до наибольшего, при котором расчёт не блокируется (из
 // последнего расчёта; до первого расчёта - штатное ±3). Расстановку считает
 // расчёт: крайние стойки - по краям щита, остальные равномерно между ними;
-// брусья крышки - равномерно, отступы от стенок равны промежуткам (при
-// «Оптимизировать размеры» - на 2 мм больше). Центр ползунка при включении -
+// брусья крышки - равномерно, отступы от стенок равны промежуткам. Центр ползунка при включении -
 // штатное число из последнего расчёта (до первого расчёта - 3).
 const MANUAL_COUNT_DEFAULT_CENTER = 3;
 // kind -> id элементов, ключ localStorage, поля штатного и наибольшего
@@ -6082,7 +6083,7 @@ function renderBoardTables(calc, manualOverrides){
     diagramDno(calc.t_stojka, calc.skin.value, torecW, calc.k9Base, dnoSkidCount(calc.dno)),
     renderPartTable(calc.dno, 'dno', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Крышка</div>`,
-    diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.skin.value, calc.t_stojka + calc.skin.value, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
+    diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.lidOverhangLong, calc.lidOverhangCross, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
     renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Щит торцевой (2 шт.)</div>`,
     diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW, calc.torecFrame.hasRaskosina),
