@@ -128,8 +128,9 @@ from a branch → папка `/docs`).
   `board-gaps.js` - ползунок и поле наибольшего промежутка между досками (10-100 мм, запоминается).
 - `src/i4/calc-i4.js`, `render-i4.js`, `print-i4.js` - расчёт, вывод, печать.
 - `src/i4/diagrams/` - чертежи (все рисуются SVG: на фото I-3 обшивка
-  сплошная): `generated.js` (общие функции, как у I-3), `boards.js` (3 доски
-  с промежутком и его размер), `dno.js` (изометрия дна), `kryshka.js`,
+  сплошная): `generated.js` (общие функции, как у I-3), `boards.js` (доски
+  одной ширины на экране - `drawnBoardStrips` в `common-diagrams.js`, и
+  размер промежутка), `dno.js` (изометрия дна), `kryshka.js`,
   `end-panel.js`, `bokovoy.js`.
 
 Тип II-1 (`GOST10198_91_II1.html`, каркасно-щитовой ящик). Файлы разложены
@@ -165,7 +166,7 @@ from a branch → папка `/docs`).
 - `src/ii2/compute/` - расчёт: `compute.js` (`computeGost10198II2`,
   наибольший промежуток обязателен), `boards.js` (доски с промежутками -
   `fillGapBoards`, 10-150 мм), `dno.js`, `kryshka.js` (при досках поперёк -
-  по линиям досок бокового щита), `end-panel.js`, `bokovoy.js`; согласование
+  доски бокового щита - по её линиям), `end-panel.js`, `bokovoy.js`; согласование
   размеров, каркасы и таблицы - общие с II-1 (`src/ii1/compute`).
 - `src/ii2/options.js`, `manual-counts.js`, `fine-thickness.js` - как у II-1;
   `board-gaps.js` - ползунок и поле наибольшего промежутка между досками

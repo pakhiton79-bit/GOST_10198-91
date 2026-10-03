@@ -3476,6 +3476,39 @@ function diagramTooDense(){
   return diagramStub(DIAGRAM_TOO_DENSE_TEXT);
 }
 
+// Доски обшивки на чертежах типов с промежутками (I-4, II-2) - одной
+// ширины на экране на всех чертежах крышки и щитов (по указанию
+// пользователя): DRAWN_BOARD_PX экранных пикселей при обычном размере
+// чертежа, число досок на чертеже - сколько поместится (может отличаться от
+// расчётного). Промежуток - в реальной доле к доске (не уже
+// DRAWN_BOARD_MIN_GAP_PX), крайние доски - по краям отрезка.
+const DRAWN_BOARD_PX = 7, DRAWN_BOARD_MIN_GAP_PX = 1.6;
+// Единиц картинки IW×IH на 1px экрана: на странице чертёж увеличивается до
+// ~290×240px (см. common-diagram-fit.js).
+function diagramScreenScale(IW, IH){
+  return Math.max(IW / 290, IH / 240);
+}
+// [начало, конец] досок на отрезке a..b картинки (k - единиц картинки на 1px
+// экрана, diagramScreenScale). gapMm - промежуток между досками по расчёту
+// (null - щит сплошной, доски вплотную); edgeMm - промежуток от края отрезка
+// до крайней доски по расчёту (0 - крайние по краям). Размеры в мм - к доске
+// 100 мм.
+function drawnBoardStrips(a, b, k, gapMm, edgeMm){
+  const bw = DRAWN_BOARD_PX * k;
+  const e = edgeMm > 0 ? bw * edgeMm / 100 : 0;
+  const a1 = a + e, span = b - e - a1;
+  if(span <= 0) return [];
+  if(gapMm == null){
+    const n = Math.max(1, Math.round(span / bw)), w = span / n;
+    return Array.from({length: n}, (_, i) => [a1 + i * w, a1 + (i + 1) * w]);
+  }
+  const g0 = Math.max(bw * gapMm / 100, DRAWN_BOARD_MIN_GAP_PX * k);
+  const n = Math.floor((span + g0) / (bw + g0) + 1e-9);
+  if(n < 2) return [[a1, a1 + Math.min(bw, span)]];
+  const g = (span - n * bw) / (n - 1);
+  return Array.from({length: n}, (_, i) => [a1 + i * (bw + g), a1 + i * (bw + g) + bw]);
+}
+
 // Дно (типы I-3 и II-1): картинка по числу полозьев. На 2 - фото (у каждого
 // типа своё, photo2), на 3-8 - картинки из того же фото с дорисованными
 // средними полозьями (tools/make_dno_images.py, список images - DNO_SKIDS_IMAGES
@@ -3621,19 +3654,17 @@ function i3aspect(realW, realH){
   return Math.min(2.4, Math.max(0.45, realW/realH));
 }
 
-// ГОСТ 10198-91, тип I-4: обшивка щита на чертежах - доски с промежутками
-// (как у типа I-2, js/i2/diagrams/boards.js): 3 доски, промежуток -
-// схематичный, всегда одной доли frac высоты щита (настоящий размер
-// подписан); у сплошного щита (hasGap = false) доски вплотную. Доски -
-// светло-серые, рамка поверх - белая (как у торца I-2).
+// ГОСТ 10198-91, тип I-4: обшивка щита на чертежах - доски с промежутками,
+// одной ширины на экране на всех чертежах крышки и щитов (drawnBoardStrips
+// в common-diagrams.js, по указанию пользователя); у сплошного щита доски
+// вплотную. Доски - светло-серые, рамка поверх - белая (как у торца I-2).
 const I4_BOARD_FILL = '#d9d9d9';
 
-// [верх, низ] каждой из 3 досок на отрезке top..bot.
-function i4BoardStrips(top, bot, hasGap, frac){
-  const F = bot - top;
-  const g = hasGap ? F * frac : 0;
-  const h = (F - 2*g) / 3;
-  return [[top, top + h], [top + h + g, top + 2*h + g], [top + 2*h + 2*g, bot]];
+// [начало, конец] каждой доски на отрезке top..bot. boardGap - промежутки
+// ({ gap, ... }) или null - щит сплошной; k - единиц картинки на 1px экрана
+// (diagramScreenScale).
+function i4BoardStrips(top, bot, boardGap, k){
+  return drawnBoardStrips(top, bot, k, boardGap ? boardGap.gap : null, 0);
 }
 
 // Доски поперёк x0..x1 по полосам strips (SVG).
@@ -3801,10 +3832,9 @@ function diagramDnoFor(calc){
 // Положение планок/брусьев вдоль длины - в реальных пропорциях; сама длина
 // крышки на чертеже - в пределах 1.4..4 её ширины (иначе очень длинная
 // крышка превратилась бы в тонкую полосу).
-// I-4: boardGap - промежуток обшивки ({ gap, ... }) или null - доски
-// вплотную: доски крышки идут вдоль длины, на чертеже - 3 полосы (см.
-// boards.js), сквозь промежутки видны пояса-планки снизу.
-const I4_LID_BOARD_GAP = 0.08; // промежуток на чертеже - доля ширины крышки
+// I-4: boardGap - промежуток обшивки ({ qty, gap, share }) или null - доски
+// вплотную: доски крышки идут вдоль длины, на чертеже - полосы по числу
+// досок (см. boards.js), сквозь промежутки видны пояса-планки снизу.
 function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm, plankEdgeGapVal, beamEdgeMm, beamGapMm, boardGap){
   const lidLen = lengthMm + t30*2 + t32*2, lidW = widthMm + t41*2;
   const P = Math.max(1, Math.round(plankCount)), B = Math.max(0, Math.round(crossBeamQty));
@@ -3843,9 +3873,14 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
     polys.push(quad(u0, u0+pw, -0.13*Wv, 1.13*Wv, low));
     polys.push([pt(u0,-0.13*Wv,low), pt(u0+pw,-0.13*Wv,low), pt(u0+pw,-0.13*Wv,lowEnd), pt(u0,-0.13*Wv,lowEnd)]);
   }
-  // крышка - 3 доски вдоль длины (от дальней к ближней): передняя и левая
+  // крышка - доски вдоль длины (от дальней к ближней): передняя и левая
   // грани толщины + верх; доски - светло-серые (как на щитах).
-  const lidStrips = i4BoardStrips(0, Wv, !!boardGap, I4_LID_BOARD_GAP);
+  // Ширина доски на экране - как на щитах: масштаб - по уже построенным
+  // планкам и плоскости крышки (доски и брусья внутри них).
+  const lidBox = polys.flat().concat([pt(0,0), pt(Lu,0), pt(Lu,Wv,up), pt(0,Wv,up), pt(0,0,thick)]);
+  const lidK = diagramScreenScale(Math.max(...lidBox.map(q=>q[0])) - Math.min(...lidBox.map(q=>q[0])),
+    Math.max(...lidBox.map(q=>q[1])) - Math.min(...lidBox.map(q=>q[1])));
+  const lidStrips = i4BoardStrips(0, Wv, boardGap, lidK);
   const boardPolyFrom = polys.length;
   lidStrips.slice().reverse().forEach(([v0, v1])=>{
     polys.push([pt(0,v0), pt(Lu,v0), pt(Lu,v0,thick), pt(0,v0,thick)]);
@@ -4060,8 +4095,7 @@ function diagramKryshkaFor(calc){
 // Wmm - длина горизонтальной планки (ширина груза), Htot - высота рамы (H+t12),
 // floorSpan - (2 этажа) вертикальная планка этажа + ширина гор. планки.
 // I-4: hasBraces = false - щит без раскосин; boardGap - промежуток обшивки
-// ({ gap, ... }) или null - доски вплотную (см. boards.js).
-const I4_TOREC_BOARD_GAP = 0.06; // промежуток на чертеже - доля высоты щита
+// ({ qty, gap, share }) или null - доски вплотную (см. boards.js).
 function diagramEndPanelGen(Wmm, Htot, sections, floors, xMode, floorSpanVal, hasBraces, boardGap){
   const N = Math.max(1, Math.round(sections)), F = floors === 2 ? 2 : 1;
   const IH = F === 2 ? 1200 : 800, hp = 90, vw = 90; // гор. и верт. планки - одной ширины
@@ -4071,8 +4105,8 @@ function diagramEndPanelGen(Wmm, Htot, sections, floors, xMode, floorSpanVal, ha
   const IW = Math.round((N+1)*vw + N*sw);
   if(diagramIsTooDense(Math.min(sw, innerH) / 2 - i3stroke(IW, IH), IW)) return diagramTooDense(); // секций так много, что планки слились бы
   const vx = i => i*(vw + sw);                      // левый край i-й вертикальной планки
-  // Обшивка - 3 доски с промежутками под рамкой.
-  const strips = i4BoardStrips(0, IH, !!boardGap, I4_TOREC_BOARD_GAP);
+  // Обшивка - доски с промежутками под рамкой.
+  const strips = i4BoardStrips(0, IH, boardGap, diagramScreenScale(IW, IH));
   let shapes = i4BoardRects(0, IW, strips);
   for(let fl=0; fl<F && hasBraces !== false; fl++){
     const top = hp + fl*(innerH + hp), bot = top + innerH;
@@ -4105,10 +4139,12 @@ function diagramEndPanelGen(Wmm, Htot, sections, floors, xMode, floorSpanVal, ha
       {type:'double', x1:-110, y1:midBot, x2:-110, y2:IH, lx:-115, ly:(midBot+IH)/2, text: dimLabel(floorSpanVal)+' мм', vertical:true}
     );
   }
-  // Промежуток между досками - слева от щита, у первого промежутка.
-  if(boardGap){
+  // Промежуток между досками - слева от щита, у первого промежутка ниже
+  // верхней планки (под планкой его не видно).
+  const gi = strips.findIndex((st, i) => i + 1 < strips.length && st[1] >= hp);
+  if(boardGap && gi >= 0){
     const k = IW / 260;
-    records.push(...i4BoardGapRecords(vw, -Math.max(70, 10*k), strips[0][1], strips[1][0], Math.max(60, 9*k), Math.max(15, 3*k), boardGap.gap, k, -1));
+    records.push(...i4BoardGapRecords(vw, -Math.max(70, 10*k), strips[gi][1], strips[gi+1][0], Math.max(60, 9*k), Math.max(15, 3*k), boardGap.gap, k, -1));
   }
   const title = `Щит торцевой (${F} эт., ${N} секц.${hasBraces === false ? ', без раскосин' : xMode ? ', X-раскосины' : ''}) - схема расположения деталей`;
   return i3render(title, IW, IH, shapes, records);
@@ -4127,9 +4163,8 @@ function diagramEndPanelFor(calc){
 // крышки и раскосины.
 
 // --- Щит боковой: P планок (P-1 секций), 1 или 2 этажа ---
-// I-4: boardGap - промежуток обшивки ({ gap, ... }) или null - доски
+// I-4: boardGap - промежуток обшивки ({ qty, gap, share }) или null - доски
 // вплотную (см. boards.js).
-const I4_BOK_BOARD_GAP = 0.06; // промежуток на чертеже - доля высоты щита
 function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloorVal, plankCount, floors, xMode, upperSpanVal, midPlankWidthVal, sectionWmm, lidBoardTVal, hasBraces, plankGapVal, boardGap){
   const P = Math.max(2, Math.round(plankCount)), F = floors === 2 ? 2 : 1;
   const PH = floors === 2 ? 1300 : 800, pw = 100, stub = 100, hp = 100; // средняя планка - той же ширины
@@ -4151,8 +4186,8 @@ function diagramBokovoyGen(boardLenVal, overhangVal, edgeDistVal, heightPlusFloo
   const IW = Math.round(panelW), IH = up + PH + ovh;
   if(diagramIsTooDense((hasBraces === false ? sw : Math.min(sw, innerH) / 2) - i3stroke(IW, IH), IW)) return diagramTooDense(); // планок так много, что они слились бы
   const px = i => stub + i*(pw + sw);
-  // Доски бока - 3 доски с промежутками.
-  const strips = i4BoardStrips(0, PH, !!boardGap, I4_BOK_BOARD_GAP);
+  // Доски бока - с промежутками.
+  const strips = i4BoardStrips(0, PH, boardGap, diagramScreenScale(IW, IH));
   let shapes = `<g transform="translate(0,${up})">` + i4BoardRects(0, IW, strips);
   for(let fl=0; fl<F && hasBraces !== false; fl++){  // hasBraces=false - щит без раскосин
     const top = fl*(innerH + hp), bot = top + innerH;
