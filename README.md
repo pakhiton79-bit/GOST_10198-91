@@ -166,7 +166,9 @@ from a branch → папка `/docs`).
 - `src/ii2/shell.html` - HTML-каркас (список частей - `II2_PARTS` в `build.py`).
 - `src/ii2/compute/` - расчёт: `compute.js` (`computeGost10198II2`,
   наибольший промежуток обязателен), `boards.js` (доски с промежутками -
-  `fillGapBoards`, 10-150 мм), `dno.js`, `kryshka.js`, `end-panel.js`, `bokovoy.js`; согласование
+  `fillGapBoards`, 10-150 мм), `dno.js`, `kryshka.js`, `end-panel.js`,
+  `bokovoy.js` (при досках крышки поперёк - по линиям крышки, крайние доски
+  уже 100 мм на толщину обшивки торца); согласование
   размеров, каркасы и таблицы - общие с II-1 (`src/ii1/compute`).
 - `src/ii2/options.js`, `manual-counts.js`, `fine-thickness.js` - как у II-1;
   `board-gaps.js` - ползунок и поле наибольшего промежутка между досками
