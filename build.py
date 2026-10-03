@@ -396,6 +396,7 @@ III1_PARTS = {
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
     "/*__III1_OPTIONS_JS__*/": III1_DIR / "options.js",
     "/*__III1_MANUAL_COUNTS_JS__*/": III1_DIR / "manual-counts.js",
+    "/*__III1_FINE_THICKNESS_JS__*/": III1_DIR / "fine-thickness.js",
     "/*__III1_PANEL_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "panel.js",
     "/*__III1_TOREC_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "torec.js",
     "/*__III1_DNO_DIAGRAM_JS__*/": III1_DIR / "diagrams" / "dno.js",

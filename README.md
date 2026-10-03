@@ -190,7 +190,8 @@ from a branch → папка `/docs`).
   `frame.js` (каркас щита), `dno.js`, `kryshka.js`, `end-panel.js`,
   `bokovoy.js`, `bolts.js` (болты), `logic.js` (таблицы III-1),
   `gost-tables.js` (таблицы дна, копия), `helpers.js`.
-- `src/iii1/options.js`, `manual-counts.js`, `calc-iii1.js`,
+- `src/iii1/options.js`, `manual-counts.js`, `fine-thickness.js` («Тонкая настройка»
+  толщин, как у II-1), `calc-iii1.js`,
   `render-iii1.js` (таблицы узлов, болты, пергамин; чертежи - `diagrams/`:
   `dno.js` - изометрия дна, `kryshka.js` - крышка снизу, щиты - `panel.js`
   (общий генератор), `torec.js`, `bok.js`),

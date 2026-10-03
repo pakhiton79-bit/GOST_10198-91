@@ -45,6 +45,7 @@ function buildCalcInput(){
     lidCrossBeamCount: manualCount.cross,
     lidCrossBeamAxis: manualCount.crossAxis,
     manualOverrides,
+    fineThickness: readFineThickness(),
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 }
