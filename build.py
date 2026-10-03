@@ -37,6 +37,13 @@ src/ii1/shell.html - свой HTML-каркас с плейсхолдером н
   - GOST10198_91_II1.html
 
 == Тип III-1 ==
+src/ii2/shell.html - тот же ящик, что II-1, но доски обшивки всех щитов с
+промежутками (как у I-4), без пергамина (список - II2_PARTS ниже):
+src/ii2/compute/ - расчёт (согласование размеров, каркасы и таблицы - общие с
+II-1), src/ii2/diagrams/ - чертежи (все генерируемые, на основе чертежей
+II-1), src/ii2/*.js - интерфейс.
+  - GOST10198_91_II2.html
+
 src/iii1/shell.html - отдельная копия II-1 со своими таблицами (список -
 III1_PARTS ниже): src/iii1/compute/ - расчёт, src/iii1/diagrams/ - чертежи
 (все генерируемые), src/iii1/*.js - интерфейс.
@@ -307,6 +314,58 @@ II1_VARIANTS = [
     {"out_name": "GOST10198_91_II1.html"},
 ]
 
+II2_DIR = SRC_DIR / "ii2"
+II2_SHELL = II2_DIR / "shell.html"
+# Тип II-2 - тот же ящик, что II-1, но обшивка с промежутками; файлы разложены
+# так же, как в gost_backend: compute/ - расчёт (backend/src/ii2; общие с II-1
+# части - из src/ii1/compute), остальное - интерфейс и чертежи
+# (frontend/public/js/ii2). Из чертежей II-1 берутся геометрия и подписи щитов
+# и крышки (torec.js, panel-generated.js, kryshka.js); у torec.js ссылки на
+# фото щитов II-1 вырезаются (II-2 их не показывает - иначе в страницу
+# попало бы ~2 МБ лишних картинок).
+II2_II1_TOREC_JS = re.sub(r'"data:image/jpeg;base64,__IMG:[A-Za-z0-9_.-]+__"', '""',
+                          (II1_DIR / "diagrams" / "torec.js").read_text(encoding="utf-8"))
+II2_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__II1_HELPERS_JS__*/": II1_DIR / "compute" / "helpers.js",
+    "/*__II1_GOST_TABLES_JS__*/": II1_DIR / "compute" / "gost-tables.js",
+    "/*__II1_LOGIC_JS__*/": II1_DIR / "compute" / "logic.js",
+    "/*__II1_SIZING_JS__*/": II1_DIR / "compute" / "sizing.js",
+    "/*__II1_FRAME_JS__*/": II1_DIR / "compute" / "frame.js",
+    "/*__II2_BOARDS_CALC_JS__*/": II2_DIR / "compute" / "boards.js",
+    "/*__II2_DNO_JS__*/": II2_DIR / "compute" / "dno.js",
+    "/*__II2_KRYSHKA_JS__*/": II2_DIR / "compute" / "kryshka.js",
+    "/*__II2_END_PANEL_JS__*/": II2_DIR / "compute" / "end-panel.js",
+    "/*__II2_BOKOVOY_JS__*/": II2_DIR / "compute" / "bokovoy.js",
+    "/*__II2_COMPUTE_JS__*/": II2_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1_DIR / "diagrams" / "kryshka.js",
+    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1_DIR / "diagrams" / "panel-generated.js",
+    "/*__II2_DIAGRAM_BOARDS_JS__*/": II2_DIR / "diagrams" / "boards.js",
+    "/*__II2_DIAGRAM_DNO_JS__*/": II2_DIR / "diagrams" / "dno.js",
+    "/*__II2_DIAGRAM_KRYSHKA_JS__*/": II2_DIR / "diagrams" / "kryshka.js",
+    "/*__II2_DIAGRAM_PANEL_JS__*/": II2_DIR / "diagrams" / "panel.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__II2_OPTIONS_JS__*/": II2_DIR / "options.js",
+    "/*__II2_BOARD_GAPS_JS__*/": II2_DIR / "board-gaps.js",
+    "/*__II2_MANUAL_COUNTS_JS__*/": II2_DIR / "manual-counts.js",
+    "/*__II2_FINE_THICKNESS_JS__*/": II2_DIR / "fine-thickness.js",
+    "/*__II2_RENDER_JS__*/": II2_DIR / "render-ii2.js",
+    "/*__II2_PRINT_JS__*/": II2_DIR / "print-ii2.js",
+    "/*__II2_CALC_JS__*/": II2_DIR / "calc-ii2.js",
+}
+II2_VARIANTS = [
+    # torec.js II-1 без фото - готовой строкой (см. II2_II1_TOREC_JS выше).
+    {"out_name": "GOST10198_91_II2.html", "/*__II1_DIAGRAM_TOREC_JS__*/": II2_II1_TOREC_JS},
+]
+
 III1_DIR = SRC_DIR / "iii1"
 III1_SHELL = III1_DIR / "shell.html"
 # Тип III-1 - отдельная копия II-1 со своими таблицами; файлы разложены так
@@ -436,6 +495,8 @@ def main():
         build_one(I2_SHELL, I2_PARTS, variant)
     for variant in II1_VARIANTS:
         build_one(II1_SHELL, II1_PARTS, variant)
+    for variant in II2_VARIANTS:
+        build_one(II2_SHELL, II2_PARTS, variant)
     for variant in III1_VARIANTS:
         build_one(III1_SHELL, III1_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
