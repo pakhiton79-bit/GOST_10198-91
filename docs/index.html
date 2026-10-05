@@ -1177,7 +1177,6 @@
   .thickness-dropdown-panel.open{display:block;}
   .thickness-dropdown-actions{
     display:flex;
-    flex-wrap:wrap;
     gap:10px;
     margin-bottom:12px;
     padding-bottom:12px;
@@ -1188,8 +1187,6 @@
     padding:8px 14px;
     font-size:12px;
   }
-  /* «Как в общих настройках», когда тип и так берёт общие толщины. */
-  .thickness-dropdown-actions button:disabled{opacity:.45;cursor:default;pointer-events:none;}
   .thickness-checkbox-list{
     display:grid;
     /* Список стандартных толщин короткий (до 16 значений - у типов I-3/II-1,
@@ -1616,7 +1613,7 @@ const SITE_SETTINGS_SECTIONS = [
     id: 'thickness', title: 'Толщины в наличии',
     rows: () => [{
       title: 'Общие толщины в наличии',
-      hint: 'Берутся во всех типах ящиков, где толщины не меняли. Толщины, выбранные внутри типа, - в приоритете (вернуть общие - кнопкой «Как в общих настройках» в списке толщин типа). Ничего не выбрано - расчёт строго по ГОСТ.',
+      hint: 'По умолчанию берутся во всех типах ящиков. Толщины, выбранные внутри типа, - в приоритете. Ничего не выбрано - расчёт строго по ГОСТ.',
       control: siteThicknessHtml,
       wide: true,
     }],
