@@ -2708,7 +2708,10 @@ function buildDno(g) {
     width = W + T.bokBoard * 2;
     rows.push({ name: 'Полоз', t: skidT, w: PLANK_W, l: width, qty: plankQty, overrideKey: 't9Value' });
   } else {
-    width = W + (T.bokBoard + T.bokPlanka) * 2;
+    // По указанию пользователя: планка дна - как полоз и как значение справа
+    // на чертежах дна и крышки: ширина груза + 2 доски бокового щита (планки
+    // бока стоят снаружи по её торцам).
+    width = W + T.bokBoard * 2;
     rows.push({ name: 'Планка', t: T.dnoPlanka, w: PLANK_W, l: width, qty: plankQty, overrideKey: 'tDnoPlanka' });
   }
   rows.push(...boardRows('Доска дна', T.dnoBoard, W + T.bokBoard * 2, kLen, roundBoardWidths, 'tDnoBoard', boardGapShare));
@@ -3458,7 +3461,7 @@ function braceStrip(l, r, top, bot, rising, PW, hTop, hBot, fmt){
 // кромка второй, topY/botY - рамка, gap - кромки досок у первого промежутка
 // и его размер); null - планок так много, что они слились бы (вместо
 // чертежа заглушка).
-function panelGenerated(n, hasRaskosinaVal, xRaskosinaVal, boardGap){
+function panelGenerated(n, hasRaskosinaVal, xRaskosinaVal, boardGap, flush){
   const G = PANEL_GEN;
   const x0 = G.stubL + G.edge, x1 = G.stubR - G.edge;
   let plankW = PANEL_GEN_PLANK_W;
@@ -3483,7 +3486,9 @@ function panelGenerated(n, hasRaskosinaVal, xRaskosinaVal, boardGap){
     }
   }
   for(let i=0; i<n; i++){
-    shapes += `<rect x="${f(px(i))}" y="${f(G.plankTop)}" width="${f(plankW)}" height="${f(G.plankBot-G.plankTop)}"/>`;
+    // flush - планка вровень с досками (дно), иначе выступает сверху и снизу.
+    const pt = flush ? G.topY : G.plankTop, pb = flush ? G.botY : G.plankBot;
+    shapes += `<rect x="${f(px(i))}" y="${f(pt)}" width="${f(plankW)}" height="${f(pb-pt)}"/>`;
   }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${G.IW}" height="${G.IH}" viewBox="0 0 ${G.IW} ${G.IH}">`
     + `<rect width="100%" height="100%" fill="#fff"/>`
@@ -3549,7 +3554,6 @@ function diagramPanel(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, partTi
     {type:'line', x1:stubR, y1:botY, x2:dimFarX, y2:botY},
     {type:'double', x1:dblArrowX, y1:topY, x2:dblArrowX, y2:botY, lx:dblArrowX+2*px, ly:(topY+botY)/2, text: dim+' мм', vertical:true},
 
-    {type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX, ly:thickTailY, text: plankT+' мм'},
 
     {type:'line', x1:stubL, y1:topY, x2:stubL, y2:topLineY},
     {type:'line', x1:stubR, y1:topY, x2:stubR, y2:topLineY},
@@ -3568,6 +3572,11 @@ function diagramPanel(g, dimVal, plankTVal, edgeVal, gapVal, boardLenVal, partTi
   // Промежуток между досками - размер слева от щита у первого промежутка
   // (у сплошного щита его нет).
   if(g.gap) records.push(...boardGapRecords(stubL, stubL - 22*px, g.gap.y1, g.gap.y2, 24*px, 6*px, g.gap.value));
+
+  // Выступ планки сверху (у дна планки вровень с досками - plankTVal null, подписи нет).
+  if(plankTVal != null){
+    records.push({type:'single', x1:thickTailX, y1:thickTailY, x2:p1L, y2:thickTargetY, lx:thickTailX, ly:thickTailY, text: plankT+' мм'});
+  }
 
   if(bottomTVal > 0){
     const lastR = stubR - (p1L - stubL); // правая кромка крайней правой планки
@@ -3591,7 +3600,8 @@ function diagramKryshka(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plank
   return diagramPanel(g, widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Крышка', framePx);
 }
 function diagramDno(widthVal, plankTVal, edgeVal, gapVal, boardLenVal, plankQty, hasRaskosinaVal, xRaskosinaVal, framePx, boardGap){
-  const g = panelGenerated(Math.round(plankQty), hasRaskosinaVal, xRaskosinaVal, boardGap);
+  // Планки дна вровень с досками (flush): планка дна той же длины, что и щит.
+  const g = panelGenerated(Math.round(plankQty), hasRaskosinaVal, xRaskosinaVal, boardGap, true);
   if(!g) return diagramTooDense();
   return diagramPanel(g, widthVal, plankTVal, edgeVal, gapVal, boardLenVal, 'Дно', framePx);
 }
@@ -5490,10 +5500,12 @@ function renderBoardTables(calc, manualOverrides){
 
   let html = '';
   html += renderPartBlock('Дно',
-    diagramDno(calc.dnoWidth, calc.drawPlankT.dno, edge, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, panelFramePx, gaps.dno),
+    // Дно и крышка: справа - ширина груза + 2 доски бока (calc.dnoWidth); у дна
+    // планки не выступают за доски - подписи выступа нет (null).
+    diagramDno(calc.dnoWidth, null, edge, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, panelFramePx, gaps.dno),
     renderPartTable(calc.dno, 'dno', manualOverrides));
   html += renderPartBlock('Крышка',
-    diagramKryshka(calc.kPlankaKryshka, calc.drawPlankT.kryshka, edge, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, panelFramePx, gaps.kryshka),
+    diagramKryshka(calc.dnoWidth, calc.drawPlankT.kryshka, edge, calc.plankGap, calc.kLen, calc.plankQty, calc.kryshkaDnoHasRaskosina, calc.xRaskosina, panelFramePx, gaps.kryshka),
     renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlock('Щит торцевой (2 шт.)',
     diagramTorec(calc.H, calc.W, calc.raskosinaNeeded, calc.xRaskosina, torecFramePx, gaps.torec),
