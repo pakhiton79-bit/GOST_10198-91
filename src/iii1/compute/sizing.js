@@ -61,11 +61,11 @@ function stabilizeSizes(c) {
       polozSimpleExceeded = poloz.exceeded;
       const countDefault = (W > 1100) ? 3 : 2;
       const minNeeded = minSkidsByWidth162(skidSpace, poloz.w);
-      skid = { t: poloz.h, w: poloz.w, count: countDefault < minNeeded ? minNeeded : countDefault };
+      skid = { t: round(poloz.h, 'Полоз'), w: poloz.w, count: countDefault < minNeeded ? minNeeded : countDefault };
       skidTableInfo = null;
     } else {
       const sel = selectSkid19(MASS, len, skidSpace); // толщины «в наличии» - availableThicknesses из ../options.js
-      skid = { t: sel.h, w: sel.w, count: sel.count };
+      skid = { t: round(sel.h, 'Полоз'), w: sel.w, count: sel.count };
       skidTableInfo = sel;
     }
     skid.tGost = skid.t;

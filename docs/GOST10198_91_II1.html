@@ -2976,11 +2976,11 @@ function stabilizeSizes(c) {
       polozSimpleExceeded = poloz.exceeded;
       const countDefault = (W > 1100) ? 3 : 2;
       const minNeeded = minSkidsByWidth162(skidCalcWidth, poloz.w);
-      skid = { t: poloz.h, w: poloz.w, count: countDefault < minNeeded ? minNeeded : countDefault };
+      skid = { t: round(poloz.h, 'Полоз'), w: poloz.w, count: countDefault < minNeeded ? minNeeded : countDefault };
       skidTableInfo = null;
     } else {
       const sel = selectSkid19(MASS, len, skidCalcWidth); // толщины «в наличии» - availableThicknesses из ../options.js
-      skid = { t: sel.h, w: sel.w, count: sel.count };
+      skid = { t: round(sel.h, 'Полоз'), w: sel.w, count: sel.count };
       skidTableInfo = sel;
     }
     // Толщина полоза из «Тонкой настройки» - в расчёт (высота ящика, объём);
@@ -3054,7 +3054,7 @@ function buildDno(c, s, subLengthWarn) {
   if (endBeam.exceeded) {
     warnings.push('Масса вне диапазона п.1.6.8 (≤20000 кг) - сечение торцового бруса дна принято по крайнему значению.');
   }
-  const beamGostT = round(endBeam.h);
+  const beamGostT = round(endBeam.h, 'Торцовый брус дна');
   const beam = { t: ov('t11', beamGostT, 'Толщина торцового бруса дна', { cell: false }), w: endBeam.w, l: W, qty: 2 };
   rows.push({ name: 'Торцовый брус дна', t: ov('t11', beamGostT, 'Толщина торцового бруса дна'), w: beam.w, l: beam.l, qty: beam.qty, overrideKey: 't11' });
 
@@ -3362,6 +3362,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 function computeGost10198II1(input) {
   const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
+  thicknessLimitParts = [];
   const round = roundUpToAvailable;
   const { ov, belowGost, appliedCount } = makeThicknessOverrides(input.manualOverrides || {}, fineThicknessOverrides(input.fineThickness));
 
@@ -3502,6 +3503,9 @@ function computeGost10198II1(input) {
   if (thicknessLimitExceeded) {
     warnings.push(`Расчётная толщина детали больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) - использовано значение по ГОСТ (нужен пиломатериал большей толщины).`);
   }
+  thicknessLimitParts.forEach(p => {
+    warnings.push(`${p.label}: по ГОСТ ${p.t} мм, это больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) - использовано значение по ГОСТ (нужен пиломатериал большей толщины).`);
+  });
   Object.values(belowGost).forEach(b => {
     warnings.push(`${b.label}: вручную указано ${b.value} мм (< расчётных ${Math.round(b.gostValue * 100) / 100} мм по ГОСТ) - использовано введённое значение.`);
   });
@@ -5832,14 +5836,21 @@ window.addEventListener('site-thickness-change', () => {
 
 let availableThicknesses = loadAvailableThicknesses();
 let thicknessLimitExceeded = false;
+let thicknessLimitParts = [];
 
 // Округление вверх до ближайшей толщины «в наличии» (ничего не выбрано - как
 // есть, строго по ГОСТ). Больше максимальной «в наличии» - остаётся расчётной
 // по ГОСТ, взводится thicknessLimitExceeded (предупреждение в расчёте).
-function roundUpToAvailable(t){
+// label (необязательно) - название детали: тогда превышение попадает не в общий
+// флаг, а в thicknessLimitParts, и предупреждение называет деталь и толщину.
+// Для детали с label учитывается последний вызов (размеры II-1/III-1
+// уточняются в цикле - промежуточные значения не должны давать предупреждение).
+function roundUpToAvailable(t, label){
+  if(label) thicknessLimitParts = thicknessLimitParts.filter(p=>p.label!==label);
   if(availableThicknesses.length === 0) return t;
   for(const a of availableThicknesses){ if(t<=a) return a; }
-  thicknessLimitExceeded = true;
+  if(!label) thicknessLimitExceeded = true;
+  else thicknessLimitParts.push({ label, t });
   return t;
 }
 

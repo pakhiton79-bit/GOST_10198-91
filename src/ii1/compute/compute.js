@@ -78,6 +78,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 function computeGost10198II1(input) {
   const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
+  thicknessLimitParts = [];
   const round = roundUpToAvailable;
   const { ov, belowGost, appliedCount } = makeThicknessOverrides(input.manualOverrides || {}, fineThicknessOverrides(input.fineThickness));
 
@@ -218,6 +219,9 @@ function computeGost10198II1(input) {
   if (thicknessLimitExceeded) {
     warnings.push(`Расчётная толщина детали больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) - использовано значение по ГОСТ (нужен пиломатериал большей толщины).`);
   }
+  thicknessLimitParts.forEach(p => {
+    warnings.push(`${p.label}: по ГОСТ ${p.t} мм, это больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) - использовано значение по ГОСТ (нужен пиломатериал большей толщины).`);
+  });
   Object.values(belowGost).forEach(b => {
     warnings.push(`${b.label}: вручную указано ${b.value} мм (< расчётных ${Math.round(b.gostValue * 100) / 100} мм по ГОСТ) - использовано введённое значение.`);
   });

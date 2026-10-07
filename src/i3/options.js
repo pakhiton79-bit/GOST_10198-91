@@ -40,14 +40,21 @@ window.addEventListener('site-thickness-change', () => {
 
 let availableThicknesses = loadAvailableThicknesses();
 let thicknessLimitExceeded = false;
+let thicknessLimitParts = [];
 
 // Округление вверх до ближайшей толщины «в наличии» (ничего не выбрано - как
 // есть, строго по ГОСТ). Больше максимальной «в наличии» - остаётся расчётной
 // по ГОСТ, взводится thicknessLimitExceeded (предупреждение в расчёте).
-function roundUpToAvailable(t){
+// label (необязательно) - название детали: тогда превышение попадает не в общий
+// флаг, а в thicknessLimitParts, и предупреждение называет деталь и толщину.
+// Для детали с label учитывается последний вызов (размеры II-1/III-1
+// уточняются в цикле - промежуточные значения не должны давать предупреждение).
+function roundUpToAvailable(t, label){
+  if(label) thicknessLimitParts = thicknessLimitParts.filter(p=>p.label!==label);
   if(availableThicknesses.length === 0) return t;
   for(const a of availableThicknesses){ if(t<=a) return a; }
-  thicknessLimitExceeded = true;
+  if(!label) thicknessLimitExceeded = true;
+  else thicknessLimitParts.push({ label, t });
   return t;
 }
 
