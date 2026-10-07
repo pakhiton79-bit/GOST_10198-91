@@ -43,8 +43,9 @@ let thicknessLimitExceeded = false;
 let thicknessLimitParts = [];
 
 // Округление вверх до ближайшей толщины «в наличии» (ничего не выбрано - как
-// есть, строго по ГОСТ). Больше максимальной «в наличии» - остаётся расчётной
-// по ГОСТ, взводится thicknessLimitExceeded (предупреждение в расчёте).
+// есть, строго по ГОСТ). Больше максимальной «в наличии» - берётся максимальная
+// из наличия (тоньше ГОСТ, по указанию пользователя), взводится
+// thicknessLimitExceeded (предупреждение в расчёте).
 // label (необязательно) - название детали: тогда превышение попадает не в общий
 // флаг, а в thicknessLimitParts, и предупреждение называет деталь и толщину.
 // Для детали с label учитывается последний вызов (размеры II-1/III-1
@@ -55,7 +56,7 @@ function roundUpToAvailable(t, label){
   for(const a of availableThicknesses){ if(t<=a) return a; }
   if(!label) thicknessLimitExceeded = true;
   else thicknessLimitParts.push({ label, t });
-  return t;
+  return availableThicknesses[availableThicknesses.length - 1];
 }
 
 function buildThicknessCheckboxList(){
