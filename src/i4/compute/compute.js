@@ -45,7 +45,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к
 //   доскам дна), L, W, H, MASS, optimizeSizes, removeFloorBoards,
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
-//   xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, beamGapValue,
+//   xRaskosina, addRaskosina (раскосины и там, где по ГОСТ их нет), addEndTape, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity,
 //   boardGapMax - наибольший промежуток между досками обшивки, мм }.
 function computeGost10198I4(input) {

@@ -1947,6 +1947,10 @@ else initSiteSettings();
         </label>
         <div class="option-group-title">Раскосины</div>
         <label>
+          <input type="checkbox" id="addRaskosina">
+          <span>Добавить раскосины<span class="option-hint">По ГОСТ раскосины ставятся в щиты выше 600 мм (в торцевой - ещё и шире 600 мм); галочка добавляет их в оба щита и в остальных случаях</span></span>
+        </label>
+        <label>
           <input type="checkbox" id="xRaskosina">
           <span>X-образные раскосины</span>
         </label>
@@ -3199,17 +3203,23 @@ function buildEndPanel(c, t12) {
 
   // Секции по ширине: добавляются, пока угол раскосины меньше 20° (и есть
   // место под ещё одну вертикальную планку). Раскосины нет у низкого или
-  // узкого щита (≤ 600 мм) и у одной секции с углом больше 60°.
+  // узкого щита (≤ 600 мм) и у одной секции с углом больше 60°. Галочка
+  // «Добавить раскосины» (c.addRaskosina, по указанию пользователя) ставит
+  // их всегда, независимо от ГОСТ; угол вне 20–60° - предупреждение.
+  const gostRaskosina = H > 600 && W > 600;
   const sectionWidth = n => (W - PLANK_W * (n + 1)) / n;
   const angleDeg = n => Math.atan2(vertLen, sectionWidth(n)) * 180 / Math.PI;
   let sections = 1;
-  if (H > 600 && W > 600) {
+  if (gostRaskosina || c.addRaskosina) {
     while (angleDeg(sections) < MIN_ANGLE && sectionWidth(sections + 1) > 0) sections++;
     if (angleDeg(sections) < MIN_ANGLE) {
       warnings.push(`Щит торцевой: угол раскосины <20° даже при максимуме секций (${sections}) - больше не добавить, не хватает места (по ${PLANK_W} мм на планку).`);
     }
   }
-  const hasRaskosina = H > 600 && W > 600 && !(sections === 1 && angleDeg(1) > MAX_ANGLE);
+  const hasRaskosina = c.addRaskosina || (gostRaskosina && !(sections === 1 && angleDeg(1) > MAX_ANGLE));
+  if (c.addRaskosina && angleDeg(sections) > MAX_ANGLE) {
+    warnings.push(`Щит торцевой: угол раскосины ${Math.round(angleDeg(sections))}° больше 60° (раскосины добавлены вручную) - нужна консультация конструктора.`);
+  }
   const vertQty = (sections + 1) * floors;
   const rask = { l: Math.sqrt(Math.pow(sectionWidth(sections), 2) + Math.pow(vertLen, 2)), qty: hasRaskosina ? sections * floors : 0 };
 
@@ -3259,9 +3269,14 @@ function buildBokovoy(c, p) {
   const { len, t12, skidT, plankQty, sectionW } = p;
   const hFull = H + t12;
 
-  // Раскосины - у щита выше 600 мм и с 2+ поясами. 2 этажа - по высоте груза
-  // (как у торца) или если на 1 этаже угол раскосины вышел бы больше 60°.
-  const hasRaskosina = H > 600 && plankQty > 1;
+  // Раскосины - у щита выше 600 мм и с 2+ поясами (галочка «Добавить
+  // раскосины» - при любой высоте; при 1 поясе раскосину ставить некуда).
+  // 2 этажа - по высоте груза (как у торца) или если на 1 этаже угол
+  // раскосины вышел бы больше 60°.
+  const hasRaskosina = (H > 600 || c.addRaskosina) && plankQty > 1;
+  if (c.addRaskosina && plankQty <= 1) {
+    warnings.push('Щит боковой: раскосину не поставить - у крышки один пояс планок (нужно хотя бы два).');
+  }
   const angle1FloorDeg = sectionW > 0 ? Math.atan2(hFull, sectionW) * 180 / Math.PI : null;
   const floors = (floorsForHeight(H) === 2 || (hasRaskosina && angle1FloorDeg !== null && angle1FloorDeg > 60)) ? 2 : 1;
 
@@ -3356,7 +3371,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к
 //   доскам дна), L, W, H, MASS, optimizeSizes, removeFloorBoards,
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
-//   xRaskosina, addEndTape, plankLayoutMode, plankLayoutValue, beamGapValue,
+//   xRaskosina, addRaskosina (раскосины и там, где по ГОСТ их нет), addEndTape, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity,
 //   boardGapMax - наибольший промежуток между досками обшивки, мм }.
 function computeGost10198I4(input) {
@@ -6036,7 +6051,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','xRaskosina','addEndTape'].forEach(persistCheckbox);
+['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','addRaskosina','xRaskosina','addEndTape'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -6616,6 +6631,7 @@ function buildCalcInput(){
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
+    addRaskosina: document.getElementById('addRaskosina').checked,
     addEndTape: document.getElementById('addEndTape').checked,
     boardGapMax: readBoardGapMax(), // наибольший промежуток между досками обшивки, мм (board-gaps.js)
     plankLayoutMode,

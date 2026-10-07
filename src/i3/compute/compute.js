@@ -39,7 +39,7 @@ function makeThicknessOverrides(manualOverrides) {
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к
 //   доскам дна), L, W, H, MASS, optimizeSizes, removeFloorBoards,
 //   removeSkidBoards, roundBoardWidths, solidRigidBase, forkliftLoading,
-//   xRaskosina, addEndTape, addParchment, plankLayoutMode, plankLayoutValue, beamGapValue,
+//   xRaskosina, addRaskosina (раскосины и там, где по ГОСТ их нет), addEndTape, addParchment, plankLayoutMode, plankLayoutValue, beamGapValue,
 //   beamCountValue, manualOverrides, woodDensity }.
 function computeGost10198I3(input) {
   const { L, W, H, MASS, woodDensity } = input;
