@@ -54,6 +54,13 @@ const TYPES = [
     file: 'GOST10198_91_III1.html',
     image: 'data:image/png;base64,__IMG:box_iii1.png__',
     badge: 'Неточность в самом ГОСТ'
+  },
+  {
+    name: 'Тип III-1 (оптимальный)',
+    file: 'GOST10198_91_III1_OPT.html',
+    image: 'data:image/png;base64,__IMG:box_iii1.png__',
+    badge: 'Оптимальная конструкция',
+    badgeOk: true
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];

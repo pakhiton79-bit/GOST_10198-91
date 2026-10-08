@@ -406,8 +406,12 @@ III1_PARTS = {
     "/*__III1_PRINT_JS__*/": III1_DIR / "print-iii1.js",
     "/*__III1_CALC_JS__*/": III1_DIR / "calc-iii1.js",
 }
+# Оптимальный конструктивный вариант III-1 - та же страница с флагом
+# window.III1_OPTIMIZED (см. src/iii1/options.js).
 III1_VARIANTS = [
-    {"out_name": "GOST10198_91_III1.html"},
+    {"out_name": "GOST10198_91_III1.html", "/*__III1_VARIANT_TITLE__*/": "", "/*__III1_VARIANT_FLAG__*/": ""},
+    {"out_name": "GOST10198_91_III1_OPT.html", "/*__III1_VARIANT_TITLE__*/": " (оптимальный)",
+     "/*__III1_VARIANT_FLAG__*/": "window.III1_OPTIMIZED = true; // оптимальный конструктивный вариант"},
 ]
 
 LAUNCHER_DIR = SRC_DIR / "launcher"
