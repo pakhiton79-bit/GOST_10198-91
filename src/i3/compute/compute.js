@@ -51,6 +51,8 @@ function computeGost10198I3(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
+  const limitsError = inputLimitsError(input);
+  if (limitsError) return { error: limitsError };
   const warnings = [];
   if (L <= 1200 || W <= 800) {
     warnings.push(`Габариты ${L}×${W} мм ≤ 1200×800 - формально действует ГОСТ 21140. Расчёт по ГОСТ 10198-91 продолжен, но результат нужно сверить с ГОСТ 21140.`);
@@ -140,7 +142,7 @@ function computeGost10198I3(input) {
   const negField = findNegativeField(result, '');
   if (negField) {
     console.warn('Расчёт дал отрицательное значение:', negField);
-    return { error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
+    return { error: 'При таких размерах и массе груза получаются недопустимые размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
   }
   return result;
 }

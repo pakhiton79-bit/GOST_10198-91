@@ -2620,7 +2620,9 @@ function fillBoards(space, roundWidths){
 // параметры чертежей) либо null. Отрицательный размер - невозможная геометрия.
 function findNegativeField(value, path){
   if(typeof value === 'number'){
-    return (Number.isFinite(value) && value < 0) ? path : null;
+    // NaN и бесконечность - тоже ошибка (по указанию пользователя, после
+    // аудита: такой результат показывался как успешный).
+    return (!Number.isFinite(value) || value < 0) ? path : null;
   }
   if(Array.isArray(value)){
     for(let i=0; i<value.length; i++){
@@ -2635,6 +2637,24 @@ function findNegativeField(value, path){
       if(found) return found;
     }
     return null;
+  }
+  return null;
+}
+
+// Границы входных данных (по указанию пользователя, после аудита): размеры
+// груза - до 15000 мм, масса - до 40000 кг, толщины, введённые вручную
+// (ячейки таблицы и «Тонкая настройка»), - до 250 мм. Без границ огромные
+// размеры давали бессмысленный результат, а у II-1, II-2 и III-1 - зависание
+// сервера. Возвращает текст ошибки или null.
+const INPUT_MAX_SIZE = 15000, INPUT_MAX_MASS = 40000, INPUT_MAX_THICKNESS = 250;
+function inputLimitsError(input){
+  if ([input.L, input.W, input.H].some(v => v > INPUT_MAX_SIZE)) {
+    return `Размеры груза - не больше ${INPUT_MAX_SIZE} мм. Расчёт не выполняется.`;
+  }
+  if (input.MASS > INPUT_MAX_MASS) return `Масса груза - не больше ${INPUT_MAX_MASS} кг. Расчёт не выполняется.`;
+  const tooThick = obj => obj && typeof obj === 'object' && Object.keys(obj).some(k => Number(obj[k]) > INPUT_MAX_THICKNESS);
+  if (tooThick(input.manualOverrides) || tooThick(input.fineThickness)) {
+    return `Толщина, введённая вручную, - не больше ${INPUT_MAX_THICKNESS} мм. Расчёт не выполняется.`;
   }
   return null;
 }
@@ -3376,6 +3396,8 @@ function computeGost10198I3(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
+  const limitsError = inputLimitsError(input);
+  if (limitsError) return { error: limitsError };
   const warnings = [];
   if (L <= 1200 || W <= 800) {
     warnings.push(`Габариты ${L}×${W} мм ≤ 1200×800 - формально действует ГОСТ 21140. Расчёт по ГОСТ 10198-91 продолжен, но результат нужно сверить с ГОСТ 21140.`);
@@ -3465,7 +3487,7 @@ function computeGost10198I3(input) {
   const negField = findNegativeField(result, '');
   if (negField) {
     console.warn('Расчёт дал отрицательное значение:', negField);
-    return { error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
+    return { error: 'При таких размерах и массе груза получаются недопустимые размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
   }
   return result;
 }
@@ -7050,6 +7072,9 @@ initDensitySettings(WOOD_DENSITY_STORAGE_KEY);
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки), - подсвечиваются
 // красной рамкой (highlightErrorFields в common-calc-state.js).
 function errorFieldsFor(text){
+  // Границы входных данных (inputLimitsError в расчёте).
+  if(/Размеры груза - не больше/.test(text)) return ['L','W','H'].filter(id => parseFloat(document.getElementById(id).value) > 15000);
+  if(/Масса груза - не больше/.test(text)) return ['M'];
   if(/Заполните все поля/.test(text)) return ['L','W','H','M'].filter(id => !(parseFloat(document.getElementById(id).value) > 0));
   if(/поперечными брусьями/.test(text)) return ['beamGapInput'];
   if(/поперечных брусьев с отступом/.test(text)) return ['beamCountInput'];

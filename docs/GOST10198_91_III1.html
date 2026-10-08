@@ -2590,7 +2590,9 @@ function fillBoards(space, roundWidths){
 // параметры чертежей) либо null. Отрицательный размер - невозможная геометрия.
 function findNegativeField(value, path){
   if(typeof value === 'number'){
-    return (Number.isFinite(value) && value < 0) ? path : null;
+    // NaN и бесконечность - тоже ошибка (по указанию пользователя, после
+    // аудита: такой результат показывался как успешный).
+    return (!Number.isFinite(value) || value < 0) ? path : null;
   }
   if(Array.isArray(value)){
     for(let i=0; i<value.length; i++){
@@ -2605,6 +2607,24 @@ function findNegativeField(value, path){
       if(found) return found;
     }
     return null;
+  }
+  return null;
+}
+
+// Границы входных данных (по указанию пользователя, после аудита): размеры
+// груза - до 15000 мм, масса - до 40000 кг, толщины, введённые вручную
+// (ячейки таблицы и «Тонкая настройка»), - до 250 мм. Без границ огромные
+// размеры давали бессмысленный результат, а у II-1, II-2 и III-1 - зависание
+// сервера. Возвращает текст ошибки или null.
+const INPUT_MAX_SIZE = 15000, INPUT_MAX_MASS = 40000, INPUT_MAX_THICKNESS = 250;
+function inputLimitsError(input){
+  if ([input.L, input.W, input.H].some(v => v > INPUT_MAX_SIZE)) {
+    return `Размеры груза - не больше ${INPUT_MAX_SIZE} мм. Расчёт не выполняется.`;
+  }
+  if (input.MASS > INPUT_MAX_MASS) return `Масса груза - не больше ${INPUT_MAX_MASS} кг. Расчёт не выполняется.`;
+  const tooThick = obj => obj && typeof obj === 'object' && Object.keys(obj).some(k => Number(obj[k]) > INPUT_MAX_THICKNESS);
+  if (tooThick(input.manualOverrides) || tooThick(input.fineThickness)) {
+    return `Толщина, введённая вручную, - не больше ${INPUT_MAX_THICKNESS} мм. Расчёт не выполняется.`;
   }
   return null;
 }
@@ -3404,6 +3424,8 @@ function computeGost10198III1(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
+  const limitsError = inputLimitsError(input);
+  if (limitsError) return { error: limitsError };
   const warnings = [];
   if (MASS > 20000) {
     warnings.push('Масса груза вне диапазона типа III-1 (≤20000 кг) - расчёт продолжен по крайнему значению.');
@@ -3563,7 +3585,7 @@ function computeGost10198III1(input) {
   const negField = findNegativeField(result, '');
   if (negField) {
     console.warn('Расчёт дал отрицательное значение:', negField);
-    return { error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
+    return { error: 'При таких размерах и массе груза получаются недопустимые размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
   }
   return result;
 }
@@ -5921,7 +5943,11 @@ function diagramDnoIII1(calc, widthPx){
   const inset = calc.skin.value + calc.torFrameT;
   const endW = endRow && parseFloat(endRow.w) > 0 ? parseFloat(endRow.w) : 100;
   const noLongBeams = !rows.some(r => r.name === 'Продольный брус дна');
-  return diagramDnoIII1Generated(skidCount, hasSub, calc.outerL, calc.outerW, inset, inset / endW, widthPx, III1_PANEL_LABEL_SCALE, noLongBeams);
+  // Ширина дна - фактическая длина доски дна (в оптимальном варианте - по
+  // ширине груза), без досок дна - наружная ширина.
+  const floor = rows.find(r => /^Доска дна/.test(r.name));
+  const widthVal = floor && parseFloat(floor.l) > 0 ? parseFloat(floor.l) : calc.outerW;
+  return diagramDnoIII1Generated(skidCount, hasSub, calc.outerL, widthVal, inset, inset / endW, widthPx, III1_PANEL_LABEL_SCALE, noLongBeams);
 }
 
 // ГОСТ 10198-91, тип III-1: чертёж «Крышка» - вид снизу, генерируется (SVG)
@@ -5988,7 +6014,10 @@ function diagramKryshkaIII1Generated(crossCount, gapMm, lenVal, widthVal, widthP
 function diagramKryshkaIII1(calc, widthPx){
   const row = (calc.kryshka || []).find(r => r.name === 'Поперечный брус крышки');
   const n = row ? Math.round(parseFloat(row.qty)) : calc.crossBeamCount;
-  return diagramKryshkaIII1Generated(n, calc.gapDistCross, calc.outerL, calc.W, widthPx, III1_PANEL_LABEL_SCALE);
+  // Ширина крышки - фактическая длина доски крышки (наружная ширина ящика).
+  const board = (calc.kryshka || []).find(r => /^Доска крышки/.test(r.name));
+  const widthVal = board && parseFloat(board.l) > 0 ? parseFloat(board.l) : calc.outerW;
+  return diagramKryshkaIII1Generated(n, calc.gapDistCross, calc.outerL, widthVal, widthPx, III1_PANEL_LABEL_SCALE);
 }
 
 // ГОСТ 10198-91, тип III-1: чертёж «Щит боковой» - щит на всю наружную
@@ -6330,6 +6359,9 @@ initDensitySettings(WOOD_DENSITY_STORAGE_KEY);
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки), - подсвечиваются
 // красной рамкой (highlightErrorFields в common-calc-state.js).
 function errorFieldsFor(text){
+  // Границы входных данных (inputLimitsError в расчёте).
+  if(/Размеры груза - не больше/.test(text)) return ['L','W','H'].filter(id => parseFloat(document.getElementById(id).value) > 15000);
+  if(/Масса груза - не больше/.test(text)) return ['M'];
   if(/Заполните все поля/.test(text)) return ['L','W','H','M'].filter(id => !(parseFloat(document.getElementById(id).value) > 0));
   if(/не помеща\S* на торцевом щите/.test(text)) return ['torecPostsInput'];
   if(/не помеща\S* на боковом щите/.test(text)) return ['bokPostsInput'];

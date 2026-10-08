@@ -114,6 +114,8 @@ function computeGost10198I2(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
+  const limitsError = inputLimitsError(input);
+  if (limitsError) return { error: limitsError };
   // Доля промежутков обязательна (по указанию пользователя), значения по
   // умолчанию нет.
   const gapPercent = input.boardGapPercent;
@@ -177,6 +179,9 @@ function computeGost10198I2(input) {
   // Полоз: не тоньше 50 мм и, в отличие от остальных деталей, без
   // округления до «в наличии».
   let skidT = null;
+  if (skidEnabled && !(skidThicknessRaw > 0)) {
+    return { error: 'Укажите толщину полоза - расчёт не выполняется.' };
+  }
   if (skidEnabled) {
     skidT = ov('t9Value', Math.max(skidThicknessRaw, MIN_SKID_T), 'Толщина полоза');
     if (skidThicknessRaw < MIN_SKID_T && !(manualOverrides.t9Value > 0)) {
@@ -250,7 +255,7 @@ function computeGost10198I2(input) {
   const negField = findNegativeField(result, '');
   if (negField) {
     console.warn('Расчёт дал отрицательное значение:', negField);
-    return { error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
+    return { error: 'При таких размерах и массе груза получаются недопустимые размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
   }
   return result;
 }

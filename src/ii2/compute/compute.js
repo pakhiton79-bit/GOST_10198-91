@@ -91,6 +91,8 @@ function computeGost10198II2(input) {
   if (!L || !W || !H || !MASS || L <= 0 || W <= 0 || H <= 0 || MASS <= 0) {
     return { error: 'Заполните все поля положительными числами.' };
   }
+  const limitsError = inputLimitsError(input);
+  if (limitsError) return { error: limitsError };
   const gapMax = input.boardGapMax;
   if (!(gapMax >= GAP_MIN && gapMax <= GAP_MAX)) {
     return { error: `Укажите наибольший промежуток между досками обшивки (от ${GAP_MIN} до ${GAP_MAX} мм) - расчёт не выполняется.` };
@@ -266,7 +268,7 @@ function computeGost10198II2(input) {
   const negField = findNegativeField(result, '');
   if (negField) {
     console.warn('Расчёт дал отрицательное значение:', negField);
-    return { error: 'При таких размерах и массе груза получаются недопустимые (отрицательные) размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
+    return { error: 'При таких размерах и массе груза получаются недопустимые размеры деталей - рассчитать ящик нельзя. Проверьте введённые размеры и массу груза.' };
   }
   return result;
 }
