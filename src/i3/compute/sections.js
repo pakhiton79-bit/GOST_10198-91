@@ -32,7 +32,7 @@ function polozSection165(mass){
   let row = table.find(r=>mass<=r.max);
   let exceeded = false;
   if(!row){ row = table[table.length-1]; exceeded = true; }
-  return {h:row.h, w:row.w, exceeded};
+  return {h:row.h, w:stockWidth(row.w), exceeded};
 }
 
 // ГОСТ 10198-91, п.1.6.8: толщина и ширина торцовых брусьев дна по массе груза.
@@ -41,7 +41,7 @@ function endBeamSection(mass){
   if(mass<=2000) return {h:60,w:100,exceeded:false};
   if(mass<=3500) return {h:75,w:100,exceeded:false};
   if(mass<=5000) return {h:100,w:100,exceeded:false};
-  return {h:125,w:125,exceeded:true}; // за пределами явно описанного диапазона (>5000кг)
+  return {h:125,w:stockWidth(125),exceeded:true}; // за пределами явно описанного диапазона (>5000кг)
 }
 
 // Толщина доски дна по массе груза (крепление груза за полозья): масса

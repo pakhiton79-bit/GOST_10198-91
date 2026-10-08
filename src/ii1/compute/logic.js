@@ -73,8 +73,8 @@ function endBeamSection(mass){
   if(mass<=2000) return {h:60,w:100,exceeded:false};
   if(mass<=3500) return {h:75,w:100,exceeded:false};
   if(mass<=5000) return {h:100,w:100,exceeded:false};
-  if(mass<=20000) return {h:125,w:125,exceeded:false};
-  return {h:125,w:125,exceeded:true};
+  if(mass<=20000) return {h:125,w:stockWidth(125),exceeded:false};
+  return {h:125,w:stockWidth(125),exceeded:true};
 }
 
 // Продольные брусья крышки (только режим «поперечное расположение досок») - по
@@ -98,5 +98,5 @@ function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
   if(row.wRoundOverride && colIdx===0){
     w = roundBoardWidths ? row.wRoundOverride : row.wRoundBase;
   }
-  return {t: row.t[colIdx], w, exceeded};
+  return {t: row.t[colIdx], w: stockWidth(w), exceeded};
 }

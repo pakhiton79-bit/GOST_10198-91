@@ -17,7 +17,7 @@ function polozSection165(mass){
   let row = table.find(r=>mass<=r.max);
   let exceeded = false;
   if(!row){ row = table[table.length-1]; exceeded = true; }
-  return {h:row.h, w:row.w, exceeded};
+  return {h:row.h, w:stockWidth(row.w), exceeded};
 }
 
 // Табл. 19 - высота и ширина полозьев при креплении груза к полозьям/доскам дна,
@@ -143,7 +143,7 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     // без перестановки.
     const nums = row.dims[bestI].split('x').map(Number);
     const h = nums[0];
-    const w = nums[1];
+    const w = stockWidth(nums[1]); // ширина - на имеющуюся (stockWidth)
     return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 

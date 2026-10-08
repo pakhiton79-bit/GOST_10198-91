@@ -2529,6 +2529,16 @@ function vol(t,w,l,qty){ // m3, dims in mm
   return (t*w*l)/1e9*qty;
 }
 
+// Ширина бруса/доски по ГОСТ - на имеющуюся (по указанию пользователя):
+// уже 100 мм - 100, от 100 до 150 мм - 150, шире 150 мм - как по ГОСТ.
+// Расчёт (объём, масса, раскладка) - по полученной ширине. Доски добора
+// (остаток щита) сюда не относятся.
+function stockWidth(w){
+  if(w<100) return 100;
+  if(w>100 && w<150) return 150;
+  return w;
+}
+
 // fillBoards: заполняет пространство `space` (мм) досками шириной 100мм по максимуму,
 // а остаток - 1-2(+) дополнительными досками шириной 75-99мм. См. подробные комментарии
 // в src/logic.js (тип I-3) - здесь та же функция без изменений (независимые методики).
@@ -2622,7 +2632,7 @@ function polozSection165(mass){
   let row = table.find(r=>mass<=r.max);
   let exceeded = false;
   if(!row){ row = table[table.length-1]; exceeded = true; }
-  return {h:row.h, w:row.w, exceeded};
+  return {h:row.h, w:stockWidth(row.w), exceeded};
 }
 
 // Табл. 19 - высота и ширина полозьев при креплении груза к полозьям/доскам дна,
@@ -2748,7 +2758,7 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     // без перестановки.
     const nums = row.dims[bestI].split('x').map(Number);
     const h = nums[0];
-    const w = nums[1];
+    const w = stockWidth(nums[1]); // ширина - на имеющуюся (stockWidth)
     return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 
@@ -2924,8 +2934,8 @@ function endBeamSection(mass){
   if(mass<=2000) return {h:60,w:100,exceeded:false};
   if(mass<=3500) return {h:75,w:100,exceeded:false};
   if(mass<=5000) return {h:100,w:100,exceeded:false};
-  if(mass<=20000) return {h:125,w:125,exceeded:false};
-  return {h:125,w:125,exceeded:true};
+  if(mass<=20000) return {h:125,w:stockWidth(125),exceeded:false};
+  return {h:125,w:stockWidth(125),exceeded:true};
 }
 
 // Продольные брусья крышки (только режим «поперечное расположение досок») - по
@@ -2949,7 +2959,7 @@ function longBeamSection(crossBeamAxisMm, roundBoardWidths, axisSpacingMm){
   if(row.wRoundOverride && colIdx===0){
     w = roundBoardWidths ? row.wRoundOverride : row.wRoundBase;
   }
-  return {t: row.t[colIdx], w, exceeded};
+  return {t: row.t[colIdx], w: stockWidth(w), exceeded};
 }
 
 // ГОСТ 10198-91, тип II-1: согласование размеров ящика.

@@ -136,7 +136,7 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     // строго как напечатано.
     const nums = row.dims[bestI].split('x').map(Number);
     const h = nums[0];
-    const w = nums[1];
+    const w = stockWidth(nums[1]); // ширина - на имеющуюся (stockWidth)
     return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
   }).filter(o=>o!==null);
 
