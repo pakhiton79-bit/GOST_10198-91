@@ -59,8 +59,7 @@ const TYPES = [
     name: 'Тип III-1 (оптимальный)',
     file: 'GOST10198_91_III1_OPT.html',
     image: 'data:image/png;base64,__IMG:box_iii1.png__',
-    badge: 'Оптимальная конструкция',
-    badgeOk: true
+    badge: 'Оптимальная конструкция'
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];
