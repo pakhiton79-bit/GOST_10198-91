@@ -1339,6 +1339,11 @@
     flex:1;
     min-width:0;
   }
+  /* Шапка листа компактнее (по указанию пользователя - за счёт неё крупнее
+     таблицы и чертежи узлов): картинка ящика меньше, «Груз» и «Итог» - рядом. */
+  #printScale > .spec-row-diagram{gap:calc(var(--pk)*24px);}
+  #printScale > .spec-row-diagram .diagram-slot{flex-basis:calc(var(--pk)*180px);width:calc(var(--pk)*180px);margin-left:0;}
+  #printArea .print-summary-col{flex-direction:row;gap:calc(var(--pk)*28px);align-items:flex-start;}
   #printArea .print-watermark{
     position:absolute;right:4px;bottom:0;
     width:176px;height:auto;
@@ -1357,7 +1362,7 @@
   #printArea .print-subtitle{color:#36394A;margin-bottom:calc(var(--pk)*6px);font-size:calc(var(--pk)*16px);font-weight:700;}
 
   /* Внутренние размеры груза + Итог - в колонке справа от чертежа ящика (см. .print-summary-col) */
-  #printArea .print-summary-block{flex:0 0 auto;}
+  #printArea .print-summary-block{flex:1 1 auto;min-width:0;}
   #printArea .print-summary-block h2{font-size:calc(var(--pk)*12px);text-transform:uppercase;letter-spacing:.05em;color:#8A4B26;margin:0 0 6px;font-weight:700;}
   #printArea .print-plain-table td{padding:calc(var(--pk)*2px) 0;text-align:left;font-size:calc(var(--pk)*13px);font-weight:700;white-space:nowrap;}
   #printArea .print-plain-table td.k{color:#36394A;}
@@ -6631,19 +6636,17 @@ function buildPrintHtml(){
       <div class="diagram-slot"><div class="diagram-wrap"><img src="${BOX_IMG_B64}" alt=""></div></div>
       <div class="print-summary-col">
         <div class="print-summary-block">
-          <h2>Внутренние размеры груза, мм</h2>
+          <h2>Груз</h2>
           <table class="print-plain-table">
-            <tr><td class="k">Длина</td><td>${L}</td></tr>
-            <tr><td class="k">Ширина</td><td>${W}</td></tr>
-            <tr><td class="k">Высота</td><td>${H}</td></tr>
-            <tr><td class="k">Масса груза, кг</td><td>${M}</td></tr>
+            <tr><td class="k">Размеры, мм</td><td>${L} × ${W} × ${H}</td></tr>
+            <tr><td class="k">Масса, кг</td><td>${M}</td></tr>
           </table>
         </div>
         <div class="print-summary-block">
           <h2>Итог</h2>
           <table class="print-plain-table">
-            <tr><td class="k">Наружные размеры, мм</td><td>${outDimsText}</td></tr>
-            <tr><td class="k">Расход пило&shy;материала</td><td>${volumeText}</td></tr>
+            <tr><td class="k">Наружные, мм</td><td>${outDimsText.replace(/\s*мм$/, '')}</td></tr>
+            <tr><td class="k">Пиломатериал</td><td>${volumeText}</td></tr>
             <tr><td class="k">Масса ящика</td><td>${massText}</td></tr>
             <tr><td class="k">Норма времени</td><td>${timeText}</td></tr>
           </table>
