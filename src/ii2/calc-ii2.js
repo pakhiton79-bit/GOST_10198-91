@@ -35,7 +35,7 @@ function buildCalcInput(){
     removeFloorBoards: removeFloorBoardsEl ? removeFloorBoardsEl.checked : false,
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
-    roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+    roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
     lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
@@ -87,7 +87,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','roundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina'].forEach(id=>{
+['solidRigidBase','noRoundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });

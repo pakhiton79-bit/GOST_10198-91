@@ -1910,8 +1910,8 @@ else initSiteSettings();
       <div class="fastening-option-list">
         <div class="option-group-title">Доски</div>
         <label>
-          <input type="checkbox" id="roundBoardWidths">
-          <span>Округлить ширину досок<span class="option-hint">Все доски по 100 мм, без более узких на остаток - при таком расчёте они суммарно могут занять чуть больше места, чем есть: лишнее у последней доски подрежут на месте</span></span>
+          <input type="checkbox" id="noRoundBoardWidths">
+          <span>Не округлять ширину досок<span class="option-hint">Остаток закрывают более узкие доски (75-99 мм). Без галочки все доски по 100 мм: суммарно они могут занять чуть больше места, чем есть, лишнее у последней доски подрежут на месте</span></span>
         </label>
         <div class="option-group-title">Пояса планок и брусья крышки</div>
         <label>
@@ -6466,7 +6466,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['optimizeSizes','roundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','addRaskosina','xRaskosina','addEndTape','addParchment'].forEach(persistCheckbox);
+['optimizeSizes','noRoundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','addRaskosina','xRaskosina','addEndTape','addParchment'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -6985,7 +6985,7 @@ function buildCalcInput(){
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     removeFloorBoards: document.getElementById('removeFloorBoards').checked, // при креплении к доскам дна всегда снята
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
-    roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+    roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
     solidRigidBase: document.getElementById('solidRigidBase').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
@@ -7039,7 +7039,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['optimizeSizes','solidRigidBase','roundBoardWidths','removeFloorBoards'].forEach(id=>{
+['optimizeSizes','solidRigidBase','noRoundBoardWidths','removeFloorBoards'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });

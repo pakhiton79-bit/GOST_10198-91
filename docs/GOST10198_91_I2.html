@@ -1912,8 +1912,8 @@ else initSiteSettings();
     <div class="fastening-option-list">
       <div class="option-group-title">Доски</div>
       <label>
-        <input type="checkbox" id="roundBoardWidths">
-        <span>Округлить ширину досок<span class="option-hint">Все доски по 100 мм, без более узких на остаток - при таком расчёте они суммарно могут занять чуть больше места, чем есть: лишнее у последней доски подрежут на месте</span></span>
+        <input type="checkbox" id="noRoundBoardWidths">
+        <span>Не округлять ширину досок<span class="option-hint">Остаток закрывают более узкие доски (75-99 мм). Без галочки все доски по 100 мм: суммарно они могут занять чуть больше места, чем есть, лишнее у последней доски подрежут на месте</span></span>
       </label>
       <div class="option-group-title">Пояса планок</div>
       <label>
@@ -5322,7 +5322,7 @@ function persistCheckbox(id, onRestore){
   });
 }
 persistCheckbox('skidEnabled', showSkidThicknessRow);
-persistCheckbox('roundBoardWidths');
+persistCheckbox('noRoundBoardWidths');
 persistCheckbox('removeLidBottomRaskosina');
 persistCheckbox('xRaskosina');
 persistCheckbox('addEndTape');
@@ -5782,7 +5782,7 @@ function buildCalcInput(){
     MASS: parseFloat(document.getElementById('M').value),
     skidEnabled: document.getElementById('skidEnabled').checked,
     skidThicknessRaw: skidThicknessValue,
-    roundBoardWidths: document.getElementById('roundBoardWidths').checked,
+    roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
     removeLidBottomRaskosina: document.getElementById('removeLidBottomRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
