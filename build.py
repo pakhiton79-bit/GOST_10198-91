@@ -314,6 +314,47 @@ II1_VARIANTS = [
     {"out_name": "GOST10198_91_II1.html"},
 ]
 
+II1N_DIR = SRC_DIR / "ii1n"
+II1N_SHELL = II1N_DIR / "shell.html"
+# Тип II-1 (новая версия) - независимая копия II-1 для доработок (src/ii1n),
+# плейсхолдеры - те же, что у II-1.
+II1N_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__II1_HELPERS_JS__*/": II1N_DIR / "compute" / "helpers.js",
+    "/*__II1_GOST_TABLES_JS__*/": II1N_DIR / "compute" / "gost-tables.js",
+    "/*__II1_LOGIC_JS__*/": II1N_DIR / "compute" / "logic.js",
+    "/*__II1_SIZING_JS__*/": II1N_DIR / "compute" / "sizing.js",
+    "/*__II1_DNO_JS__*/": II1N_DIR / "compute" / "dno.js",
+    "/*__II1_KRYSHKA_JS__*/": II1N_DIR / "compute" / "kryshka.js",
+    "/*__II1_FRAME_JS__*/": II1N_DIR / "compute" / "frame.js",
+    "/*__II1_END_PANEL_JS__*/": II1N_DIR / "compute" / "end-panel.js",
+    "/*__II1_BOKOVOY_JS__*/": II1N_DIR / "compute" / "bokovoy.js",
+    "/*__II1_COMPUTE_JS__*/": II1N_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__II1_DIAGRAM_DNO_JS__*/": II1N_DIR / "diagrams" / "dno.js",
+    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1N_DIR / "diagrams" / "kryshka.js",
+    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1N_DIR / "diagrams" / "panel-generated.js",
+    "/*__II1_DIAGRAM_TOREC_JS__*/": II1N_DIR / "diagrams" / "torec.js",
+    "/*__II1_DIAGRAM_BOK_JS__*/": II1N_DIR / "diagrams" / "bok.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__II1_OPTIONS_JS__*/": II1N_DIR / "options.js",
+    "/*__II1_MANUAL_COUNTS_JS__*/": II1N_DIR / "manual-counts.js",
+    "/*__II1_FINE_THICKNESS_JS__*/": II1N_DIR / "fine-thickness.js",
+    "/*__II1_RENDER_JS__*/": II1N_DIR / "render-ii1n.js",
+    "/*__II1_PRINT_JS__*/": II1N_DIR / "print-ii1n.js",
+    "/*__II1_CALC_JS__*/": II1N_DIR / "calc-ii1n.js",
+}
+II1N_VARIANTS = [
+    {"out_name": "GOST10198_91_II1N.html"},
+]
+
 II2_DIR = SRC_DIR / "ii2"
 II2_SHELL = II2_DIR / "shell.html"
 # Тип II-2 - тот же ящик, что II-1, но обшивка с промежутками; файлы разложены
@@ -529,6 +570,8 @@ def main():
         build_one(I2_SHELL, I2_PARTS, variant)
     for variant in II1_VARIANTS:
         build_one(II1_SHELL, II1_PARTS, variant)
+    for variant in II1N_VARIANTS:
+        build_one(II1N_SHELL, II1N_PARTS, variant)
     for variant in II2_VARIANTS:
         build_one(II2_SHELL, II2_PARTS, variant)
     for variant in III1_VARIANTS:

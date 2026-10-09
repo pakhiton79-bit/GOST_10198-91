@@ -44,6 +44,13 @@ const TYPES = [
     badge: 'Требуется проверка'
   },
   {
+    name: 'Тип II-1 (новая версия)',
+    file: 'GOST10198_91_II1N.html',
+    image: 'data:image/png;base64,__IMG:box_ii1.png__',
+    badge: 'Не готово',
+    badgeDanger: true
+  },
+  {
     name: 'Тип II-2',
     file: 'GOST10198_91_II2.html',
     image: 'data:image/png;base64,__IMG:box_ii2.png__',

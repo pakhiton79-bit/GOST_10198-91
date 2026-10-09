@@ -1,0 +1,245 @@
+// ГОСТ 10198-91: таблицы и формулы, общие с типом I-3 (Табл. 19, 4, 14,
+// п.1.6.5, 1.6.11) - копия, т.к. страница II-1 собирается отдельно.
+
+// ГОСТ 10198-91, п.1.6.5-аналог: высота и ширина полозьев для грузов со сплошным
+// жёстким основанием - только по массе груза (галочка «сплошное жёсткое основание
+// груза»). Таблица идентична типу I-3 (см. src/logic.js, polozSection165) - те же
+// значения приведены и в источнике этого типа.
+function polozSection165(mass){
+  const table = [
+    {max:800,  h:44,  w:100},
+    {max:1000, h:50,  w:100},
+    {max:3000, h:75,  w:125},
+    {max:5000, h:100, w:100},
+    {max:10000,h:125, w:150},
+    {max:20000,h:150, w:175},
+  ];
+  let row = table.find(r=>mass<=r.max);
+  let exceeded = false;
+  if(!row){ row = table[table.length-1]; exceeded = true; }
+  return {h:row.h, w:stockWidth(row.w), exceeded};
+}
+
+// Табл. 19 - высота и ширина полозьев при креплении груза к полозьям/доскам дна,
+// по массе, рабочей длине полоза и количеству полозьев. Таблица общая для типов
+// I-3 и II-1 (тот же источник, см. подробные комментарии в src/logic.js) -
+// значения перенесены без изменений из уже проверенной реализации типа I-3.
+const T19_LENGTHS = [1000,1500,2000,2500,3000,3500,4000,4500,5000];
+
+// Значения - как напечатано в источнике, в том числе выбивающиеся из ряда
+// (по решению пользователя - не исправлять): 500 кг, 3 полоза, 3000-4000 мм
+// - 100x60, 100x75, 100x75 (ширина не 100, как в остальной строке); 5000 кг,
+// 3 полоза, 2500 мм - 50x175 (вероятная опечатка, соседи 150x150 и 175x150).
+const TABLE19 = [
+  {mass:500,  rows:[
+    {count:2, dims:['50x100','60x100','60x100','75x100','75x100','100x100','100x100',null,null]},
+    {count:3, dims:['40x100','50x100','50x100','60x100','100x60','100x75','100x75',null,null]},
+  ]},
+  {mass:800, rows:[
+    {count:2, dims:['60x100','75x100','75x100','100x100','100x100','100x125','125x100',null,null]},
+    {count:3, dims:['50x100','60x100','60x100','75x100','100x75','100x100','100x100',null,null]},
+  ]},
+  {mass:1000, rows:[
+    {count:2, dims:['75x100','100x100','100x100','100x125','100x125','125x100','125x125',null,null]},
+    {count:3, dims:['60x100','75x100','75x100','75x125','100x100','100x100','100x125',null,null]},
+  ]},
+  {mass:1500, rows:[
+    {count:2, dims:['100x75','100x100','100x125','125x125','125x150','150x125','150x150',null,null]},
+    {count:3, dims:['60x100','75x100','100x100','100x125','100x125','125x100','125x125',null,null]},
+  ]},
+  {mass:2000, rows:[
+    {count:2, dims:['100x100','100x125','125x125','125x150','150x125','150x125','150x150',null,null]},
+    {count:3, dims:['75x100','100x100','100x125','125x100','125x125','125x125','150x125',null,null]},
+  ]},
+  {mass:2500, rows:[
+    {count:2, dims:['100x125','125x100','125x150','150x150','150x150','175x150','175x150','175x200',null]},
+    {count:3, dims:['75x100','100x125','125x100','125x125','125x150','150x125','150x150','175x175',null]},
+  ]},
+  {mass:3000, rows:[
+    {count:2, dims:['125x100','125x125','150x150','150x175','175x150','175x175','175x175','200x175','200x200']},
+    {count:3, dims:['100x100','125x100','125x125','125x150','150x125','150x150','175x150','175x175','175x175']},
+  ]},
+  {mass:4000, rows:[
+    {count:2, dims:['125x125','150x100','150x175','175x175','175x200','200x175','200x200','225x200','225x225']},
+    {count:3, dims:['100x125','125x125','150x125','150x150','150x175','175x150','175x175','175x200','175x200']},
+  ]},
+  {mass:5000, rows:[
+    {count:3, dims:['125x100','125x150','150x150','50x175','175x150','175x200','175x200','200x200','200x200']},
+    {count:4, dims:['100x100','125x100','125x150','150x125','150x175','150x175','175x150','175x150','175x175']},
+  ]},
+  {mass:6000, rows:[
+    {count:3, dims:['125x125','150x125','150x175','175x150','175x175','200x175','200x200','200x225','225x225']},
+    {count:4, dims:['125x100','125x125','150x125','150x150','150x175','175x150','175x150','175x175','175x200']},
+  ]},
+  {mass:7000, rows:[
+    {count:3, dims:['125x150','150x150','175x150','175x175','175x200','200x200','200x200','225x200','225x225']},
+    {count:4, dims:['125x100','125x125','150x125','150x150','175x150','175x175','175x175','175x200','200x200']},
+  ]},
+  {mass:8000, rows:[
+    {count:3, dims:['150x125','150x175','175x175','175x200','200x200','200x225','225x225','225x225','225x250']},
+    {count:4, dims:['125x125','150x125','150x175','150x175','175x175','175x200','175x200','200x200','200x200']},
+  ]},
+  {mass:10000, rows:[
+    {count:3, dims:[null,'175x175','175x200','200x200','225x225','225x250','250x225','250x225','250x250']},
+    {count:4, dims:[null,'150x150','175x150','175x200','200x175','200x200','200x200','200x225','225x225']},
+  ]},
+  {mass:12000, rows:[
+    {count:4, dims:[null,'150x175','175x150','175x200','200x200','200x225','225x225','225x250','250x225']},
+    {count:5, dims:[null,'150x150','150x150','175x175','175x175','175x200','175x225','200x200','225x200']},
+  ]},
+  {mass:14000, rows:[
+    {count:4, dims:[null,'175x175','175x175','200x200','200x225','225x225','225x225','225x250','250x225']},
+    {count:5, dims:[null,'150x175','175x150','175x175','175x200','200x200','200x200','200x225','225x225']},
+  ]},
+  {mass:16000, rows:[
+    {count:4, dims:[null,'175x200','175x200','200x200','225x225','225x250','250x225','250x225','250x250']},
+    {count:5, dims:[null,'175x175','175x175','175x200','175x200','200x200','200x200','225x200','225x225']},
+  ]},
+  {mass:18000, rows:[
+    {count:4, dims:[null,null,'175x200','200x200','225x225','225x250','250x225','250x225','250x250']},
+    {count:5, dims:[null,null,'175x175','175x200','200x200','225x225','225x225','225x225','225x250']},
+  ]},
+  {mass:20000, rows:[
+    {count:4, dims:[null,null,'200x200','225x225','225x250','250x225','250x225','250x225','250x250']},
+    {count:5, dims:[null,null,'175x200','200x200','200x200','200x225','225x225','225x250','225x250']},
+  ]},
+];
+
+function nearestIndexBy(arr, keyFn, target){
+  let best = 0, bestDiff = Infinity;
+  arr.forEach((item,i)=>{
+    const diff = Math.abs(keyFn(item) - target);
+    if(diff < bestDiff || (diff === bestDiff && keyFn(item) > keyFn(arr[best]))){
+      bestDiff = diff; best = i;
+    }
+  });
+  return best;
+}
+
+function minSkidsByWidth162(widthMm, skidW){
+  const span = Math.max(0, widthMm - (skidW||0));
+  return Math.max(2, Math.ceil(span / 1200) + 1);
+}
+
+function selectSkid19(mass, workingLengthMm, widthMm){
+  const massIdx = nearestIndexBy(TABLE19, r=>r.mass, mass);
+  const massRow = TABLE19[massIdx];
+  const massSnapped = mass > TABLE19[TABLE19.length-1].mass;
+  const lengthExceeded = workingLengthMm > T19_LENGTHS[T19_LENGTHS.length-1];
+
+  const options = massRow.rows.map(row=>{
+    const availIdx = row.dims.map((d,i)=>d!==null ? i : null).filter(i=>i!==null);
+    if(availIdx.length===0) return null;
+    let bestI = availIdx[0], bestDiff = Infinity;
+    availIdx.forEach(i=>{
+      const diff = Math.abs(T19_LENGTHS[i]-workingLengthMm);
+      if(diff<bestDiff || (diff===bestDiff && T19_LENGTHS[i]>T19_LENGTHS[bestI])){ bestDiff=diff; bestI=i; }
+    });
+    // Толщина (h) и ширина (w) полоза - строго позиционно, как в исходной
+    // таблице «Новые стандарты полозьев.docx» (первое число ячейки - высота/
+    // толщина, второе - ширина). Раньше принудительно переставлялись
+    // (меньшее=толщина, большее=ширина, см. историю в src/logic.js) - по
+    // новому уточнению пользователя таблицу нужно читать максимально точно,
+    // без перестановки.
+    const nums = row.dims[bestI].split('x').map(Number);
+    const h = nums[0];
+    const w = stockWidth(nums[1]); // ширина - на имеющуюся (stockWidth)
+    return {count:row.count, h, w, lengthUsed:T19_LENGTHS[bestI], lengthSnapped: lengthExceeded};
+  }).filter(o=>o!==null);
+
+  let valid = options.filter(o=>o.count>=minSkidsByWidth162(widthMm, o.w));
+  let extrapolatedBeyondOne = false;
+  if(valid.length===0){
+    // Ни один табличный вариант не даёт нужного количества (по шагу осей
+    // ≤1200мм, п.1.6.2). По уточнению пользователя: добавляем максимум 1
+    // полоз сверх табличного варианта с БОЛЬШИМ количеством, БЕЗ понижения
+    // сечения (то же сечение, что и у табличного варианта) - вопреки тексту
+    // примечания к самой таблице ("на одну градацию ниже"), которое здесь
+    // не применяется. Если даже +1 не хватает - добавляем ещё (тем же
+    // сечением), но это уже повод для предупреждения.
+    const base = options.reduce((a,b)=> b.count>a.count ? b : a);
+    const requiredCount = minSkidsByWidth162(widthMm, base.w);
+    const finalCount = Math.max(base.count+1, requiredCount);
+    extrapolatedBeyondOne = finalCount > base.count+1;
+    valid = [{count:finalCount, h:base.h, w:base.w, lengthUsed:base.lengthUsed, lengthSnapped:base.lengthSnapped}];
+  }
+
+  let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
+  if(!chosen){
+    chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
+  }
+  return {
+    h: chosen.h, w: chosen.w, count: chosen.count,
+    massUsed: massRow.mass, massSnapped,
+    lengthUsed: chosen.lengthUsed, lengthSnapped: chosen.lengthSnapped,
+    extrapolatedBeyondOne
+  };
+}
+
+// ГОСТ 10198-91, п.1.6.11-аналог: толщина подполозной доски по массе груза.
+// Значения идентичны типу I-3.
+function subfloorThicknessRaw(mass){
+  if(mass<=1000) return 25;
+  if(mass<=5000) return 32;
+  if(mass<=10000) return 40;
+  return 50;
+}
+
+// Толщина доски дна при креплении груза за полозья (доски дна не несущие) -
+// минимум по массе груза. Значения идентичны типу I-3.
+function floorBoardThicknessNew(mass){
+  return mass<=1000 ? 16 : 19;
+}
+
+// Табл. 4 - толщина досок дна при креплении груза к доскам дна, по удельной
+// нагрузке и расстоянию между осями смежных полозьев. Общая для типов I-3 и
+// II-1 (тот же источник) - значения перенесены без изменений.
+const T4_LOADS = [0.10,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
+
+const T4_DISTANCES = [500,600,800,1000,1200];
+
+const TABLE4 = [
+  [19,19,19,22,25],
+  [19,19,22,32,32],
+  [19,22,25,32,40],
+  [19,22,32,40,40],
+  [19,22,32,40,50],
+  [22,25,32,40,50],
+  [22,25,40,50,50],
+  [22,32,40,50,50],
+];
+
+function floorBoardThickness(mass, Lmm, Wmm, distanceMm){
+  const S_cm2 = (Lmm/10)*(Wmm/10);
+  const udel = mass/S_cm2;
+  let exceeded = false;
+  if(udel<0.10) return {value:19, udel, exceeded:false};
+  let rowIdx = T4_LOADS.findIndex(v=>udel<=v);
+  if(rowIdx===-1){ rowIdx = T4_LOADS.length-1; exceeded = true; }
+  let colIdx = T4_DISTANCES.findIndex(v=>distanceMm<=v);
+  if(colIdx===-1){ colIdx = T4_DISTANCES.length-1; exceeded = true; }
+  return {value:TABLE4[rowIdx][colIdx], udel, exceeded};
+}
+
+// Табл. 14 - толщина поперечных брусьев крышки по массе груза и наружной ширине
+// ящика. Значения в источнике этого типа (картинка в docx) численно совпадают с
+// уже проверенной таблицей типа I-3 - перенесены без изменений.
+const T14_WIDTHS = [1000,1500,2000,2500,3200];
+
+const TABLE14 = [
+  {maxMass:1000,  t:[32,32,32,40,40]},
+  {maxMass:3000,  t:[32,32,40,50,50]},
+  {maxMass:5000,  t:[32,40,50,60,75]},
+  {maxMass:8000,  t:[40,50,60,75,75]},
+  {maxMass:12000, t:[40,60,75,75,100]},
+  {maxMass:20000, t:[50,75,75,100,100]},
+];
+
+function crossBeamThickness(mass, outerWmm){
+  let exceeded=false;
+  let row = TABLE14.find(r=>mass<=r.maxMass);
+  if(!row){ row=TABLE14[TABLE14.length-1]; exceeded=true; }
+  let colIdx = T14_WIDTHS.findIndex(w=>outerWmm<=w);
+  if(colIdx===-1){ colIdx=T14_WIDTHS.length-1; exceeded=true; }
+  return {value:row.t[colIdx], exceeded};
+}
