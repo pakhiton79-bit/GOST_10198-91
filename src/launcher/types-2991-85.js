@@ -11,8 +11,6 @@ const TYPES = [
   {
     name: 'Тип II-1',
     file: 'GOST2991_85_II1.html',
-    image: 'data:image/png;base64,__IMG:box_g2991_ii1.png__',
-    badge: 'Не готово',
-    badgeDanger: true
+    image: 'data:image/png;base64,__IMG:box_g2991_ii1.png__'
   }
 ];
