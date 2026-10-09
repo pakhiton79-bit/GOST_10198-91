@@ -3240,7 +3240,8 @@ function buildEndPanel(c, s, frame, rask) {
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
   // Доски обшивки - на каждый этаж, по наружной ширине ящика.
-  const boardLen = 100 * 2 + frame.len + s.longBeamT;
+  // + толщина поперечного бруса крышки (каркас ниже на неё - см. compute.js).
+  const boardLen = 100 * 2 + frame.len + s.longBeamT + s.crossBeamT;
   const fb = fillBoards(s.outerW, c.roundBoardWidths);
   const boardQty = fb.mainQty * frame.floors;
   if (fb.warn) warnings.push('Доска торца: остаток - нестандартная ширина (вне 75–99 мм).');
@@ -3282,16 +3283,14 @@ function buildBokovoy(c, s, frame, rask) {
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Опорная планка - несёт поперечные брусья крышки: толщина - доска
-  // обшивки, ширина - ширина стойки минус толщина поперечного бруса (вниз до
-  // целого, в пределах 50-75 мм), длина - как у горизонтального бруса.
-  // Опорная планка - 1 шт. на щит (по указанию пользователя; было 2).
-  const opora = { t: skinT, w: Math.min(75, Math.max(50, Math.floor(STOJKA_W - s.crossBeamT))), l: horiz.l, qty: 1 };
+  // Опорных планок нет (по указанию пользователя) - брусья крышки лежат на
+  // каркасе (см. compute.js).
 
   // Доски обшивки - на длину груза + толщину стойки торцевого щита с
   // каждой стороны (по указанию пользователя: заходят на торцы стоек
   // торцевых щитов; доски торца - по наружной ширине - закрывают их концы).
-  const boardLen = 100 * 2 + frame.len + s.longBeamT;
+  // + толщина поперечного бруса крышки (каркас ниже на неё - см. compute.js).
+  const boardLen = 100 * 2 + frame.len + s.longBeamT + s.crossBeamT;
   const fb = fillBoards(L + s.stojkaT * 2, c.roundBoardWidths);
   const boardQty = fb.mainQty * frame.floors;
   if (fb.warn) warnings.push('Доска бока: остаток - нестандартная ширина (вне 75–99 мм).');
@@ -3306,7 +3305,6 @@ function buildBokovoy(c, s, frame, rask) {
   if (horiz.qty > 0) rows.push({ name: 'Горизонтальный брус', t: horiz.t, w: horiz.w, l: horiz.l, qty: horiz.qty, overrideKey: 'tStojka' });
   if (frame.hasRaskosina) rows.push({ name: 'Раскосина', t: rask.t, w: rask.w, l: raskLen, qty: raskQty, overrideKey: 'tRaskosina' });
   if (withX) rows.push({ name: 'Раскосина (дополнительная)', t: rask.t, w: rask.w, l: (raskLen - rask.w) / 2, qty: raskQty * 2, overrideKey: 'tRaskosina' });
-  rows.push({ name: 'Опорная планка', t: opora.t, w: opora.w, l: opora.l, qty: opora.qty, overrideKey: 'skinValue' });
   if (boardQty > 0) rows.push({ name: 'Доска', t: skinT, w: 100, l: boardLen, qty: boardQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
@@ -3314,7 +3312,7 @@ function buildBokovoy(c, s, frame, rask) {
   });
 
   const volume = vol(stojka.t, stojka.w, stojka.l, stojka.qty) + vol(horiz.t, horiz.w, horiz.l, horiz.qty)
-    + vol(rask.t, rask.w, raskLen, raskQty) + vol(opora.t, opora.w, opora.l, opora.qty)
+    + vol(rask.t, rask.w, raskLen, raskQty)
     + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty * frame.floors), 0)
     + (withX ? vol(rask.t, rask.w, (raskLen - rask.w) / 2, raskQty * 2) : 0);
 
@@ -3493,10 +3491,15 @@ function computeGost10198II1N(input) {
   // ползунков ручной настройки.
   const torecSpace = W + s.stojkaT * 2, bokSpace = L; // бок - по длине груза
   const torecManual = input.torecPostCount > 0, bokManual = input.bokPostCount > 0;
-  const torecStandard = buildFrame(torecSpace, panelHeightFull, H, 0, input.addRaskosina);
-  const bokStandard = buildFrame(bokSpace, panelHeightFull, H, 0, input.addRaskosina);
-  const torecFrame = torecManual ? buildFrame(torecSpace, panelHeightFull, H, input.torecPostCount, input.addRaskosina) : torecStandard;
-  const bokFrame = bokManual ? buildFrame(bokSpace, panelHeightFull, H, input.bokPostCount, input.addRaskosina) : bokStandard;
+  // II-1 (новая версия, по указанию пользователя): опорных планок нет -
+  // поперечные брусья крышки лежат на каркасе, поэтому каркас обоих щитов
+  // (стойки и раскосины) ниже на толщину поперечного бруса крышки; при 2
+  // этажах - поровну (стойки каждого этажа короче на половину толщины).
+  const frameHeight = panelHeightFull - s.crossBeamT;
+  const torecStandard = buildFrame(torecSpace, frameHeight, H, 0, input.addRaskosina);
+  const bokStandard = buildFrame(bokSpace, frameHeight, H, 0, input.addRaskosina);
+  const torecFrame = torecManual ? buildFrame(torecSpace, frameHeight, H, input.torecPostCount, input.addRaskosina) : torecStandard;
+  const bokFrame = bokManual ? buildFrame(bokSpace, frameHeight, H, input.bokPostCount, input.addRaskosina) : bokStandard;
   if (torecFrame.tooNarrow) {
     return { error: `Ширина груза ${W} мм слишком мала для минимум двух стоек торцевого щита (по 100мм) - расчёт не выполняется.` };
   }
@@ -6306,6 +6309,8 @@ function renderTextRow(sectionKey, rows, defaultText){
 // чертежей подписи почти не вылетают за рамку, и автосжатие их не уменьшает.
 const II1_PANEL_WIDTH = 260, II1_PANEL_LABEL_SCALE = 0.8;
 
+// Выступ обшивки щитов над каркасом - продольный + поперечный брус крышки
+// (II-1 новая версия: опорных планок нет, каркас ниже на поперечный брус).
 function renderBoardTables(calc, manualOverrides){
   const torecW = calc.W + calc.t_stojka*2;
   let html = '';
@@ -6316,10 +6321,10 @@ function renderBoardTables(calc, manualOverrides){
     diagramKryshka(calc.longbeamCount, calc.crossBeamCount, calc.lidOverhangLong, calc.lidOverhangCross, calc.outerW, calc.k9Base, undefined, calc.edgeDistCross, crossBeamWidth(calc.kryshka), calc.gapDistCross),
     renderPartTable(calc.kryshka, 'kryshka', manualOverrides));
   html += renderPartBlock(`<div class="part-title">Щит торцевой (2 шт.)</div>`,
-    diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW, calc.torecFrame.hasRaskosina),
+    diagramTorec(calc.torecFrame.count, calc.torecFrame.floors, calc.t_longbeam + calc.t21, torecW, calc.skin.value, calc.panelHeightFull, 100 + calc.torecFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.torecFrame.sectionW, calc.torecFrame.hasRaskosina),
     renderPartTable(calc.endPanel, 'endPanel', manualOverrides));
   html += renderPartBlock(`<div class="part-title" style="margin-bottom:26px">Щит боковой (2 шт.)</div>`,
-    diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam, calc.L, calc.t_stojka, calc.panelHeightFull, 100 + calc.bokFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.bokFrame.sectionW, calc.bokFrame.hasRaskosina),
+    diagramBok(calc.bokFrame.count, calc.bokFrame.floors, calc.t_longbeam + calc.t21, calc.L, calc.t_stojka, calc.panelHeightFull, 100 + calc.bokFrame.len, II1_PANEL_WIDTH, II1_PANEL_LABEL_SCALE, calc.xRaskosina, calc.bokFrame.sectionW, calc.bokFrame.hasRaskosina),
     renderPartTable(calc.bokovoy, 'bokovoy', manualOverrides));
   // Пергамин - под всеми узлами, попадает и в печать.
   if(calc.parchment && calc.parchment.length){
