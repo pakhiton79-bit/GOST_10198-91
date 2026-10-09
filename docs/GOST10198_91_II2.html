@@ -3614,10 +3614,10 @@ function computeGost10198II2(input) {
   const crateMass = totalVolume * woodRho;
 
   if (thicknessLimitExceeded) {
-    warnings.push(`Расчётная толщина детали больше максимальной «в наличии» - использована самая толстая из наличия (${availableThicknesses[availableThicknesses.length - 1]} мм), это тоньше ГОСТ.`);
+    warnings.push(`Расчётная толщина детали больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) - использована толщина по ГОСТ, такой толщины нет в наличии.`);
   }
   thicknessLimitParts.forEach(p => {
-    warnings.push(`${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${availableThicknesses[availableThicknesses.length - 1]} мм - использовано ${availableThicknesses[availableThicknesses.length - 1]} мм, это тоньше ГОСТ.`);
+    warnings.push(`${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${availableThicknesses[availableThicknesses.length - 1]} мм - использовано ${p.t} мм по ГОСТ, такой толщины нет в наличии.`);
   });
   Object.values(belowGost).forEach(b => {
     warnings.push(`${b.label}: вручную указано ${b.value} мм (< расчётных ${Math.round(b.gostValue * 100) / 100} мм по ГОСТ) - использовано введённое значение.`);
@@ -6319,8 +6319,8 @@ let thicknessLimitExceeded = false;
 let thicknessLimitParts = [];
 
 // Округление вверх до ближайшей толщины «в наличии» (ничего не выбрано - как
-// есть, строго по ГОСТ). Больше максимальной «в наличии» - берётся максимальная
-// из наличия (тоньше ГОСТ, по указанию пользователя), взводится
+// есть, строго по ГОСТ). Больше максимальной «в наличии» - берётся толщина по
+// ГОСТ (по указанию пользователя; раньше - максимальная из наличия), взводится
 // thicknessLimitExceeded (предупреждение в расчёте).
 // label (необязательно) - название детали: тогда превышение попадает не в общий
 // флаг, а в thicknessLimitParts, и предупреждение называет деталь и толщину.
@@ -6332,7 +6332,7 @@ function roundUpToAvailable(t, label){
   for(const a of availableThicknesses){ if(t<=a) return a; }
   if(!label) thicknessLimitExceeded = true;
   else thicknessLimitParts.push({ label, t });
-  return availableThicknesses[availableThicknesses.length - 1];
+  return t;
 }
 
 function buildThicknessCheckboxList(){

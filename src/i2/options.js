@@ -46,14 +46,14 @@ let availableThicknesses = loadAvailableThicknesses();
 let thicknessLimitExceeded = false;
 
 // Округление вверх до ближайшей толщины «в наличии» (ничего не выбрано - как
-// есть, строго по ГОСТ). Больше максимальной «в наличии» - берётся максимальная
-// из наличия (тоньше ГОСТ, по указанию пользователя), взводится
+// есть, строго по ГОСТ). Больше максимальной «в наличии» - берётся толщина по
+// ГОСТ (по указанию пользователя; раньше - максимальная из наличия), взводится
 // thicknessLimitExceeded (предупреждение в расчёте).
 function roundUpToAvailable(t){
   if(availableThicknesses.length === 0) return t;
   for(const a of availableThicknesses){ if(t<=a) return a; }
   thicknessLimitExceeded = true;
-  return availableThicknesses[availableThicknesses.length - 1];
+  return t;
 }
 
 function buildThicknessCheckboxList(){

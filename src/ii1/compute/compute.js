@@ -218,10 +218,10 @@ function computeGost10198II1(input) {
   const crateMass = totalVolume * woodRho;
 
   if (thicknessLimitExceeded) {
-    warnings.push(`Расчётная толщина детали больше максимальной «в наличии» - использована самая толстая из наличия (${availableThicknesses[availableThicknesses.length - 1]} мм), это тоньше ГОСТ.`);
+    warnings.push(`Расчётная толщина детали больше максимальной «в наличии» (${availableThicknesses[availableThicknesses.length - 1]} мм) - использована толщина по ГОСТ, такой толщины нет в наличии.`);
   }
   thicknessLimitParts.forEach(p => {
-    warnings.push(`${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${availableThicknesses[availableThicknesses.length - 1]} мм - использовано ${availableThicknesses[availableThicknesses.length - 1]} мм, это тоньше ГОСТ.`);
+    warnings.push(`${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${availableThicknesses[availableThicknesses.length - 1]} мм - использовано ${p.t} мм по ГОСТ, такой толщины нет в наличии.`);
   });
   Object.values(belowGost).forEach(b => {
     warnings.push(`${b.label}: вручную указано ${b.value} мм (< расчётных ${Math.round(b.gostValue * 100) / 100} мм по ГОСТ) - использовано введённое значение.`);
