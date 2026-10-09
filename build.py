@@ -494,6 +494,8 @@ G2991_II1_SHELL = G2991_II1_DIR / "shell.html"
 G2991_II1_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
     "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
     "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
@@ -507,6 +509,8 @@ G2991_II1_PARTS = {
     "/*__G2991_II1_OPTIONS_JS__*/": G2991_II1_DIR / "options.js",
     "/*__G2991_II1_COMPUTE_JS__*/": G2991_II1_DIR / "compute" / "compute.js",
     "/*__G2991_II1_RENDER_JS__*/": G2991_II1_DIR / "render-g2991ii1.js",
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__G2991_II1_PRINT_JS__*/": G2991_II1_DIR / "print-g2991ii1.js",
     "/*__G2991_II1_CALC_JS__*/": G2991_II1_DIR / "calc-g2991ii1.js",
 }
 G2991_II1_VARIANTS = [
