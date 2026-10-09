@@ -1975,6 +1975,10 @@ else initSiteSettings();
       </label>
       <div class="option-group-title">Обшивка</div>
       <label>
+        <input type="checkbox" id="bulkCargo">
+        <span>Насыпной или незакреплённый груз<span class="option-hint">Обшивка стенок и крышки 19 мм вместо 16 мм (п. 1.6.13)</span></span>
+      </label>
+      <label>
         <input type="checkbox" id="addParchment">
         <span>Добавить пергамин<span class="option-hint">Площадь внутренних поверхностей ящика</span></span>
       </label>
@@ -2873,16 +2877,13 @@ function crossBeamThickness(mass, outerWmm){
 // боковые и торцевые щиты - каркас (стойки + горизонтальные брусья + раскосины),
 // обшитый досками, а не сплошной набор планок/досок.
 
-// Толщина досок обшивки (боковых/торцевых щитов и крышки) по массе груза.
-// ЧЕРНОВАЯ таблица - по прямому указанию пользователя официальную таблицу
-// в тексте ГОСТ не нашли («Нормальную таблицу я не нашел, попытайся её найти,
-// а пока используй эту»). Верхняя граница диапазона (>600кг) в источнике не
-// указана - применяется 25мм вплоть до 20000кг. Пользователь подтвердил
-// использование этой таблицы как временной.
-function skinThickness(mass){
-  if(mass<=400) return 19;
-  if(mass<=600) return 22;
-  return 25;
+// Толщина досок обшивки стенок и крышки (п.1.6.13 ГОСТ 10198-91, типы
+// II-IV): не менее 16 мм; при насыпном грузе или деталях, не связанных между
+// собой и не закреплённых к дну (галочка «Насыпной или незакреплённый
+// груз»), - не менее 19 мм. Как у III-1 (раньше - черновая таблица по массе
+// 19/22/25 мм).
+function skinThickness(bulkCargo) {
+  return bulkCargo ? 19 : 16;
 }
 
 // Толщина и ширина стоек по массе груза и наружной высоте ящика (по тексту
@@ -3414,8 +3415,8 @@ function computeGost10198II1(input) {
   if (MASS < 200) {
     warnings.push(`Масса груза ${MASS} кг менее 200 кг - вне области распространения ГОСТ 10198-91 в целом (200–20000 кг). Расчёт продолжен, но результат нужно перепроверить.`);
   }
-  // Толщина досок обшивки (щиты и крышка) - черновая таблица по массе.
-  const skin = { value: ov('skinValue', round(skinThickness(MASS)), 'Толщина обшивки (доска крышки)') };
+  // Толщина досок обшивки (щиты и крышка) - п.1.6.13: 16 мм, насыпной груз - 19 мм.
+  const skin = { value: ov('skinValue', round(skinThickness(input.bulkCargo)), 'Толщина обшивки (доска крышки)') };
   const c = { ...input, skinT: skin.value, ov, round, warnings };
 
   // --- 2. Согласование размеров ---
@@ -6086,7 +6087,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','noRoundBoardWidths','noOptimizeSizes','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
+['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','noRoundBoardWidths','noOptimizeSizes','bulkCargo','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -6482,6 +6483,7 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
+    bulkCargo: document.getElementById('bulkCargo').checked,
     optimizeSizes: !document.getElementById('noOptimizeSizes').checked, // по умолчанию размеры оптимизируются
     xRaskosina: document.getElementById('xRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
@@ -6532,7 +6534,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','noRoundBoardWidths','removeFloorBoards','noOptimizeSizes','addRaskosina','addParchment'].forEach(id=>{
+['solidRigidBase','noRoundBoardWidths','removeFloorBoards','noOptimizeSizes','bulkCargo','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });
