@@ -3130,7 +3130,10 @@ function buildKryshka(c, s) {
   // Оптимизация размеров (по умолчанию включена, галочка «Не оптимизировать
   // размеры» её выключает; как у I-3 и I-4): брусья крышки короче на 4 мм,
   // расстояние от края крышки до их торцов - больше на 2 мм с каждой стороны.
-  const crossLen = W - (optimizeSizes ? 4 : 0);
+  // II-1 (новая версия, по указанию пользователя): брус лежит на каркасе
+  // боковых щитов - длина = ширина груза + 2 толщины стойки (горизонтального
+  // бруса) бокового щита.
+  const crossLen = W + s.stojkaT * 2 - (optimizeSizes ? 4 : 0);
   rows.push({ name: 'Внутренний поперечный брус', t: s.crossBeamT, w: s.crossBeamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 't21' });
   let volume = vol(s.crossBeamT, s.crossBeamW, crossLen, s.crossBeamCount);
 
@@ -3571,7 +3574,7 @@ function computeGost10198II1N(input) {
     // поперечных - стойка + обшивка бока, за концы продольных - обшивка
     // торца; при «Оптимизировать размеры» - на 2 мм больше (по указанию
     // пользователя).
-    lidOverhangCross: s.stojkaT + skin.value + (input.optimizeSizes ? 2 : 0),
+    lidOverhangCross: skin.value + (input.optimizeSizes ? 2 : 0), // брус - до наружных граней стоек бока
     lidOverhangLong: skin.value + (input.optimizeSizes ? 2 : 0),
     xRaskosina: !!input.xRaskosina,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
