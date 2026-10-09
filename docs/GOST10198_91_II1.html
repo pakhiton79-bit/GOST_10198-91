@@ -1913,8 +1913,8 @@ else initSiteSettings();
       </label>
       <div class="option-group-title">Брусья крышки</div>
       <label>
-        <input type="checkbox" id="optimizeSizes">
-        <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 2 мм; при поперечном расположении досок крышки - и продольного бруса тоже.</span></span>
+        <input type="checkbox" id="noOptimizeSizes">
+        <span>Не оптимизировать размеры<span class="option-hint">Без галочки внутренние поперечный и продольный брусья крышки короче на 4 мм (по 2 мм с каждого конца)</span></span>
       </label>
       <label>
         <input type="checkbox" id="customCrossBeams" onchange="onManualCountCheckboxChange('cross')">
@@ -3123,11 +3123,14 @@ function buildKryshka(c, s) {
   const { L, W, warnings, skinT, optimizeSizes } = c;
   const rows = [];
 
-  const crossLen = W - (optimizeSizes ? 2 : 0);
+  // Оптимизация размеров (по умолчанию включена, галочка «Не оптимизировать
+  // размеры» её выключает; как у I-3 и I-4): брусья крышки короче на 4 мм,
+  // расстояние от края крышки до их торцов - больше на 2 мм с каждой стороны.
+  const crossLen = W - (optimizeSizes ? 4 : 0);
   rows.push({ name: 'Внутренний поперечный брус', t: s.crossBeamT, w: s.crossBeamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 't21' });
   let volume = vol(s.crossBeamT, s.crossBeamW, crossLen, s.crossBeamCount);
 
-  const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 2 : 0);
+  const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 4 : 0);
   rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.longBeamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
   volume += vol(s.longBeamT, s.longBeamW, longLen, s.longBeamCount);
 
@@ -4014,11 +4017,11 @@ function crossBeamWidth(kryshkaRows){
 }
 
 // torecBoardVal - выступ досок крышки за концы продольных брусьев (толщина
-// доски торца, при «Оптимизировать размеры» +2 мм - calc.lidOverhangLong);
+// доски торца, при оптимизации размеров (по умолчанию) +2 мм - calc.lidOverhangLong);
 // отсутствует на чертеже при продольных=0 (как на фото - доска торца там не
 // подписывается вовсе, по самой инструкции). sideFrameVal - выступ досок за
 // торцы поперечных брусьев (толщина стойки + доски обшивки бока, при
-// «Оптимизировать размеры» +2 мм - calc.lidOverhangCross).
+// оптимизации размеров (по умолчанию) +2 мм - calc.lidOverhangCross).
 // widthVal/lengthVal - наружные ширина/длина ящика (outerW/k9Base).
 // edgeDistVal - расстояние от стенки до края крайнего поперечного бруса
 // (calc.edgeDistCross), gapDistVal - между краями соседних брусьев
@@ -6081,7 +6084,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','noRoundBoardWidths','optimizeSizes','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
+['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','noRoundBoardWidths','noOptimizeSizes','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -6477,7 +6480,7 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
-    optimizeSizes: document.getElementById('optimizeSizes').checked,
+    optimizeSizes: !document.getElementById('noOptimizeSizes').checked, // по умолчанию размеры оптимизируются
     xRaskosina: document.getElementById('xRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
     addParchment: document.getElementById('addParchment').checked,
@@ -6527,7 +6530,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['solidRigidBase','noRoundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina','addParchment'].forEach(id=>{
+['solidRigidBase','noRoundBoardWidths','removeFloorBoards','noOptimizeSizes','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });
