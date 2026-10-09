@@ -1967,8 +1967,8 @@ else initSiteSettings();
           </div>
         </div>
         <label>
-          <input type="checkbox" id="optimizeSizes">
-          <span>Оптимизировать размеры<span class="option-hint">Длина внутреннего поперечного бруса крышки уменьшается на 4 мм</span></span>
+          <input type="checkbox" id="noOptimizeSizes">
+          <span>Не оптимизировать размеры<span class="option-hint">Без галочки внутренний поперечный брус крышки короче на 4 мм (по 2 мм с каждого конца)</span></span>
         </label>
         <div class="option-group-title">Раскосины</div>
         <label>
@@ -3225,7 +3225,13 @@ function buildKryshka(c, len, outerW) {
     warnings.push('Масса или ширина ящика вне Табл. 14 - брус крышки принят по крайнему значению.');
   }
   const beamT = ov('t21Value', round(crossBeam.value), 'Толщина внутреннего поперечного бруса крышки');
+  // Оптимизация размеров (по умолчанию включена, галочка «Не оптимизировать
+  // размеры» её выключает): брус короче на 4 мм, и только расстояние от
+  // бокового края крышки до торца бруса больше на 2 мм с каждой стороны.
   const beamLen = W - (c.optimizeSizes ? 4 : 0);
+  // Расстояние от бокового края крышки (ширина крышки - W + 2 толщины стенки,
+  // как у досок крышки) до торца поперечного бруса - для чертежа.
+  const beamSideGap = (W + wall * 2 - beamLen) / 2;
   const beams = beamLayout(len, wall + wall, c.beamGapValue, c.beamCountValue);
   if (beams.error) return { error: beams.error };
   rows.push({ name: 'Внутренний поперечный брус', t: beamT, w: BEAM_W, l: beamLen, qty: beams.count, overrideKey: 't21Value' });
@@ -3233,7 +3239,7 @@ function buildKryshka(c, len, outerW) {
   const volume = vol(wall, PLANK_W, width, planks.count) + vol(wall, 100, len, fb.mainQty) + vol(beamT, BEAM_W, beamLen, beams.count)
     + fb.extra.reduce((s, e) => s + vol(wall, e.width, len, e.qty), 0);
 
-  return { rows, volume, planks, standardPlanks: standard, beams, beamW: BEAM_W, boardGap: fb.gap };
+  return { rows, volume, planks, standardPlanks: standard, beams, beamW: BEAM_W, beamSideGap, boardGap: fb.gap };
 }
 
 // ГОСТ 10198-91, тип I-4: щит торцевой (расчёт на 1 щит, щитов 2).
@@ -3516,7 +3522,7 @@ function computeGost10198I4(input) {
     k9Base: len, t41: wall, t40: wall, torecFrameThickness: wall + wall,
     W, L, t30: wall, t32: wall,
     edgeDistKryshka: planks.edgeDist, l21: beams.count, w21: kryshka.beamW, l19: planks.count, bokSectionW: sectionW, plankGap: planks.gap,
-    beamEdgeDist: beams.edgeDist, beamGap: beams.gap, standardBeamCount: beams.standardCount,
+    beamEdgeDist: beams.edgeDist, beamGap: beams.gap, beamSideGap: kryshka.beamSideGap, standardBeamCount: beams.standardCount,
     standardPlankCount: kryshka.standardPlanks.count, standardPlankGap: kryshka.standardPlanks.gap,
     k32: endPanel.boardLen, torecSections: endPanel.sections, torecHasRaskosina: endPanel.hasRaskosina, HplusT12: H + dno.t12,
     torecNoRaskosinaDiagram: endPanel.noRaskosinaDiagram, torecFloors: endPanel.floors, k30plusW31: endPanel.floorSpan,
@@ -4065,7 +4071,26 @@ function diagramDnoFor(calc){
 // I-4: boardGap - промежуток обшивки ({ qty, gap, share }) или null - доски
 // вплотную: доски крышки идут вдоль длины, на чертеже - полосы по числу
 // досок (см. boards.js), сквозь промежутки видны пояса-планки снизу.
-function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm, plankEdgeGapVal, beamEdgeMm, beamGapMm, boardGap){
+// Расстояние от бокового края крышки до торца поперечного бруса (по указанию
+// пользователя). Размер маленький - стрелки снаружи: Bp - угол торца бруса на
+// крышке, E - точка бокового края крышки напротив него; выносные линии - вдоль
+// ext на extLen, между ними - размер со стрелками снаружи (arrow), подпись -
+// за стрелкой у бруса (labelOff).
+function lidSideGapRecords(Bp, E, ext, extLen, arrow, labelOff, text){
+  const a = [E[0] + ext[0]*extLen, E[1] + ext[1]*extLen], b = [Bp[0] + ext[0]*extLen, Bp[1] + ext[1]*extLen];
+  const over = arrow*0.4;
+  const len = Math.hypot(b[0]-a[0], b[1]-a[1]) || 1, ux = (b[0]-a[0])/len, uy = (b[1]-a[1])/len;
+  return [
+    {type:'line', x1:E[0], y1:E[1], x2:a[0] + ext[0]*over, y2:a[1] + ext[1]*over},
+    {type:'line', x1:Bp[0], y1:Bp[1], x2:b[0] + ext[0]*over, y2:b[1] + ext[1]*over},
+    {type:'line', x1:a[0], y1:a[1], x2:b[0], y2:b[1]},
+    {type:'single', x1:a[0] - ux*arrow, y1:a[1] - uy*arrow, x2:a[0], y2:a[1]},
+    {type:'single', x1:b[0] + ux*arrow, y1:b[1] + uy*arrow, x2:b[0], y2:b[1]},
+    {type:'label', lx:b[0] + ux*(arrow + labelOff), ly:b[1] + uy*(arrow + labelOff), text},
+  ];
+}
+
+function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshkaMm, crossBeamQty, crossBeamWidthMm, plankCount, plankGapMm, plankEdgeGapVal, beamEdgeMm, beamGapMm, boardGap, beamSideGapMm){
   const lidLen = lengthMm + t30*2 + t32*2, lidW = widthMm + t41*2;
   const P = Math.max(1, Math.round(plankCount)), B = Math.max(0, Math.round(crossBeamQty));
   const eu = [0.9507, -0.3101], ev = [-0.4406, -0.8977];
@@ -4267,6 +4292,12 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
     const ea = P2(0, 0.5*Wv), eb = P2(bu0, 0.5*Wv);
     const edgeText = dimLabel(beamEdgeMm)+' мм';
     dimFit(ea, eb, edgeText, 'a', nleft, null, true);
+    // Расстояние от бокового (переднего) края крышки до торца первого бруса -
+    // у его правого переднего угла, выносные линии - вправо по крышке.
+    if(beamSideGapMm > 0){
+      const ur = bu0 + bw, room = (B > 1 ? beamU(1) : Lu) - ur;
+      records.push(...lidSideGapRecords(P2(ur, vB), P2(ur, 0), eu, Math.max(0.45*room, 20*pxU), 14*pxU, 16*pxU, dimLabel(beamSideGapMm)+' мм'));
+    }
     if(B > 1){
       const gi = Math.floor((B-1)/2), ua = beamU(gi) + bw, ub = beamU(gi+1);
       const [ga, gb] = beamDim(ua, ub, P2(ua, vB), P2(ub, vB), rowNear);
@@ -4316,7 +4347,7 @@ function diagramKryshkaGen(widthMm, lengthMm, t30, t32, t41, t40, edgeDistKryshk
 // Чертёж крышки для результата расчёта. I-4: всегда генерируемый - на фото
 // I-3 обшивка сплошная.
 function diagramKryshkaFor(calc){
-  return diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap, calc.boardGaps.kryshka);
+  return diagramKryshkaGen(calc.W, calc.L, calc.t30, calc.t32, calc.t41, calc.t40, calc.edgeDistKryshka, calc.l21, calc.w21, calc.l19, calc.bokSectionW, calc.plankGap, calc.beamEdgeDist, calc.beamGap, calc.boardGaps.kryshka, calc.beamSideGap);
 }
 
 // ГОСТ 10198-91, тип I-4: чертёж «Щит торцевой» - всегда генерируемый (SVG,
@@ -6154,7 +6185,7 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['optimizeSizes','noRoundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','addRaskosina','xRaskosina','addEndTape'].forEach(persistCheckbox);
+['noOptimizeSizes','noRoundBoardWidths','solidRigidBase','forkliftLoading','removeSkidBoards','removeFloorBoards','addRaskosina','xRaskosina','addEndTape'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
@@ -6725,7 +6756,7 @@ function buildCalcInput(){
     H: parseFloat(document.getElementById('H').value),
     MASS: parseFloat(document.getElementById('M').value),
     fasteningType: fasteningType,
-    optimizeSizes: document.getElementById('optimizeSizes').checked,
+    optimizeSizes: !document.getElementById('noOptimizeSizes').checked, // по умолчанию размеры оптимизируются
     removeFloorBoards: document.getElementById('removeFloorBoards').checked, // при креплении к доскам дна всегда снята
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
@@ -6782,7 +6813,7 @@ function calculateNow(){
 ['L','W','H','M'].forEach(id=>{
   document.getElementById(id).addEventListener('input', invalidateCalc);
 });
-['optimizeSizes','solidRigidBase','noRoundBoardWidths','removeFloorBoards'].forEach(id=>{
+['noOptimizeSizes','solidRigidBase','noRoundBoardWidths','removeFloorBoards'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
 });
