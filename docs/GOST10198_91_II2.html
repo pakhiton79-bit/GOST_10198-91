@@ -1902,19 +1902,6 @@ else initSiteSettings();
   </div>
   -->
 
-  <div class="card">
-    <h2>Расположение досок крышки</h2>
-    <div class="fastening-option-list">
-      <label>
-        <input type="radio" name="lidLayout" value="longitudinal" checked>
-        <span>Вдоль длины ящика<span class="option-hint">Продольные брусья крышки не требуются</span></span>
-      </label>
-      <label>
-        <input type="radio" name="lidLayout" value="transverse">
-        <span>Поперёк ящика<span class="option-hint">Добавляются внутренние продольные брусья крышки</span></span>
-      </label>
-    </div>
-  </div>
 
   <div class="card">
     <h2>Промежутки между досками обшивки</h2>
@@ -3069,17 +3056,14 @@ function stabilizeSizes(c) {
     stojkaT = ov('tStojka', round(stj.t), 'Толщина стойки');
     stojkaExceeded = stj.exceeded;
 
-    // Продольные брусья крышки - только при поперечном расположении досок.
-    if (c.lidLayout === 'transverse') {
-      longBeamCount = minCountBySpan(W, 100, LONG_BEAM_MAX_AXIS);
-      const longBeamAxis = clearGapBySpan(W, 100, longBeamCount) + 100; // ось-в-ось
-      const crossBeamAxis = (L + CROSS_BEAM_W) / (crossBeamCount + 1);
-      const lb = longBeamSection(crossBeamAxis, c.roundBoardWidths, longBeamAxis);
-      longBeamT = ov('tLongbeam', round(lb.t), 'Толщина продольного бруса крышки');
-      longBeamW = lb.w; longBeamExceeded = lb.exceeded;
-    } else {
-      longBeamT = 0; longBeamW = 100; longBeamCount = 0;
-    }
+    // Продольные брусья крышки (доски крышки - всегда поперёк ящика, по
+    // указанию пользователя продольное расположение убрано).
+    longBeamCount = minCountBySpan(W, 100, LONG_BEAM_MAX_AXIS);
+    const longBeamAxis = clearGapBySpan(W, 100, longBeamCount) + 100; // ось-в-ось
+    const crossBeamAxis = (L + CROSS_BEAM_W) / (crossBeamCount + 1);
+    const lb = longBeamSection(crossBeamAxis, c.roundBoardWidths, longBeamAxis);
+    longBeamT = ov('tLongbeam', round(lb.t), 'Толщина продольного бруса крышки');
+    longBeamW = lb.w; longBeamExceeded = lb.exceeded;
   }
 
   return {
@@ -3243,12 +3227,9 @@ function buildDno(c, s, subLengthWarn) {
 }
 
 
-// ГОСТ 10198-91, тип II-2: крышка - поперечные брусья, продольные брусья
-// (только при поперечном расположении досок) и доски с промежутками (как у
-// II-1, ../ii1/kryshka.js).
-//
-// При поперечном расположении доски крышки раскладываются по наружной длине
-// ящика, при продольном - по наружной ширине (так же, как торцевой щит).
+// ГОСТ 10198-91, тип II-2: крышка - поперечные брусья, продольные брусья и
+// доски с промежутками (как у II-1, ../ii1/kryshka.js). Доски - поперёк
+// ящика, раскладываются по наружной длине ящика.
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (../ii1/sizing.js).
 function buildKryshka(c, s) {
@@ -3259,20 +3240,15 @@ function buildKryshka(c, s) {
   rows.push({ name: 'Внутренний поперечный брус', t: s.crossBeamT, w: s.crossBeamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 't21' });
   let volume = vol(s.crossBeamT, s.crossBeamW, crossLen, s.crossBeamCount);
 
-  // Доски: при поперечном расположении идут поперёк ящика (длина - наружная
-  // ширина) и лежат на продольных брусьях; при продольном - вдоль (длина -
-  // длина ящика).
-  let boardLen, fillspace;
-  if (c.lidLayout === 'transverse') {
-    const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 2 : 0);
-    rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.longBeamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
-    volume += vol(s.longBeamT, s.longBeamW, longLen, s.longBeamCount);
-    boardLen = s.outerW;
-    fillspace = s.len;
-  } else {
-    boardLen = s.len;
-    fillspace = s.outerW;
-  }
+  const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 2 : 0);
+  rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.longBeamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
+  volume += vol(s.longBeamT, s.longBeamW, longLen, s.longBeamCount);
+
+  // Доски идут поперёк ящика (длина - наружная ширина) и лежат на
+  // продольных брусьях; продольное расположение убрано по указанию
+  // пользователя.
+  const boardLen = s.outerW;
+  const fillspace = s.len;
   const fb = fillGapBoards(fillspace, c.roundBoardWidths, c.boardGapMax, 'Крышка', warnings);
   if (fb.mainQty > 0) rows.push({ name: 'Доска крышки', t: skinT, w: BOARD_W, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
@@ -3337,20 +3313,17 @@ function buildEndPanel(c, s, frame, rask) {
 // доски обшивки - с промежутками (boards.js), на длину груза + толщину
 // стойки торцевого щита с каждой стороны.
 
-// Раскладка досок бока (вид результата - как у fillGapBoards). При досках
-// крышки поперёк доски бока продолжают линии досок крышки (по указанию
+// Раскладка досок бока (вид результата - как у fillGapBoards). Доски бока продолжают линии досок крышки (по указанию
 // пользователя): раскладка крышки по наружной длине (kryshka.js), обрезанная
 // краями бока - крайние доски бока уже 100 мм на толщину обшивки торцевого
-// щита (cut), остальные - по 100 мм точно под досками крышки. Иначе (или
-// если у крышки промежутков нет) - своя раскладка по ширине бока.
+// щита (cut), остальные - по 100 мм точно под досками крышки. Если у крышки
+// промежутков нет - своя раскладка по ширине бока.
 function sideBoards(c, s, span) {
-  if (c.lidLayout === 'transverse') {
-    const lid = gapBoards(s.len, c.boardGapMax);
-    const cut = (s.len - span) / 2;
-    if (lid && cut > 0 && cut < BOARD_W) {
-      return { mainQty: lid.qty - 2, extra: [{ name: 'Доска (крайняя)', width: BOARD_W - cut, qty: 2 }],
-        warn: false, singleNarrow: false, gap: { ...lid, cut } };
-    }
+  const lid = gapBoards(s.len, c.boardGapMax);
+  const cut = (s.len - span) / 2;
+  if (lid && cut > 0 && cut < BOARD_W) {
+    return { mainQty: lid.qty - 2, extra: [{ name: 'Доска (крайняя)', width: BOARD_W - cut, qty: 2 }],
+      warn: false, singleNarrow: false, gap: { ...lid, cut } };
   }
   return fillGapBoards(span, c.roundBoardWidths, c.boardGapMax, 'Щит боковой', c.warnings);
 }
@@ -3477,7 +3450,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 
 // input: { L, W, H, MASS, fasteningType ('skid' | 'floor_boards'),
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
-//   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
+//   roundBoardWidths, optimizeSizes,
 //   xRaskosina, addRaskosina (раскосины и при высоте до 600 мм), torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
 //   boardGapMax (наибольший промежуток между досками обшивки, мм), fineThickness ({ frame, skid, sub, skin, floor, endBeam,
@@ -3647,7 +3620,7 @@ function computeGost10198II2(input) {
     warnings, dno: dno.rows, kryshka: kryshka.rows, endPanel: endPanel.rows, bokovoy: bokovoy.rows,
     outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
     // Параметры чертежей.
-    k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT, lidLayout: input.lidLayout,
+    k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT,
     torecFrame, bokFrame, panelHeightFull,
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
     // Отступ от стенки до крайнего поперечного бруса и расстояние между
@@ -4689,15 +4662,12 @@ function diagramDnoII2(calc){
 // crossBeamWidth - js/ii1/diagrams/kryshka.js), но с досками: доски крышки с
 // промежутками (boards.js) светло-серые, брусья поверх - продольные белые,
 // поперечные тёмно-серые; брусья и доски - одной ширины на экране
-// (drawnMemberWidth в common-diagrams.js). При поперечном расположении досок доски идут
-// поперёк (полосы по длине крышки), при продольном - вдоль. Плюс размер
-// «промежуток между досками»: при поперечных - под чертежом, при продольных -
-// слева.
+// (drawnMemberWidth в common-diagrams.js). Доски идут поперёк ящика (полосы по
+// длине крышки). Плюс размер «промежуток между досками» - под чертежом.
 
 function ii2KryshkaImage(calc, crossBeamW){
   const longbeamCount = calc.longbeamCount, crossBeamCount = calc.crossBeamCount;
   const lengthVal = calc.k9Base, gapDistVal = calc.gapDistCross, bg = calc.boardGaps.kryshka;
-  const transverse = calc.lidLayout === 'transverse';
   const G = longbeamCount > 0 ? KRYSHKA_GEN[2] : KRYSHKA_GEN[0];
   const f = v => v.toFixed(1);
   const k = diagramScreenScale(G.IW, G.IH), mw = drawnMemberWidth(k);
@@ -4711,10 +4681,10 @@ function ii2KryshkaImage(calc, crossBeamW){
   const beamW = Math.min(mw, 0.6 * pitch, 1.2 * (centers[0] - G.x0));
   if(diagramIsTooDense(pitch - beamW - KRYSHKA_GEN_STROKE, G.IW)) return null;
 
-  // Доски: поперечные - полосы по x, продольные - полосы по y.
-  const strips = transverse ? ii2BoardStrips(G.x0, G.x1, bg, k) : ii2BoardStrips(G.y0, G.y1, bg, k);
+  // Доски - полосы по x.
+  const strips = ii2BoardStrips(G.x0, G.x1, bg, k);
   let shapes = rect(G.x0, G.y0, G.x1, G.y1, '#fff');
-  shapes += transverse ? ii2BoardRects(strips, true, G.y0, G.y1) : ii2BoardRects(strips, false, G.x0, G.x1);
+  shapes += ii2BoardRects(strips, true, G.y0, G.y1);
   if(longbeamCount > 0){
     const lx0 = G.x0 + KRYSHKA_GEN_INSET, lx1 = G.x1 - KRYSHKA_GEN_INSET;
     for(let i = 0; i < longbeamCount; i++){
@@ -4728,7 +4698,7 @@ function ii2KryshkaImage(calc, crossBeamW){
     + `<rect width="100%" height="100%" fill="#fff"/>`
     + `<g stroke="#000" stroke-width="${KRYSHKA_GEN_STROKE}">${shapes}</g></svg>`;
   return { img: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), IW: G.IW, IH: G.IH, tpl: G.tpl, G,
-    firstBeamX: centers[0] - beamW / 2, secondBeamX: centers[1] - beamW / 2, beamW, strips, transverse };
+    firstBeamX: centers[0] - beamW / 2, secondBeamX: centers[1] - beamW / 2, beamW, strips };
 }
 
 function diagramKryshkaII2(calc){
@@ -4738,16 +4708,10 @@ function diagramKryshkaII2(calc){
     .concat(kryshkaGapRecords(g, dimLabel(calc.gapDistCross)));
   const bg = calc.boardGaps.kryshka, k = g.IW / DIAGRAM_DEFAULT_WIDTH;
   if(bg){
-    if(g.transverse){
-      // Под чертежом, ниже размера длины, у 60% длины (левее внизу - подпись
-      // толщины торцевой доски).
-      const pick = ii2PickGap(g.strips, g.G.x0 + (g.G.x1 - g.G.x0) * 0.6);
-      if(pick) records.push(...ii2BoardGapRecords(pick[0], pick[1], g.G.y1, g.IH + 40 * k, 7 * k, bg.gap, k, 1, true));
-    } else {
-      // Слева, у верхней четверти (ниже - подписи отступа и толщины бокового щита).
-      const pick = ii2PickGap(g.strips, g.G.y0 + (g.G.y1 - g.G.y0) * 0.2);
-      if(pick) records.push(...ii2BoardGapRecords(pick[0], pick[1], g.G.x0, -9 * k, 7 * k, bg.gap, k, 1, false));
-    }
+    // Под чертежом, ниже размера длины, у 60% длины (левее внизу - подпись
+    // толщины торцевой доски).
+    const pick = ii2PickGap(g.strips, g.G.x0 + (g.G.x1 - g.G.x0) * 0.6);
+    if(pick) records.push(...ii2BoardGapRecords(pick[0], pick[1], g.G.y1, g.IH + 40 * k, 7 * k, bg.gap, k, 1, true));
   }
   return renderDiagram(g.img, 'Крышка - схема расположения деталей', g.IW, g.IH, records, undefined, photoStrokeScale(g.IW));
 }
@@ -6502,25 +6466,10 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-function persistRadioGroup(name){
-  const els = Array.from(document.querySelectorAll(`input[name="${name}"]`));
-  if(els.length === 0) return;
-  const key = OPTIONS_STORAGE_PREFIX + name;
-  try{
-    const saved = localStorage.getItem(key);
-    if(saved !== null && els.some(el=>el.value===saved)){
-      els.forEach(el=>{ el.checked = (el.value === saved); });
-    }
-  }catch(e){}
-  els.forEach(el=>el.addEventListener('change', ()=>{
-    if(el.checked){ try{ localStorage.setItem(key, el.value); }catch(e){} }
-  }));
-}
 ['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','noRoundBoardWidths','optimizeSizes','addRaskosina','xRaskosina'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
-persistRadioGroup('lidLayout');
 
 // ГОСТ 10198-91, тип II-2: «Наибольший промежуток между досками» обшивки (как
 // у I-4) - ползунок (10-150 мм с шагом 10) и поле для любого целого от 10 до
@@ -6697,7 +6646,7 @@ const FINE_THICKNESS_FIELDS = [
   { key: 'frame',     label: 'Каркас (стойки и раскосины)' },
   { key: 'skin',      label: 'Доски обшивки' },
   { key: 'crossBeam', label: 'Поперечные брусья крышки' },
-  { key: 'longBeam',  label: 'Продольные брусья крышки', hint: 'при досках крышки поперёк ящика' },
+  { key: 'longBeam',  label: 'Продольные брусья крышки' },
 ];
 const FINE_THICKNESS_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'fineThickness';
 
@@ -6948,7 +6897,6 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
-    lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
@@ -7002,9 +6950,6 @@ function calculateNow(){
 ['solidRigidBase','noRoundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
-});
-document.querySelectorAll('input[name="lidLayout"]').forEach(el=>{
-  el.addEventListener('change', invalidateCalc);
 });
 
 // Правка ячейки таблицы не пересчитывает сразу: ячейка помечается

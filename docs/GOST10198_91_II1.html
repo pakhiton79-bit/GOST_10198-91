@@ -1902,19 +1902,6 @@ else initSiteSettings();
   </div>
   -->
 
-  <div class="card">
-    <h2>Расположение досок крышки</h2>
-    <div class="fastening-option-list">
-      <label>
-        <input type="radio" name="lidLayout" value="longitudinal" checked>
-        <span>Вдоль длины ящика<span class="option-hint">Продольные брусья крышки не требуются</span></span>
-      </label>
-      <label>
-        <input type="radio" name="lidLayout" value="transverse">
-        <span>Поперёк ящика<span class="option-hint">Добавляются внутренние продольные брусья крышки</span></span>
-      </label>
-    </div>
-  </div>
 
   <div class="card">
     <h2>Дополнительные опции</h2>
@@ -3062,17 +3049,14 @@ function stabilizeSizes(c) {
     stojkaT = ov('tStojka', round(stj.t), 'Толщина стойки');
     stojkaExceeded = stj.exceeded;
 
-    // Продольные брусья крышки - только при поперечном расположении досок.
-    if (c.lidLayout === 'transverse') {
-      longBeamCount = minCountBySpan(W, 100, LONG_BEAM_MAX_AXIS);
-      const longBeamAxis = clearGapBySpan(W, 100, longBeamCount) + 100; // ось-в-ось
-      const crossBeamAxis = (L + CROSS_BEAM_W) / (crossBeamCount + 1);
-      const lb = longBeamSection(crossBeamAxis, c.roundBoardWidths, longBeamAxis);
-      longBeamT = ov('tLongbeam', round(lb.t), 'Толщина продольного бруса крышки');
-      longBeamW = lb.w; longBeamExceeded = lb.exceeded;
-    } else {
-      longBeamT = 0; longBeamW = 100; longBeamCount = 0;
-    }
+    // Продольные брусья крышки (доски крышки - всегда поперёк ящика, по
+    // указанию пользователя продольное расположение убрано).
+    longBeamCount = minCountBySpan(W, 100, LONG_BEAM_MAX_AXIS);
+    const longBeamAxis = clearGapBySpan(W, 100, longBeamCount) + 100; // ось-в-ось
+    const crossBeamAxis = (L + CROSS_BEAM_W) / (crossBeamCount + 1);
+    const lb = longBeamSection(crossBeamAxis, c.roundBoardWidths, longBeamAxis);
+    longBeamT = ov('tLongbeam', round(lb.t), 'Толщина продольного бруса крышки');
+    longBeamW = lb.w; longBeamExceeded = lb.exceeded;
   }
 
   return {
@@ -3131,8 +3115,8 @@ function buildDno(c, s, subLengthWarn) {
 }
 
 
-// ГОСТ 10198-91, тип II-1: крышка - поперечные брусья, продольные брусья
-// (только при поперечном расположении досок) и доски.
+// ГОСТ 10198-91, тип II-1: крышка - поперечные брусья, продольные брусья и
+// доски (поперёк ящика).
 
 // c - контекст расчёта (см. compute.js); s - согласованные размеры (sizing.js).
 function buildKryshka(c, s) {
@@ -3143,20 +3127,15 @@ function buildKryshka(c, s) {
   rows.push({ name: 'Внутренний поперечный брус', t: s.crossBeamT, w: s.crossBeamW, l: crossLen, qty: s.crossBeamCount, overrideKey: 't21' });
   let volume = vol(s.crossBeamT, s.crossBeamW, crossLen, s.crossBeamCount);
 
-  // Доски: при поперечном расположении идут поперёк ящика (длина - наружная
-  // ширина) и лежат на продольных брусьях; при продольном - вдоль (длина -
-  // длина ящика).
-  let boardLen, fillspace;
-  if (c.lidLayout === 'transverse') {
-    const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 2 : 0);
-    rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.longBeamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
-    volume += vol(s.longBeamT, s.longBeamW, longLen, s.longBeamCount);
-    boardLen = s.outerW;
-    fillspace = s.len;
-  } else {
-    boardLen = s.len;
-    fillspace = s.outerW;
-  }
+  const longLen = L + s.stojkaT * 2 - (optimizeSizes ? 2 : 0);
+  rows.push({ name: 'Внутренний продольный брус', t: s.longBeamT, w: s.longBeamW, l: longLen, qty: s.longBeamCount, overrideKey: 'tLongbeam' });
+  volume += vol(s.longBeamT, s.longBeamW, longLen, s.longBeamCount);
+
+  // Доски идут поперёк ящика (длина - наружная ширина) и лежат на
+  // продольных брусьях; продольное расположение убрано по указанию
+  // пользователя.
+  const boardLen = s.outerW;
+  const fillspace = s.len;
   const fb = fillBoards(fillspace, c.roundBoardWidths);
   if (fb.mainQty > 0) rows.push({ name: 'Доска крышки', t: skinT, w: 100, l: boardLen, qty: fb.mainQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
@@ -3403,7 +3382,7 @@ function makeThicknessOverrides(manualOverrides, fine) {
 
 // input: { L, W, H, MASS, fasteningType ('skid' | 'floor_boards'),
 //   solidRigidBase, removeFloorBoards, removeSkidBoards, forkliftLoading,
-//   roundBoardWidths, lidLayout ('longitudinal' | 'transverse'), optimizeSizes,
+//   roundBoardWidths, optimizeSizes,
 //   xRaskosina, addRaskosina (раскосины и при высоте до 600 мм), torecPostCount, bokPostCount (число стоек вручную; нет - штатно),
 //   lidCrossBeamCount (число поперечных брусьев крышки вручную; нет - штатно),
 //   addParchment, fineThickness ({ frame, skid, sub, skin, floor, endBeam,
@@ -3569,7 +3548,7 @@ function computeGost10198II1(input) {
     warnings, dno: dno.rows, kryshka: kryshka.rows, endPanel: endPanel.rows, bokovoy: bokovoy.rows,
     outerL: s.len, outerW: s.outerW, outerH: s.outerH, totalVolume, normaVremeni, crateMass, woodDensity: woodRho,
     // Параметры чертежей.
-    k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT, lidLayout: input.lidLayout,
+    k9Base: s.len, W, L, H, t_stojka: s.stojkaT, skin, t21: s.crossBeamT, t_longbeam: s.longBeamT,
     torecFrame, bokFrame, panelHeightFull,
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
     // Отступ от стенки до крайнего поперечного бруса и расстояние между
@@ -6099,25 +6078,10 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-function persistRadioGroup(name){
-  const els = Array.from(document.querySelectorAll(`input[name="${name}"]`));
-  if(els.length === 0) return;
-  const key = OPTIONS_STORAGE_PREFIX + name;
-  try{
-    const saved = localStorage.getItem(key);
-    if(saved !== null && els.some(el=>el.value===saved)){
-      els.forEach(el=>{ el.checked = (el.value === saved); });
-    }
-  }catch(e){}
-  els.forEach(el=>el.addEventListener('change', ()=>{
-    if(el.checked){ try{ localStorage.setItem(key, el.value); }catch(e){} }
-  }));
-}
 ['removeFloorBoards','removeSkidBoards','forkliftLoading','solidRigidBase','noRoundBoardWidths','optimizeSizes','addRaskosina','xRaskosina','addParchment'].forEach(persistCheckbox);
 // «Убрать доски дна» скрыта при креплении к доскам дна - сохранённая
 // галочка не должна действовать незаметно.
 if(fasteningType !== 'skid') document.getElementById('removeFloorBoards').checked = false;
-persistRadioGroup('lidLayout');
 
 // ГОСТ 10198-91, тип II-1: ручная настройка числа деталей - стоек каркаса
 // (отдельно для торцевого и бокового щита) и поперечных брусьев крышки
@@ -6235,7 +6199,7 @@ const FINE_THICKNESS_FIELDS = [
   { key: 'frame',     label: 'Каркас (стойки и раскосины)' },
   { key: 'skin',      label: 'Доски обшивки' },
   { key: 'crossBeam', label: 'Поперечные брусья крышки' },
-  { key: 'longBeam',  label: 'Продольные брусья крышки', hint: 'при досках крышки поперёк ящика' },
+  { key: 'longBeam',  label: 'Продольные брусья крышки' },
 ];
 const FINE_THICKNESS_STORAGE_KEY = OPTIONS_STORAGE_PREFIX + 'fineThickness';
 
@@ -6510,7 +6474,6 @@ function buildCalcInput(){
     removeSkidBoards: document.getElementById('removeSkidBoards').checked,
     forkliftLoading: document.getElementById('forkliftLoading').checked,
     roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
-    lidLayout: document.querySelector('input[name="lidLayout"]:checked').value,
     optimizeSizes: document.getElementById('optimizeSizes').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addRaskosina: document.getElementById('addRaskosina').checked,
@@ -6564,9 +6527,6 @@ function calculateNow(){
 ['solidRigidBase','noRoundBoardWidths','removeFloorBoards','optimizeSizes','addRaskosina','addParchment'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', invalidateCalc);
-});
-document.querySelectorAll('input[name="lidLayout"]').forEach(el=>{
-  el.addEventListener('change', invalidateCalc);
 });
 
 // Правка ячейки таблицы не пересчитывает сразу: ячейка помечается
