@@ -1,5 +1,5 @@
-// ГОСТ 2991-85, тип I: сбор входных данных, расчёт (computeGost2991I,
-// src/g2991/i/compute/compute.js) и вывод результата. Кнопка «Рассчитать»
+// ГОСТ 2991-85, тип I: сбор входных данных, расчёт в браузере
+// (computeGost2991I, src/g2991/i/compute/compute.js) и вывод результата. Кнопка «Рассчитать»
 // вызывает общую обёртку calculate() из common-calc-state.js, та -
 // calculateNow().
 
@@ -11,8 +11,13 @@ function buildCalcInput(){
     W: parseFloat(document.getElementById('W').value),
     H: parseFloat(document.getElementById('H').value),
     MASS: parseFloat(document.getElementById('M').value),
+    roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
     noLid: document.getElementById('noLid').checked,
     availableThicknesses: thicknessPicker.get(),
+    availableWidths: widthPicker.get(),
+    mainWidth: siteMainWidth2991(),
+    tableEdits: readTableEdits(),
+    woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
 }
 
@@ -24,20 +29,41 @@ function showCalcError(text){
   document.getElementById('results').style.display = 'none';
 }
 
+// Разделы таблицы деталей и их множители в объёме (щиты - по 2 шт.).
+const G2991_I_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2};
+
 function calculateNow(){
   document.getElementById('err').textContent = '';
-  const calc = computeGost2991I(buildCalcInput());
+  const input = buildCalcInput();
+  const calc = computeGost2991I(input);
   if(calc.error){
     showCalcError(calc.error);
     return;
   }
+  // Ручные правки таблицы - поверх расчёта; объём, норма времени и масса
+  // пересчитываются с их учётом.
+  if(applyTableEdits(calc, input.tableEdits, G2991_I_TABLE_SECTIONS)){
+    calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
+    calc.crateMass = calc.totalVolume * calc.woodDensity;
+  }
 
-  renderThicknessTable(calc);
+  renderSummary(calc);
+  renderBoardTables(calc);
   renderWarnings(calc.warnings);
 
   document.getElementById('results').style.display = 'block';
   setCalcStatus('check');
 }
+
+// Правка ячейки таблицы не пересчитывает сразу: ячейка помечается
+// исправленной, расчёт - устаревшим; учтётся по «Рассчитать».
+document.getElementById('boardTables').addEventListener('input', e=>{
+  if(e.target.classList.contains('editable-cell')){
+    markCellEdited(e.target);
+    updateResetButton();
+    invalidateCalc();
+  }
+});
 
 // Поля, из-за которых расчёт заблокирован (по тексту ошибки), - подсвечиваются
 // красной рамкой (highlightErrorFields в common-calc-state.js).
@@ -47,3 +73,7 @@ function errorFieldsFor(text){
   if(/Заполните все поля/.test(text)) return ['L','W','H','M'].filter(id => !(parseFloat(document.getElementById(id).value) > 0));
   return [];
 }
+
+document.getElementById('boxView').src = BOX_G2991_I_IMG;
+initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+initDensitySettings(WOOD_DENSITY_STORAGE_KEY);

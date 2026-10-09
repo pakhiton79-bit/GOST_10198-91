@@ -5,6 +5,7 @@ const TYPES = [
   {
     name: 'Тип I',
     file: 'GOST2991_85_I.html',
+    image: 'data:image/png;base64,__IMG:box_g2991_i.png__',
     badge: 'Не готово',
     badgeDanger: true
   },

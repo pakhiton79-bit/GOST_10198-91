@@ -460,7 +460,7 @@ III1_VARIANTS = [
      "/*__III1_VARIANT_FLAG__*/": "window.III1_OPTIMIZED = true; // оптимальный конструктивный вариант"},
 ]
 
-# ГОСТ 2991-85, тип I (заготовка: пока только толщины досок по таблице 2).
+# ГОСТ 2991-85, тип I: расчёт деталей, чертежи (общая функция схемы - из II-1), печать.
 # Файлы разложены так же, как в gost_backend: compute/ - расчёт
 # (backend/src/g2991/i), остальное - интерфейс (frontend/public/js/g2991/i);
 # таблица 2 - общая для всех типов ГОСТ 2991-85 (src/g2991/table2.js),
@@ -471,15 +471,25 @@ G2991_I_SHELL = G2991_I_DIR / "shell.html"
 G2991_I_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
     "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
     "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
     "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
-    "/*__G2991_I_COMPUTE_JS__*/": G2991_I_DIR / "compute" / "compute.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    # чертежи - общая функция плоской схемы из II-1 и свои узлы типа I
+    "/*__G2991_II1_PANELS_JS__*/": G2991_DIR / "ii1" / "diagrams" / "panels.js",
+    "/*__G2991_I_DIAGRAMS_JS__*/": G2991_I_DIR / "diagrams.js",
     "/*__G2991_STOCK_JS__*/": G2991_DIR / "stock.js",
     "/*__G2991_I_OPTIONS_JS__*/": G2991_I_DIR / "options.js",
+    "/*__G2991_I_COMPUTE_JS__*/": G2991_I_DIR / "compute" / "compute.js",
     "/*__G2991_I_RENDER_JS__*/": G2991_I_DIR / "render-g2991i.js",
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__G2991_I_PRINT_JS__*/": G2991_I_DIR / "print-g2991i.js",
     "/*__G2991_I_CALC_JS__*/": G2991_I_DIR / "calc-g2991i.js",
 }
 G2991_I_VARIANTS = [
