@@ -473,6 +473,7 @@ G2991_I_PARTS = {
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
     "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
+    "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
     "/*__G2991_I_COMPUTE_JS__*/": G2991_I_DIR / "compute" / "compute.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,

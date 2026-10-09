@@ -1868,6 +1868,24 @@ else initSiteSettings();
   </div>
 
   <div class="card">
+    <h2>Толщины пиломатериала в наличии</h2>
+    <div class="thickness-filter dropdown-wrap">
+      <button type="button" class="thickness-dropdown-btn" id="thicknessDropdownBtn" onclick="toggleThicknessDropdown()">
+        <span id="thicknessDropdownLabel">-</span>
+        <span class="thickness-dropdown-arrow">▾</span>
+      </button>
+      <div class="thickness-dropdown-panel" id="thicknessDropdownPanel">
+        <div class="thickness-dropdown-actions">
+          <button type="button" class="btn-secondary" onclick="setAllThickness(true)">Выбрать все</button>
+          <button type="button" class="btn-secondary" onclick="setAllThickness(false)">Снять все</button>
+        </div>
+        <div class="thickness-checkbox-list" id="thicknessCheckboxList"></div>
+      </div>
+    </div>
+    <div class="note" id="thicknessNote" style="display:none;margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
     <h2>Дополнительные опции</h2>
     <div class="fastening-option-list">
       <label>
@@ -2094,6 +2112,14 @@ const T2_ROWS = [
   [500, 800,  [22, 22, 22, 22, 22, 22, 19, 19, 19]],
   [500, INF,  [22, 22, 22, 22, 22, 22, 22, 22, 19]],
 ];
+// Толщины «в наличии» для ГОСТ 2991-85 (по указанию пользователя, только
+// для этого ГОСТа): каждый 1 мм от минимальной до максимальной толщины его
+// таблиц (9-25 мм: таблицы 2 и 3) плюс все толщины сайта (16-250 мм).
+const G2991_THICKNESS_OPTIONS = [...new Set([
+  ...Array.from({ length: 25 - 9 + 1 }, (_, i) => 9 + i),
+  16, 19, 22, 25, 32, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250,
+])].sort((a, b) => a - b);
+
 // Ряд толщин досок ГОСТ 2991-85 (градации), мм.
 const G2991_THICKNESSES = [9, 13, 16, 19, 22, 25];
 
@@ -2119,6 +2145,33 @@ function g2991RoundUp(value) {
 }
 
 
+// ГОСТ 2991-85: округление вверх до толщин «в наличии» и предупреждения -
+// копия makeRoundUpToAvailable / thicknessPartWarnings из helpers.js сайта
+// (backend/src/helpers.js): толщина по ГОСТ больше максимальной в наличии -
+// берётся толщина по ГОСТ с предупреждением.
+
+function makeRoundUpToAvailable(availableThicknesses) {
+  const state = { exceeded: false, parts: [] };
+  // Для детали с label учитывается последний вызов (размеры II-1/III-1
+  // уточняются в цикле - промежуточные значения не должны давать предупреждение).
+  const fn = function (t, label) {
+    if (label) state.parts = state.parts.filter(p => p.label !== label);
+    if (!availableThicknesses || availableThicknesses.length === 0) return t;
+    for (const a of availableThicknesses) { if (t <= a) return a; }
+    if (!label) state.exceeded = true;
+    else state.parts.push({ label, t });
+    return t;
+  };
+  fn.state = state;
+  return fn;
+}
+
+function thicknessPartWarnings(round, availableThicknesses) {
+  const max = availableThicknesses[availableThicknesses.length - 1];
+  return round.state.parts.map(p =>
+    `${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${max} мм - использовано ${p.t} мм по ГОСТ, такой толщины нет в наличии.`);
+}
+
 // ГОСТ 2991-85, тип I (плотный, торцовые стенки цельные, без планок; груз до
 // 35 кг): расчёт ящика. ЗАГОТОВКА: пока только толщины досок по ГОСТ;
 // детали (длины, количество), объём, масса и норма времени - по таблице
@@ -2136,10 +2189,14 @@ function g2991RoundUp(value) {
 //   - торец - 1,5 толщины боковой стенки, округление вверх по ряду
 //     9/13/16/19/22/25 (п. 1.14);
 //   - галочка «Без крышки» (п. 1.2): вместо крышки 2 доски толщиной как у
-//     дна и шириной 40-60 мм у верхних кромок стенок.
+//     дна и шириной 40-60 мм у верхних кромок стенок;
+//   - толщины «в наличии» (9-25 мм через 1 мм и все толщины сайта): толщина
+//     по ГОСТ округляется вверх до ближайшей в наличии; больше максимальной -
+//     толщина по ГОСТ с предупреждением; ничего не выбрано - строго по ГОСТ.
 // Расчёт идёт в браузере; findNegativeField и inputLimitsError - из
 // src/i1/compute/helpers.js, table2Thickness и g2991RoundUp - из
-// src/g2991/table2.js.
+// src/g2991/table2.js, makeRoundUpToAvailable и thicknessPartWarnings - из
+// src/g2991/rounding.js.
 
 const TYPE_I_MAX_MASS = 35; // таблица 1
 
@@ -2151,26 +2208,35 @@ function computeGost2991I(input) {
 
   const bok = table2Thickness(MASS, L, H, TYPE_I_MAX_MASS);
   const dno = table2Thickness(MASS, L, W, TYPE_I_MAX_MASS);
-  const torecT = g2991RoundUp(bok.thickness * 1.5);
+  const torecGost = g2991RoundUp(bok.thickness * 1.5);
   const noLid = !!input.noLid;
+  // Округление до толщин «в наличии».
+  const available = input.availableThicknesses || [];
+  const round = makeRoundUpToAvailable(available);
+  const bokT = round(bok.thickness, 'Доски боковых стенок');
+  const dnoT = round(dno.thickness, 'Доски дна');
+  const lidT = round(dno.thickness, noLid ? 'Доски вместо крышки' : 'Доски крышки');
+  const torecT = round(torecGost, 'Доски торцовых стенок');
+  const inStock = (t, gost) => t !== gost ? `; по ГОСТ ${gost} мм, в наличии - ${t} мм` : '';
 
   const basis = r => `табл. 2: масса до ${r.rowMass} кг, длина до ${r.rowLength} мм, размер до ${r.colSize} мм`;
   const thicknessRows = [
-    { name: 'Доски боковых стенок', t: bok.thickness, basis: `${basis(bok)} (по высоте)` },
-    { name: 'Доски дна', t: dno.thickness, basis: `${basis(dno)} (по ширине)` },
+    { name: 'Доски боковых стенок', t: bokT, basis: `${basis(bok)} (по высоте)${inStock(bokT, bok.thickness)}` },
+    { name: 'Доски дна', t: dnoT, basis: `${basis(dno)} (по ширине)${inStock(dnoT, dno.thickness)}` },
     noLid
-      ? { name: 'Доски вместо крышки (2 шт., ширина 40-60 мм)', t: dno.thickness, basis: 'п. 1.2: толщина как у досок дна' }
-      : { name: 'Доски крышки', t: dno.thickness, basis: `${basis(dno)} (по ширине)` },
-    { name: 'Доски торцовых стенок', t: torecT, basis: `п. 1.14: 1,5 × ${bok.thickness} мм с округлением вверх` },
+      ? { name: 'Доски вместо крышки (2 шт., ширина 40-60 мм)', t: lidT, basis: `п. 1.2: толщина как у досок дна${inStock(lidT, dno.thickness)}` }
+      : { name: 'Доски крышки', t: lidT, basis: `${basis(dno)} (по ширине)${inStock(lidT, dno.thickness)}` },
+    { name: 'Доски торцовых стенок', t: torecT, basis: `п. 1.14: 1,5 × ${bok.thickness} мм с округлением вверх${inStock(torecT, torecGost)}` },
   ];
 
   const warnings = [];
   if (MASS > TYPE_I_MAX_MASS) warnings.push(`Тип I - для грузов до ${TYPE_I_MAX_MASS} кг (таблица 1 ГОСТ 2991-85). Толщины взяты по строке ${TYPE_I_MAX_MASS} кг.`);
+  warnings.push(...thicknessPartWarnings(round, available));
   if (L > 1200) warnings.push('Длина больше 1200 мм: для масс до 35 кг в таблице 2 нет строки «св. 1200», толщины взяты по строке 1200 мм.');
 
   const result = {
     innerL: L, innerW: W, innerH: H, mass: MASS, noLid,
-    thickness: { bok: bok.thickness, dno: dno.thickness, kryshka: dno.thickness, torec: torecT },
+    thickness: { bok: bokT, dno: dnoT, kryshka: lidT, torec: torecT },
     thicknessRows,
     warnings,
   };
@@ -2587,6 +2653,7 @@ function applyTableEdits(calc, edits, sections){
 
 // ГОСТ 2991-85, тип I: опции формы. Галочки запоминаются в localStorage
 // (ключи - свои для типа).
+const THICKNESS_STORAGE_KEY = 'silvan-gost2991-i-available-thickness';
 const OPTIONS_STORAGE_PREFIX = 'silvan-gost2991-i-opt-';
 
 // Любое изменение параметров: после первого расчёта показывается «Нажмите
@@ -2608,6 +2675,105 @@ function persistCheckbox(id){
   });
 }
 persistCheckbox('noLid');
+
+// ============ Толщины «в наличии» ============
+// Свои толщины у типа (THICKNESS_STORAGE_KEY), а пока их в типе не меняли
+// (ключа нет) - общие из окна «Настройки» (siteAvailableThicknesses в
+// common-settings.js; по указанию пользователя: свои у типа в приоритете).
+// thicknessFromSite - тип сейчас берёт общие.
+let thicknessFromSite = false;
+function loadAvailableThicknesses(){
+  try{
+    const raw = localStorage.getItem(THICKNESS_STORAGE_KEY);
+    thicknessFromSite = !raw;
+    if(!raw) return siteAvailableThicknesses().filter(v => G2991_THICKNESS_OPTIONS.includes(v));
+    const arr = JSON.parse(raw).filter(v => G2991_THICKNESS_OPTIONS.includes(v));
+    return arr.sort((a,b)=>a-b);
+  }catch(e){ return []; }
+}
+function saveAvailableThicknesses(){
+  try{ localStorage.setItem(THICKNESS_STORAGE_KEY, JSON.stringify(availableThicknesses)); }catch(e){}
+  thicknessFromSite = false;
+}
+// Общие толщины поменяли в окне «Настройки» - тип, который берёт их,
+// обновляется сразу.
+window.addEventListener('site-thickness-change', () => {
+  if(!thicknessFromSite) return;
+  availableThicknesses = loadAvailableThicknesses();
+  buildThicknessCheckboxList();
+  updateThicknessSummary();
+  invalidateCalc();
+});
+
+let availableThicknesses = loadAvailableThicknesses();
+
+function buildThicknessCheckboxList(){
+  const list = document.getElementById('thicknessCheckboxList');
+  let html = '';
+  G2991_THICKNESS_OPTIONS.forEach(t=>{
+    const checked = availableThicknesses.includes(t) ? ' checked' : '';
+    html += `<label><input type="checkbox" value="${t}"${checked} onchange="onThicknessCheckboxChange(this)"> ${t} мм</label>`;
+  });
+  list.innerHTML = html;
+}
+
+function onThicknessCheckboxChange(el){
+  const v = parseInt(el.value, 10);
+  if(el.checked){
+    if(!availableThicknesses.includes(v)) availableThicknesses.push(v);
+  } else {
+    availableThicknesses = availableThicknesses.filter(x=>x!==v);
+  }
+  availableThicknesses.sort((a,b)=>a-b);
+  saveAvailableThicknesses();
+  updateThicknessSummary();
+  invalidateCalc();
+}
+
+function setAllThickness(state){
+  availableThicknesses = state ? G2991_THICKNESS_OPTIONS.slice() : [];
+  buildThicknessCheckboxList();
+  saveAvailableThicknesses();
+  updateThicknessSummary();
+  invalidateCalc();
+}
+
+// Надпись на кнопке списка и предупреждение, если ничего не выбрано.
+function updateThicknessSummary(){
+  const label = document.getElementById('thicknessDropdownLabel');
+  const note  = document.getElementById('thicknessNote');
+  const total = G2991_THICKNESS_OPTIONS.length;
+  if(availableThicknesses.length === 0){
+    label.textContent = 'Толщины не выбраны - расчёт строго по ГОСТ';
+    note.innerHTML = '⚠ Толщины «в наличии» не выбраны - расчёт по ГОСТ 2991-85 без округления.';
+    note.style.display = 'block';
+  } else if(availableThicknesses.length === total){
+    label.textContent = `Выбраны все толщины (${G2991_THICKNESS_OPTIONS[0]}-${G2991_THICKNESS_OPTIONS[total-1]} мм)`;
+    note.style.display = 'none';
+  } else {
+    const shown = availableThicknesses.slice(0,8).join(', ');
+    const more = availableThicknesses.length > 8 ? `, ещё ${availableThicknesses.length-8} знач.` : '';
+    label.textContent = `Выбрано (${availableThicknesses.length}): ${shown} мм${more}`;
+    note.style.display = 'none';
+  }
+  if(thicknessFromSite) label.textContent += ' (общие настройки)';
+}
+
+function toggleThicknessDropdown(){
+  document.getElementById('thicknessDropdownPanel').classList.toggle('open');
+}
+// Клик мимо выпадающего списка закрывает его.
+document.addEventListener('click', e=>{
+  document.querySelectorAll('.dropdown-wrap').forEach(wrap=>{
+    if(!wrap.contains(e.target)){
+      const p = wrap.querySelector('.thickness-dropdown-panel');
+      if(p) p.classList.remove('open');
+    }
+  });
+});
+
+buildThicknessCheckboxList();
+updateThicknessSummary();
 
 // ГОСТ 2991-85, тип I: вывод результата. ЗАГОТОВКА: пока только толщины
 // досок по ГОСТ (детали и итог - когда будет таблица расчёта).
@@ -2648,6 +2814,7 @@ function buildCalcInput(){
     H: parseFloat(document.getElementById('H').value),
     MASS: parseFloat(document.getElementById('M').value),
     noLid: document.getElementById('noLid').checked,
+    availableThicknesses,
   };
 }
 
