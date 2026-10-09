@@ -113,7 +113,7 @@
     html += `<a class="type-card" href="${t.file}">
       ${badge}
       <div class="type-info"><h3>${t.name}</h3></div>
-      <div class="type-image"><img src="${t.image}" alt="${t.name}"></div>
+      ${t.image ? `<div class="type-image"><img src="${t.image}" alt="${t.name}"></div>` : ''}
     </a>`;
   });
   root.innerHTML = html;

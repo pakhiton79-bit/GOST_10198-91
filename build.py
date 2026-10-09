@@ -414,6 +414,30 @@ III1_VARIANTS = [
      "/*__III1_VARIANT_FLAG__*/": "window.III1_OPTIMIZED = true; // оптимальный конструктивный вариант"},
 ]
 
+# ГОСТ 2991-85, тип I (заготовка: пока только толщины досок по таблице 2).
+# Файлы разложены так же, как в gost_backend: compute/ - расчёт
+# (backend/src/g2991/i), остальное - интерфейс (frontend/public/js/g2991/i);
+# таблица 2 - общая для всех типов ГОСТ 2991-85 (src/g2991/table2.js),
+# findNegativeField и inputLimitsError - из helpers.js I-1.
+G2991_DIR = SRC_DIR / "g2991"
+G2991_I_DIR = G2991_DIR / "i"
+G2991_I_SHELL = G2991_I_DIR / "shell.html"
+G2991_I_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
+    "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
+    "/*__G2991_I_COMPUTE_JS__*/": G2991_I_DIR / "compute" / "compute.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__G2991_I_OPTIONS_JS__*/": G2991_I_DIR / "options.js",
+    "/*__G2991_I_RENDER_JS__*/": G2991_I_DIR / "render-g2991i.js",
+    "/*__G2991_I_CALC_JS__*/": G2991_I_DIR / "calc-g2991i.js",
+}
+G2991_I_VARIANTS = [
+    {"out_name": "GOST2991_85_I.html"},
+]
+
 LAUNCHER_DIR = SRC_DIR / "launcher"
 
 # Уровень 1 - стартовая страница (список ГОСТов).
@@ -441,6 +465,11 @@ TYPES_VARIANTS = [
         "out_name": "gost-10198-91.html",
         "/*__GOST_NAME__*/": "ГОСТ 10198-91",
         "/*__TYPES_JS__*/": LAUNCHER_DIR / "types-10198-91.js",
+    },
+    {
+        "out_name": "gost-2991-85.html",
+        "/*__GOST_NAME__*/": "ГОСТ 2991-85",
+        "/*__TYPES_JS__*/": LAUNCHER_DIR / "types-2991-85.js",
     },
 ]
 
@@ -504,6 +533,8 @@ def main():
         build_one(II2_SHELL, II2_PARTS, variant)
     for variant in III1_VARIANTS:
         build_one(III1_SHELL, III1_PARTS, variant)
+    for variant in G2991_I_VARIANTS:
+        build_one(G2991_I_SHELL, G2991_I_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
         build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
     for variant in TYPES_VARIANTS:
