@@ -477,12 +477,37 @@ G2991_I_PARTS = {
     "/*__G2991_I_COMPUTE_JS__*/": G2991_I_DIR / "compute" / "compute.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__G2991_STOCK_JS__*/": G2991_DIR / "stock.js",
     "/*__G2991_I_OPTIONS_JS__*/": G2991_I_DIR / "options.js",
     "/*__G2991_I_RENDER_JS__*/": G2991_I_DIR / "render-g2991i.js",
     "/*__G2991_I_CALC_JS__*/": G2991_I_DIR / "calc-g2991i.js",
 }
 G2991_I_VARIANTS = [
     {"out_name": "GOST2991_85_I.html"},
+]
+
+# ГОСТ 2991-85, тип II-1: compute/ - расчёт (backend/src/g2991/ii1), остальное -
+# интерфейс (frontend/public/js/g2991/ii1); таблицы ГОСТ - src/g2991/table2.js,
+# списки «в наличии» - src/g2991/stock.js.
+G2991_II1_DIR = G2991_DIR / "ii1"
+G2991_II1_SHELL = G2991_II1_DIR / "shell.html"
+G2991_II1_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
+    "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
+    "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__G2991_STOCK_JS__*/": G2991_DIR / "stock.js",
+    "/*__G2991_II1_OPTIONS_JS__*/": G2991_II1_DIR / "options.js",
+    "/*__G2991_II1_COMPUTE_JS__*/": G2991_II1_DIR / "compute" / "compute.js",
+    "/*__G2991_II1_RENDER_JS__*/": G2991_II1_DIR / "render-g2991ii1.js",
+    "/*__G2991_II1_CALC_JS__*/": G2991_II1_DIR / "calc-g2991ii1.js",
+}
+G2991_II1_VARIANTS = [
+    {"out_name": "GOST2991_85_II1.html"},
 ]
 
 LAUNCHER_DIR = SRC_DIR / "launcher"
@@ -584,6 +609,8 @@ def main():
         build_one(III1_SHELL, III1_PARTS, variant)
     for variant in G2991_I_VARIANTS:
         build_one(G2991_I_SHELL, G2991_I_PARTS, variant)
+    for variant in G2991_II1_VARIANTS:
+        build_one(G2991_II1_SHELL, G2991_II1_PARTS, variant)
     for variant in LAUNCHER_VARIANTS:
         build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
     for variant in TYPES_VARIANTS:

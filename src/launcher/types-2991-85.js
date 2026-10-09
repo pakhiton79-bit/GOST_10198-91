@@ -7,5 +7,11 @@ const TYPES = [
     file: 'GOST2991_85_I.html',
     badge: 'Не готово',
     badgeDanger: true
+  },
+  {
+    name: 'Тип II-1',
+    file: 'GOST2991_85_II1.html',
+    badge: 'Не готово',
+    badgeDanger: true
   }
 ];
