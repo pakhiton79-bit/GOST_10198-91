@@ -107,7 +107,12 @@
 (function(){
   const root = document.getElementById('types');
   let html = '';
+  // У типа с двумя версиями (versions: по ГОСТ / оптимальная, переключатель
+  // на странице расчёта) карточка ведёт на последнюю выбранную, по
+  // умолчанию - на оптимальную (по указанию пользователя).
+  const versionFile = v => { let saved = null; try{ saved = localStorage.getItem(v.key); }catch(e){} return saved === 'gost' ? v.gost : v.opt; };
   TYPES.forEach(t => {
+    if(t.versions) t.file = versionFile(t.versions);
     const badgeClass = 'type-badge' + (t.badgeDanger ? ' type-badge-danger' : t.badgeOk ? ' type-badge-ok' : '');
     const badge = t.badge ? `<span class="${badgeClass}">${t.badge}</span>` : '';
     html += `<a class="type-card" href="${t.file}">

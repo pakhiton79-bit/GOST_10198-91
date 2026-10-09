@@ -35,9 +35,13 @@
     <a href="index.html">Главная</a>
   </div>
   <header class="title-row">
-    <h1>ГОСТ 10198-91 тип III-1/*__III1_VARIANT_TITLE__*/</h1>
+    <h1>ГОСТ 10198-91 тип III-1</h1>
     <input type="text" id="boxName" class="box-name-input" maxlength="100" placeholder="Номер или название ящика" aria-label="Номер или название ящика">
   </header>
+  <nav class="version-switch" id="versionSwitch" data-key="silvan-gost10198-iii1-version" aria-label="Версия расчёта">
+    <a class="version-opt" data-version="gost" href="GOST10198_91_III1.html"><span>По ГОСТ</span><span class="version-badge">Неточность в самом ГОСТ</span></a>
+    <a class="version-opt" data-version="opt" href="GOST10198_91_III1_OPT.html"><span>Оптимальный</span><span class="version-badge">Оптимальная конструкция</span></a>
+  </nav>
 
   <div class="card">
     <h2>Внутренние размеры груза, мм</h2>
@@ -319,6 +323,7 @@
 /*__COMMON_DIAGRAM_FIT_JS__*/
 /*__COMMON_PRINT_JS__*/
 /*__COMMON_TIMESETTINGS_JS__*/
+/*__COMMON_VERSION_SWITCH_JS__*/
 /*__III1_VARIANT_FLAG__*/
 /*__III1_OPTIONS_JS__*/
 /*__III1_MANUAL_COUNTS_JS__*/

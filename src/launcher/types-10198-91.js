@@ -10,6 +10,9 @@
 // badgeDanger - красный вариант плашки (.type-badge-danger в
 // src/launcher/types.src.html) вместо обычного жёлтого - для типа, у
 // которого ещё не было ни одной сверки с реальными чертежами.
+// versions - у типа две версии (по ГОСТ / оптимальная, переключатель на
+// странице расчёта): карточка ведёт на последнюю выбранную, по умолчанию -
+// на оптимальную; key - ключ localStorage (общий с common-version-switch.js).
 // badgeOk - зелёный вариант плашки (.type-badge-ok) - у типа, где найденные
 // расхождения (по уточнению пользователя) уже исправлены и подтверждены
 // контрольным примером.
@@ -39,16 +42,8 @@ const TYPES = [
   },
   {
     name: 'Тип II-1',
-    file: 'GOST10198_91_II1.html',
-    image: 'data:image/png;base64,__IMG:box_ii1.png__',
-    badge: 'Требуется проверка'
-  },
-  {
-    name: 'Тип II-1 (новая версия)',
-    file: 'GOST10198_91_II1N.html',
-    image: 'data:image/png;base64,__IMG:box_ii1.png__',
-    badge: 'Не готово',
-    badgeDanger: true
+    versions: { key: 'silvan-gost10198-ii1-version', gost: 'GOST10198_91_II1.html', opt: 'GOST10198_91_II1N.html' },
+    image: 'data:image/png;base64,__IMG:box_ii1.png__'
   },
   {
     name: 'Тип II-2',
@@ -58,15 +53,8 @@ const TYPES = [
   },
   {
     name: 'Тип III-1',
-    file: 'GOST10198_91_III1.html',
-    image: 'data:image/png;base64,__IMG:box_iii1.png__',
-    badge: 'Неточность в самом ГОСТ'
-  },
-  {
-    name: 'Тип III-1 (оптимальный)',
-    file: 'GOST10198_91_III1_OPT.html',
-    image: 'data:image/png;base64,__IMG:box_iii1.png__',
-    badge: 'Оптимальная конструкция'
+    versions: { key: 'silvan-gost10198-iii1-version', gost: 'GOST10198_91_III1.html', opt: 'GOST10198_91_III1_OPT.html' },
+    image: 'data:image/png;base64,__IMG:box_iii1.png__'
   }
   // Следующий тип добавляется сюда новым объектом { name, file, image }.
 ];

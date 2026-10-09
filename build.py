@@ -99,6 +99,8 @@ COMMON_DIAGRAM_FIT_JS = SRC_DIR / "common-diagram-fit.js"
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
 COMMON_DIAGRAMS_JS = SRC_DIR / "common-diagrams.js"
 COMMON_TIMESETTINGS_JS = SRC_DIR / "common-timesettings.js"
+# Переключатель версий типа «По ГОСТ / Оптимальный» (II-1, III-1).
+COMMON_VERSION_SWITCH_JS = SRC_DIR / "common-version-switch.js"
 # Общие настройки сайта (шестерёнка вверху каждой страницы: тема оформления) -
 # встраивается в <head> всех страниц, чтобы тема ставилась до отрисовки.
 COMMON_SETTINGS_JS = SRC_DIR / "common-settings.js"
@@ -303,6 +305,7 @@ II1_PARTS = {
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__COMMON_VERSION_SWITCH_JS__*/": COMMON_VERSION_SWITCH_JS,
     "/*__II1_OPTIONS_JS__*/": II1_DIR / "options.js",
     "/*__II1_MANUAL_COUNTS_JS__*/": II1_DIR / "manual-counts.js",
     "/*__II1_FINE_THICKNESS_JS__*/": II1_DIR / "fine-thickness.js",
@@ -344,6 +347,7 @@ II1N_PARTS = {
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__COMMON_VERSION_SWITCH_JS__*/": COMMON_VERSION_SWITCH_JS,
     "/*__II1_OPTIONS_JS__*/": II1N_DIR / "options.js",
     "/*__II1_MANUAL_COUNTS_JS__*/": II1N_DIR / "manual-counts.js",
     "/*__II1_FINE_THICKNESS_JS__*/": II1N_DIR / "fine-thickness.js",
@@ -435,6 +439,7 @@ III1_PARTS = {
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__COMMON_VERSION_SWITCH_JS__*/": COMMON_VERSION_SWITCH_JS,
     "/*__III1_OPTIONS_JS__*/": III1_DIR / "options.js",
     "/*__III1_MANUAL_COUNTS_JS__*/": III1_DIR / "manual-counts.js",
     "/*__III1_FINE_THICKNESS_JS__*/": III1_DIR / "fine-thickness.js",
