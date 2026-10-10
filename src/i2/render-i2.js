@@ -3,6 +3,7 @@
 // предупреждения. calc - результат computeGost10198I2 (compute/compute.js).
 
 function renderSummary(calc){
+  rememberLiveCalc(calc); // основа итогов при правках без пересчёта (common-table-edits.js)
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;

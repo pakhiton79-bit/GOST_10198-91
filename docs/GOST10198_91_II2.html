@@ -900,6 +900,11 @@
   .version-badge{display:inline-block;padding:1px 9px;border:1px solid var(--warn);border-radius:999px;font-size:12px;font-weight:600;line-height:1.5;color:var(--warn);background:transparent;}
   .version-badge-danger{border-color:var(--error);color:var(--error);}
   .version-opt.active .version-badge{background:#fff;}
+  /* «?» у оптимальной версии - пояснение (по наведению, фокусу, на телефоне -
+     по нажатию: common-version-switch.js, класс .open) */
+  .version-info{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:12px;font-weight:700;line-height:1;cursor:help;outline:none;}
+  .version-info::after{content:attr(data-tip);position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);width:max-content;max-width:280px;padding:8px 12px;border-radius:8px;background:var(--ink);color:var(--panel);font-size:13px;font-weight:500;line-height:1.4;white-space:normal;text-align:left;box-shadow:var(--shadow-sm);opacity:0;visibility:hidden;transition:opacity .15s ease;pointer-events:none;z-index:20;}
+  .version-info:hover::after,.version-info:focus-visible::after,.version-info.open::after{opacity:1;visibility:visible;}
   @media (max-width:560px){.version-switch{display:flex;}.version-opt{flex:1 1 100%;justify-content:space-between;white-space:normal;}}
   @media print{.version-switch{display:none !important;}}
   .box-name-input{
@@ -2106,7 +2111,7 @@ else initSiteSettings();
     <input type="text" id="boxName" class="box-name-input" maxlength="100" placeholder="Номер или название ящика" aria-label="Номер или название ящика">
   </header>
   <nav class="version-switch" id="versionSwitch" data-key="silvan-gost10198-ii2-version" aria-label="Версия расчёта">
-    <a class="version-opt" data-version="opt" href="GOST10198_91_II2N.html"><span>Оптимальный</span><span class="version-badge version-badge-danger">Не готово</span></a>
+    <a class="version-opt" data-version="opt" href="GOST10198_91_II2N.html"><span>Оптимальный</span><span class="version-info" tabindex="0" role="button" aria-label="Конструкция немного упрощена по сравнению с ГОСТ для оптимизации размеров деталей и удобства сборки" data-tip="Конструкция немного упрощена по сравнению с ГОСТ для оптимизации размеров деталей и удобства сборки">?</span><span class="version-badge">Требуется проверка</span></a>
     <a class="version-opt" data-version="gost" href="GOST10198_91_II2.html"><span>По ГОСТ</span><span class="version-badge">Требуется проверка</span></a>
   </nav>
 
@@ -5222,9 +5227,13 @@ function calcStateSignature(){
     // I-1: без галочек «Настроить число поясов / расстояние» значение
     // ползунка в расчёт не идёт - не сравниваем его.
     if(input && !input.plankLayoutMode && 'plankLayoutValue' in input) input.plankLayoutValue = null;
+    // Правки таблицы в теле запроса - тоже только требующие пересчёта
+    // (длина, количество и т.п. итоги меняют сразу - common-table-edits.js).
+    if(input && input.tableEdits) input.tableEdits = readRecalcTableEdits();
     return JSON.stringify({
       input,
-      tableEdits: readTableEdits(),
+      // только правки, требующие пересчёта (common-table-edits.js)
+      tableEdits: readRecalcTableEdits(),
       thicknesses: typeof availableThicknesses !== 'undefined' ? availableThicknesses : null,
       time: typeof TIME_SETTINGS_STORAGE_KEY !== 'undefined' ? loadTimeSettings(TIME_SETTINGS_STORAGE_KEY) : null,
     });
@@ -5528,6 +5537,86 @@ function applyTableEdits(calc, edits, sections){
   });
   if(applied) calc.totalVolume += delta;
   return applied;
+}
+
+// ============ Правки без пересчёта ============
+// По указанию пользователя: правка ширины, длины и количества (в ГОСТ
+// 2991-85 - длины и количества) на другие детали не влияет, поэтому
+// «Нажмите «Рассчитать»» не появляется, а объём, масса ящика и норма времени
+// обновляются сразу - так же, как их пересчитал бы расчёт (applyTableEdits:
+// к объёму последнего расчёта прибавляется разница объёмов изменённых строк
+// с множителем раздела). Правка толщины (в ГОСТ 2991-85 - и ширины) меняет
+// другие детали - после неё нужен пересчёт. Роли, требующие пересчёта, тип
+// может задать константой TABLE_RECALC_ROLES (ГОСТ 2991-85 - js/g2991/options.js).
+// Множители объёма разделов (как на сервере): щиты торцевой и боковой - по
+// 2 шт.; лента, пергамин и болты в объём не входят.
+const TABLE_VOLUME_MULT = { dno: 1, kryshka: 1, torec: 2, endPanel: 2, bokovoy: 2 };
+function tableRecalcRoles(){
+  return typeof TABLE_RECALC_ROLES !== 'undefined' ? TABLE_RECALC_ROLES : ['t'];
+}
+// Правки только тех ролей, после которых нужен пересчёт: по ним
+// common-calc-state.js решает, устарел ли расчёт.
+function readRecalcTableEdits(){
+  const roles = tableRecalcRoles(), out = {};
+  const all = readTableEdits();
+  Object.keys(all).forEach(sec => Object.keys(all[sec]).forEach(key => {
+    roles.forEach(role => {
+      if(!(role in all[sec][key])) return;
+      out[sec] = out[sec] || {};
+      out[sec][key] = out[sec][key] || {};
+      out[sec][key][role] = all[sec][key][role];
+    });
+  }));
+  return out;
+}
+// Последний результат расчёта - основа для итогов при правках без пересчёта
+// (запоминает renderSummary каждого типа; повторный вывод итогов отсюда же
+// основу не меняет).
+let liveCalcBase = null, liveRendering = false;
+function rememberLiveCalc(calc){
+  if(!liveRendering) liveCalcBase = calc;
+}
+function updateLiveTotals(){
+  if(!liveCalcBase || typeof renderSummary !== 'function') return;
+  const num = s => { const x = parseFloat(String(s).replace(',', '.')); return Number.isFinite(x) ? x : 0; };
+  const recalc = tableRecalcRoles();
+  let delta = 0;
+  document.querySelectorAll('#boardTables table[data-section] tr[data-row-key]').forEach(tr => {
+    const mult = TABLE_VOLUME_MULT[tr.closest('table').dataset.section] || 0;
+    if(!mult) return;
+    // Объём строки по ячейкам: текущие значения или значения последнего
+    // расчёта; роли, требующие пересчёта, - всегда по последнему расчёту.
+    const vol = current => TABLE_EDIT_ROLES.reduce((p, role) => {
+      const c = tr.querySelector(`td[data-role="${role}"]`);
+      if(!c) return 0;
+      const orig = 'origText' in c.dataset ? c.dataset.origText : c.textContent;
+      return p * num(current && !recalc.includes(role) ? c.textContent : orig);
+    }, 1) / 1e9;
+    delta += (vol(true) - vol(false)) * mult;
+  });
+  const base = liveCalcBase, totalVolume = base.totalVolume + delta;
+  const ts = loadTimeSettings(TIME_SETTINGS_STORAGE_KEY);
+  const live = Object.assign({}, base, {
+    totalVolume,
+    crateMass: base.totalVolume > 0 ? base.crateMass * totalVolume / base.totalVolume : base.crateMass,
+    normaVremeni: Math.ceil(totalVolume / ts.baseProductivity * ts.timeCoeff * 10 - 1e-9) / 10, // как computeNormaVremeni
+  });
+  liveRendering = true;
+  try{ renderSummary(live); }finally{ liveRendering = false; }
+  if(typeof showManualEditsWarning === 'function') showManualEditsWarning();
+}
+// Правка ячейки таблицы деталей (общий обработчик всех типов): ячейка
+// помечается исправленной; толщина (и ширина в ГОСТ 2991-85) - расчёт
+// устарел, остальное - итоги сразу, без «Нажмите «Рассчитать»».
+function onTableCellInput(cell){
+  markCellEdited(cell);
+  syncOverrideCells(cell);
+  updateResetButton();
+  if(tableRecalcRoles().includes(cell.dataset.role)) invalidateCalc();
+  else{
+    updateLiveTotals();
+    invalidateCalc(); // статус - по правкам, требующим пересчёта (calcStateSignature)
+  }
 }
 
 // Подгонка чертежей под их слот в ряду «чертёж | таблица деталей» - на
@@ -6488,6 +6577,19 @@ function initDensitySettings(storageKey){
   const key = el.getAttribute('data-key');
   const page = decodeURIComponent(location.pathname.split('/').pop() || '');
   const save = v => { try{ localStorage.setItem(key, v); }catch(e){} };
+  // «?» у оптимальной версии (пояснение в data-tip): нажатие не открывает
+  // версию, а показывает/скрывает пояснение; нажатие мимо - скрывает.
+  el.addEventListener('click', e => {
+    const info = e.target.closest('.version-info');
+    el.querySelectorAll('.version-info.open').forEach(i => { if(i !== info) i.classList.remove('open'); });
+    if(!info) return;
+    e.preventDefault();
+    e.stopPropagation();
+    info.classList.toggle('open');
+  }, true);
+  document.addEventListener('click', e => {
+    if(!e.target.closest('.version-info')) el.querySelectorAll('.version-info.open').forEach(i => i.classList.remove('open'));
+  });
   el.querySelectorAll('a[data-version]').forEach(a => {
     if(a.getAttribute('href') === page){
       a.classList.add('active');
@@ -6929,6 +7031,7 @@ function onFineThicknessInput(){
 // генерируемые, с досками обшивки (diagrams/).
 
 function renderSummary(calc){
+  rememberLiveCalc(calc); // основа итогов при правках без пересчёта (common-table-edits.js)
   document.getElementById('outDims').innerHTML = `${Math.round(calc.outerL)} × ${Math.round(calc.outerW)} × ${Math.round(calc.outerH)} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;
@@ -7186,13 +7289,11 @@ function calculateNow(){
   if(el) el.addEventListener('change', invalidateCalc);
 });
 
-// Правка ячейки таблицы не пересчитывает сразу: ячейка помечается
-// исправленной, расчёт - устаревшим; учтётся по «Рассчитать».
+// Правка ячейки таблицы: толщина - расчёт устарел (учтётся по «Рассчитать»),
+// остальное - итоги сразу (onTableCellInput в common-table-edits.js).
 document.getElementById('boardTables').addEventListener('input', e=>{
   if(e.target.classList.contains('editable-cell')){
-    markCellEdited(e.target); syncOverrideCells(e.target);
-    updateResetButton();
-    invalidateCalc();
+    onTableCellInput(e.target);
   }
 });
 

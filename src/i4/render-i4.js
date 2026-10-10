@@ -7,6 +7,7 @@
 const BOX_IMG_B64  = "data:image/png;base64,__IMG:box_i4.png__"; // общий вид ящика I-4 (присланный пользователем)
 
 function renderSummary(calc){
+  rememberLiveCalc(calc); // основа итогов при правках без пересчёта (common-table-edits.js)
   document.getElementById('outDims').innerHTML = `${calc.outerL} × ${calc.outerW} × ${calc.outerH} <span>мм</span>`;
   document.getElementById('outVolume').innerHTML = `${calc.totalVolume.toFixed(3)} <span>м³</span>`;
   document.getElementById('outMass').innerHTML = `${calc.crateMass.toFixed(1)} <span>кг</span>`;
