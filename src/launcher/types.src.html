@@ -60,6 +60,12 @@
     border-color:var(--accent);
     background:var(--accent-wash);
   }
+  /* Тип без страницы (плашка «Появится позже», badgeSoon): карточка не
+     нажимается и приглушена, плашка серая. */
+  .type-card-off{cursor:default;}
+  .type-card-off:hover{border-color:var(--border-input);background:var(--panel);}
+  .type-card-off .type-info h3{color:var(--ink-soft);}
+  .type-badge-soon{background:var(--ink-soft);}
   .type-info{flex:1;min-width:0;}
   .type-info h3{
     font-size:18px;
@@ -113,13 +119,14 @@
   const versionFile = v => { let saved = null; try{ saved = localStorage.getItem(v.key); }catch(e){} return saved === 'gost' ? v.gost : v.opt; };
   TYPES.forEach(t => {
     if(t.versions) t.file = versionFile(t.versions);
-    const badgeClass = 'type-badge' + (t.badgeDanger ? ' type-badge-danger' : t.badgeOk ? ' type-badge-ok' : '');
+    const badgeClass = 'type-badge' + (t.badgeDanger ? ' type-badge-danger' : t.badgeOk ? ' type-badge-ok' : t.badgeSoon ? ' type-badge-soon' : '');
     const badge = t.badge ? `<span class="${badgeClass}">${t.badge}</span>` : '';
-    html += `<a class="type-card" href="${t.file}">
-      ${badge}
+    const inner = `${badge}
       <div class="type-info"><h3>${t.name}</h3></div>
-      ${t.image ? `<div class="type-image"><img src="${t.image}" alt="${t.name}"></div>` : ''}
-    </a>`;
+      ${t.image ? `<div class="type-image"><img src="${t.image}" alt="${t.name}"></div>` : ''}`;
+    // Без file - типа ещё нет: карточка не нажимается.
+    html += t.file ? `<a class="type-card" href="${t.file}">${inner}</a>`
+      : `<div class="type-card type-card-off" aria-disabled="true">${inner}</div>`;
   });
   root.innerHTML = html;
 })();
