@@ -2150,6 +2150,19 @@ else initSiteSettings();
   <div class="card">
     <h2>Дополнительные опции</h2>
     <div class="fastening-option-list">
+      <div class="option-group-title">Порода древесины</div>
+      <label><input type="radio" name="species" value="conifer" checked><span>Хвойные и твёрдые лиственные<span class="option-hint">Толщины - по таблице 2</span></span></label>
+      <label><input type="radio" name="species" value="birch"><span>Берёза<span class="option-hint">Толщина досок на одну градацию меньше (п. 1.9)</span></span></label>
+      <label><input type="radio" name="species" value="softDeciduous"><span>Мягкие лиственные<span class="option-hint">Толщина досок на одну градацию больше (п. 1.9)</span></span></label>
+      <div class="option-group-title">Условия</div>
+      <label>
+        <input type="checkbox" id="concentrated">
+        <span>Сосредоточенная нагрузка<span class="option-hint">Или упаковочная плотность груза от 3 кг/дм³: толщина досок на одну градацию больше (п. 1.12)</span></span>
+      </label>
+      <label>
+        <input type="checkbox" id="packet">
+        <span>Пакетные или контейнерные перевозки<span class="option-hint">Толщина досок от 13 мм - на одну градацию меньше (п. 1.13)</span></span>
+      </label>
       <div class="option-group-title">Доски</div>
       <label>
         <input type="checkbox" id="noRoundBoardWidths">
@@ -4134,7 +4147,8 @@ window.addEventListener('resize', ()=>{
 });
 
 // ГОСТ 2991-85, тип II-1: чертежи узлов - плоские схемы (SVG, как щиты
-// III-1): узел - белый прямоугольник без досок (по указанию пользователя),
+// III-1): узел - белый прямоугольник, доски - тонкими линиями стыков (по
+// указанию пользователя: видно, в какую сторону идут доски, без перегрузки),
 // планки торца - светло-серые поверх. Подписи (по указанию пользователя): у всех узлов длина и высота
 // (у дна и крышки - ширина), у торца ещё расстояние между планками.
 // Размеры - из расчёта (calc.drawing).
@@ -4145,12 +4159,28 @@ const G2991_PANEL_IW = 2222;                       // ширина картин�
 const G2991_PANEL_MIN_RATIO = 0.3, G2991_PANEL_MAX_RATIO = 1.2; // пределы высоты кадра, доли ширины
 const G2991_PANEL_WIDTH = 260, G2991_PANEL_LABEL_SCALE = 0.8;
 const G2991_PLANK_FILL = '#d9d9d9'; // планки торца - светло-серые (по указанию пользователя)
+const G2991_JOINT_STROKE = '#777';  // линии стыков досок - тонкие серые
+const G2991_JOINT_MIN_PX = 3;       // доски уже стольких px на экране - стыки не рисуются (сливаются)
+
+// Ширины досок узла по порядку строк таблицы (кроме планок): снизу вверх для
+// щитов и дна/крышки, слева направо для вертикальных досок торца.
+function g2991RowsLayout(rows){
+  const res = [];
+  rows.forEach(r => {
+    if(/^Планка/.test(r.name)) return;
+    const qty = Math.min(200, Math.max(0, Math.round(r.qty) || 0));
+    for(let i = 0; i < qty; i++) res.push(r.w);
+  });
+  return res;
+}
 
 // lenMm × heightMm - габариты узла; boards - 'edges' (только 2 доски у
 // верхнего и нижнего края - «Без крышки»), иначе - сплошной щит; planks - 'v' (2 планки у
 // левого и правого края), 'h' (у верхнего и нижнего) или null; plankMm -
-// ширина планки, plankGapMm - расстояние между планками (подпись).
-function diagramG2991Panel(altText, lenMm, heightMm, boards, planks, plankMm, plankGapMm){
+// ширина планки, plankGapMm - расстояние между планками (подпись); layout -
+// ширины досок по порядку (g2991RowsLayout): стыки - линиями, для 'h' -
+// горизонтальными снизу вверх, для 'v' - вертикальными слева направо.
+function diagramG2991Panel(altText, lenMm, heightMm, boards, planks, plankMm, plankGapMm, layout){
   const IW = G2991_PANEL_IW;
   const IH = IW * Math.min(G2991_PANEL_MAX_RATIO, Math.max(G2991_PANEL_MIN_RATIO, heightMm / lenMm));
   const f = v => v.toFixed(1);
@@ -4162,8 +4192,26 @@ function diagramG2991Panel(altText, lenMm, heightMm, boards, planks, plankMm, pl
   // Планки - по краям, вдвое шире обычной детали на экране (по указанию
   // пользователя: были тонковаты), но не больше 1/5 щита.
   const pw = Math.min(2 * drawnMemberWidth(ks), (planks === 'v' ? IW : IH) / 5);
-  // Доски не прорисовываются (по указанию пользователя) - щит белым
-  // прямоугольником; «Без крышки» - только 2 доски у краёв, шириной и цветом
+  // Стыки досок - тонкие линии поверх белого щита (лишнее у последней доски
+  // за краем щита не рисуется); слишком узкие доски - без линий.
+  let joints = '';
+  if(layout && layout.length > 1 && (boards === 'h' || boards === 'v')){
+    const span = boards === 'h' ? heightMm : lenMm, size = boards === 'h' ? IH : IW;
+    const px = size / span;
+    if(Math.min(...layout) * px / k >= G2991_JOINT_MIN_PX){
+      let pos = 0;
+      layout.slice(0, -1).forEach(w => {
+        pos += w;
+        if(pos >= span) return;
+        const c = pos * px;
+        joints += boards === 'h'
+          ? `<line x1="0" y1="${f(IH - c)}" x2="${f(IW)}" y2="${f(IH - c)}"/>`
+          : `<line x1="${f(c)}" y1="0" x2="${f(c)}" y2="${f(IH)}"/>`;
+      });
+    }
+  }
+  if(joints) shapes += `<g stroke="${G2991_JOINT_STROKE}" stroke-width="${f(0.6 * ks)}">${joints}</g>`;
+  // «Без крышки» - только 2 доски у краёв, шириной и цветом
   // как планки торца (по указанию пользователя).
   if(boards === 'edges'){
     const bw = Math.min(2 * drawnMemberWidth(ks), IH / 5);
@@ -4214,20 +4262,21 @@ function diagramG2991Panel(altText, lenMm, heightMm, boards, planks, plankMm, pl
 function diagramsG2991II1(calc){
   const d = calc.drawing;
   return {
-    dno: diagramG2991Panel('Дно - схема', d.dnoL, d.dnoW, 'h', null),
+    dno: diagramG2991Panel('Дно - схема', d.dnoL, d.dnoW, 'h', null, 0, 0, g2991RowsLayout(calc.dno)),
     kryshka: calc.noLid
       ? diagramG2991Panel('Вместо крышки - схема', d.dnoL, d.dnoW, 'edges', null)
-      : diagramG2991Panel('Крышка - схема', d.dnoL, d.dnoW, 'h', null),
+      : diagramG2991Panel('Крышка - схема', d.dnoL, d.dnoW, 'h', null, 0, 0, g2991RowsLayout(calc.kryshka)),
     torec: calc.verticalEnd
-      ? diagramG2991Panel('Щит торцевой - схема', d.torecW, d.H, 'v', 'h', d.plankW, d.plankGap)
-      : diagramG2991Panel('Щит торцевой - схема', d.torecW, d.H, 'h', 'v', d.plankW, d.plankGap),
-    bokovoy: diagramG2991Panel('Щит боковой - схема', d.bokL, d.H, 'h', null),
+      ? diagramG2991Panel('Щит торцевой - схема', d.torecW, d.H, 'v', 'h', d.plankW, d.plankGap, g2991RowsLayout(calc.torec))
+      : diagramG2991Panel('Щит торцевой - схема', d.torecW, d.H, 'h', 'v', d.plankW, d.plankGap, g2991RowsLayout(calc.torec)),
+    bokovoy: diagramG2991Panel('Щит боковой - схема', d.bokL, d.H, 'h', null, 0, 0, g2991RowsLayout(calc.bokovoy)),
   };
 }
 
 // ГОСТ 2991-85, тип I: чертежи узлов - плоские схемы, как у II-1 (функция
 // diagramG2991Panel - js/g2991/ii1/diagrams/panels.js): узел - белый
-// прямоугольник без досок, подписи - длина и высота (у дна и крышки -
+// прямоугольник, стыки досок - тонкими линиями (у щитов - снизу вверх, в
+// порядке строк таблицы), подписи - длина и высота (у дна и крышки -
 // ширина). Планок у торца нет. «Без крышки» - 2 доски у краёв.
 // Общий вид ящика (плитка «Итог» и печать) - рисунок пользователя,
 // увеличенный в 3 раза.
@@ -4236,12 +4285,12 @@ const BOX_G2991_I_IMG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA10AAANIC
 function diagramsG2991I(calc){
   const d = calc.drawing;
   return {
-    dno: diagramG2991Panel('Дно - схема', d.dnoL, d.dnoW, 'h', null),
+    dno: diagramG2991Panel('Дно - схема', d.dnoL, d.dnoW, 'h', null, 0, 0, g2991RowsLayout(calc.dno)),
     kryshka: calc.noLid
       ? diagramG2991Panel('Вместо крышки - схема', d.dnoL, d.dnoW, 'edges', null)
-      : diagramG2991Panel('Крышка - схема', d.dnoL, d.dnoW, 'h', null),
-    torec: diagramG2991Panel('Щит торцевой - схема', d.torecW, d.H, 'h', null),
-    bokovoy: diagramG2991Panel('Щит боковой - схема', d.bokL, d.H, 'h', null),
+      : diagramG2991Panel('Крышка - схема', d.dnoL, d.dnoW, 'h', null, 0, 0, g2991RowsLayout(calc.kryshka)),
+    torec: diagramG2991Panel('Щит торцевой - схема', d.torecW, d.H, 'h', null, 0, 0, g2991RowsLayout(calc.torec)),
+    bokovoy: diagramG2991Panel('Щит боковой - схема', d.bokL, d.H, 'h', null, 0, 0, g2991RowsLayout(calc.bokovoy)),
   };
 }
 
@@ -4333,7 +4382,7 @@ function stockPickerCardHtml(id, title){
 }
 
 // ГОСТ 2991-85, тип I: опции формы - толщины и ширины «в наличии»
-// (js/g2991/stock.js), галочки. Всё запоминается в localStorage
+// (js/g2991/stock.js), порода, галочки. Всё запоминается в localStorage
 // (ключи - свои для типа).
 const OPTIONS_STORAGE_PREFIX = 'silvan-gost2991-i-opt-';
 const TIME_SETTINGS_STORAGE_KEY = 'silvan-gost2991-i-time-settings'; // шестерёнка «Нормы времени»
@@ -4357,7 +4406,19 @@ function persistCheckbox(id){
     try{ localStorage.setItem(key, el.checked ? '1' : '0'); }catch(e){}
   });
 }
-['noRoundBoardWidths', 'noLid'].forEach(id => persistCheckbox(id));
+function persistRadioGroup(name){
+  const els = Array.from(document.querySelectorAll(`input[name="${name}"]`));
+  const key = OPTIONS_STORAGE_PREFIX + name;
+  try{
+    const saved = localStorage.getItem(key);
+    if(saved !== null && els.some(el => el.value === saved)) els.forEach(el => { el.checked = el.value === saved; });
+  }catch(e){}
+  els.forEach(el => el.addEventListener('change', () => {
+    if(el.checked){ try{ localStorage.setItem(key, el.value); }catch(e){} }
+  }));
+}
+['concentrated', 'packet', 'noRoundBoardWidths', 'noLid'].forEach(id => persistCheckbox(id));
+persistRadioGroup('species');
 
 // Толщины и ширины «в наличии»; общие - из раздела «ГОСТ 2991-85» окна
 // «Настройки».
@@ -4377,14 +4438,14 @@ window.addEventListener('site-thickness-change', e => { if(e.detail && e.detail.
 // Решения пользователя:
 //   - ввод - как в ГОСТ 10198-91: размеры груза (= внутренние размеры ящика)
 //     и масса;
-//   - толщины - строго по таблице 2, без поправок п. 1.9-1.15 (порода,
-//     пакетные перевозки, сосредоточенная нагрузка, пояса);
+//   - толщины - по таблице 2 с поправками п. 1.9-1.13, как у II-1 (порода,
+//     сосредоточенная нагрузка, пакетные перевозки);
 //   - расчётный размер: для боковых стенок - внутренняя высота, для дна и
 //     крышки - внутренняя ширина (п. 1.9);
 //   - масса больше 35 кг - считается по строке 35 кг с предупреждением;
 //   - длина больше 1200 мм - по строке 1200;
-//   - торец - 1,5 толщины боковой стенки, округление вверх по ряду
-//     9/13/16/19/22/25 (п. 1.14);
+//   - торец - 1,5 толщины боковой стенки (с поправками), округление вверх
+//     по ряду 9/13/16/19/22/25 (п. 1.14);
 //   - толщины «в наличии»: толщина по ГОСТ округляется вверх до ближайшей в
 //     наличии; больше максимальной - толщина по ГОСТ с предупреждением;
 //     ничего не выбрано - строго по ГОСТ.
@@ -4393,7 +4454,13 @@ window.addEventListener('site-thickness-change', e => { if(e.detail && e.detail.
 //   - дно и крышка: длина = длина груза + 2 доски торца, заполняют ширину
 //     груза + 2 доски бока;
 //   - бок: длина = длина груза + 2 доски торца, заполняет высоту груза;
-//   - торец: доски длиной = ширина груза заполняют высоту груза;
+//   - торец: доски горизонтально, длиной = ширина груза, заполняют высоту
+//     груза. По указанию пользователя: по возможности цельный (высота до
+//     150 мм - одна доска), иначе доски 150 мм; стыки досок торца - не ближе
+//     20 мм к стыкам досок бока (п. 1.2: стык торца перекрыт доской боковой
+//     стенки) - для этого нижняя и верхняя доски торца подбираются по ширине,
+//     а если и так не выходит - средние доски уже 150 мм. Доски считаются
+//     снизу вверх в порядке строк таблицы (так же они нарисованы на чертеже);
 //   - «Без крышки» (п. 1.2): вместо крышки 2 доски толщиной как у дна,
 //     шириной 50 мм (как у II-1), длиной как у крышки.
 // Ширина досок - как у II-1: основная 100 мм (общие настройки), доборные не
@@ -4406,6 +4473,9 @@ window.addEventListener('site-thickness-change', e => { if(e.detail && e.detail.
 const TYPE_I_MAX_MASS = 35;     // таблица 1
 const NO_LID_BOARD_W = 50;      // доски вместо крышки (п. 1.2: 40-60 мм; как у II-1 - 50)
 const WOOD_DENSITY_KG_M3 = 700; // плотность по умолчанию (как у ГОСТ 10198-91)
+const SPECIES = ['conifer', 'birch', 'softDeciduous'];
+const TOREC_BOARD_W = 150;      // доски торца (по указанию пользователя - пошире, чтобы стыки не совпадали с боком)
+const JOINT_CLEARANCE = 20;     // стык торца - не ближе стольких мм к стыку бока
 
 // Строки деталей: основные доски и доборные (как в ГОСТ 10198-91).
 function boardRows(name, t, l, fb, mainW) {
@@ -4415,6 +4485,37 @@ function boardRows(name, t, l, fb, mainW) {
   return rows;
 }
 const rowsVolume = rows => rows.reduce((s, r) => s + vol(r.t, r.w, r.l, r.qty), 0);
+// Ширины досок по порядку (основные, затем доборные) и стыки между ними снизу.
+const fillWidths = (fb, mainW) => [...Array(fb.mainQty).fill(mainW), ...fb.extra.flatMap(e => Array(e.qty).fill(e.width))];
+function joints(widths, space) {
+  const res = [];
+  let y = 0;
+  widths.slice(0, -1).forEach(w => { y += w; if (y < space) res.push(y); });
+  return res;
+}
+
+// Доски торца (снизу вверх): одна доска, если хватает (w0 = null); иначе
+// нижняя доска w0, k средних шириной m и верхняя top (не уже минимума
+// таблицы 4, не шире m). Первый вариант, где все стыки не ближе
+// JOINT_CLEARANCE к стыкам бока (bokJoints): средние - 150 мм, нижняя - как
+// можно шире; не вышло - средние уже (по 5 мм). Совсем не вышло - обычная
+// раскладка досками 150 мм с предупреждением.
+function torecLayout(H, bokJoints, minW, widths) {
+  if (H <= TOREC_BOARD_W) return { w0: null };
+  const avail = widths.length ? widths : G2991_WIDTH_OPTIONS;
+  const cands = [...new Set([TOREC_BOARD_W, ...avail.filter(w => w >= minW && w <= TOREC_BOARD_W)])].sort((a, b) => b - a);
+  for (const m of cands) {
+    for (const w0 of cands) {
+      if (w0 > m) continue;
+      const k = Math.max(0, Math.ceil((H - w0 - m) / m - 1e-9));
+      const top = H - w0 - k * m;
+      if (top < minW || top > m) continue;
+      const js = Array.from({ length: k + 1 }, (_, i) => w0 + i * m);
+      if (js.every(j => bokJoints.every(s => Math.abs(j - s) >= JOINT_CLEARANCE))) return { w0, m, k, top, clash: false };
+    }
+  }
+  return { clash: true };
+}
 
 function computeGost2991I(input) {
   const { L, W, H, MASS } = input;
@@ -4423,20 +4524,22 @@ function computeGost2991I(input) {
   if (limitErr) return { error: limitErr };
 
   const warnings = [];
+  const opts = { species: SPECIES.includes(input.species) ? input.species : 'conifer', concentrated: !!input.concentrated, packet: !!input.packet };
   const noLid = !!input.noLid;
   const widths = input.availableWidths || [];
   const mainW = G2991_WIDTH_OPTIONS.includes(input.mainWidth) ? input.mainWidth : G2991_MAIN_WIDTH_DEFAULT;
   const minW = g2991MinBoardWidth(MASS);
 
-  // Толщины по ГОСТ, затем - «в наличии».
+  // Толщины по ГОСТ (с поправками), затем - «в наличии».
   const bok = table2Thickness(MASS, L, H, TYPE_I_MAX_MASS);
   const dno = table2Thickness(MASS, L, W, TYPE_I_MAX_MASS);
-  const torecGost = g2991RoundUp(bok.thickness * 1.5);
+  const bokG = g2991Corrected(bok.thickness, opts), dnoG = g2991Corrected(dno.thickness, opts);
+  const torecGost = g2991RoundUp(bokG * 1.5);
   const available = input.availableThicknesses || [];
   const round = makeRoundUpToAvailable(available);
-  const bokT = round(bok.thickness, 'Доски боковых стенок');
-  const dnoT = round(dno.thickness, 'Доски дна');
-  const lidT = round(dno.thickness, noLid ? 'Доски вместо крышки' : 'Доски крышки');
+  const bokT = round(bokG, 'Доски боковых стенок');
+  const dnoT = round(dnoG, 'Доски дна');
+  const lidT = round(dnoG, noLid ? 'Доски вместо крышки' : 'Доски крышки');
   const torecT = round(torecGost, 'Доски торцовых стенок');
   if (MASS > TYPE_I_MAX_MASS) warnings.push(`Тип I - для грузов до ${TYPE_I_MAX_MASS} кг (таблица 1 ГОСТ 2991-85). Толщины взяты по строке ${TYPE_I_MAX_MASS} кг.`);
   warnings.push(...thicknessPartWarnings(round, available));
@@ -4453,8 +4556,31 @@ function computeGost2991I(input) {
   const lidRows = noLid
     ? [{ name: 'Доска вместо крышки', t: lidT, w: NO_LID_BOARD_W, l: len, qty: 2 }]
     : boardRows('Доска крышки', lidT, len, fill(W + bokT * 2, 'Крышка'), mainW);
-  const bokRows = boardRows('Доска бока', bokT, len, fill(H, 'Бок'), mainW);
-  const torecRows = boardRows('Доска торца', torecT, W, fill(H, 'Торец'), mainW);
+  const bokFill = fill(H, 'Бок');
+  const bokRows = boardRows('Доска бока', bokT, len, bokFill, mainW);
+  const roundWidths = input.roundBoardWidths !== false;
+  const tl = torecLayout(H, joints(fillWidths(bokFill, mainW), H), minW, widths);
+  // Строки - снизу вверх. С округлением ширин верхняя доска - шириной
+  // средних (лишнее подрежут на месте), без - по остатку (вверх до ширины «в
+  // наличии»). Цельный торец - одна доска: 150 мм или по высоте груза.
+  const torecRow = (name, w, qty) => ({ name, t: torecT, w, l: W, qty });
+  let torecRows;
+  if (tl.clash) {
+    warnings.push('Торец: не удалось развести стыки досок торца и бока - часть стыков торца совпадает со стыками бока (п. 1.2).');
+    const fb = g2991FillBoards(H, TOREC_BOARD_W, roundWidths, minW, widths);
+    if (fb.warn) warnings.push(`Торец: доборная доска уже ${minW} мм (минимум по таблице 4 ГОСТ 2991-85).`);
+    torecRows = boardRows('Доска торца', torecT, W, fb, TOREC_BOARD_W);
+  } else if (tl.w0 === null) {
+    torecRows = [torecRow('Доска торца', roundWidths ? TOREC_BOARD_W : g2991RoundWidth(H, widths), 1)];
+  } else {
+    const topW = roundWidths ? tl.m : g2991RoundWidth(tl.top, widths);
+    const main = tl.k + (tl.w0 === tl.m ? 1 : 0) + (topW === tl.m ? 1 : 0);
+    torecRows = [
+      ...(tl.w0 !== tl.m ? [torecRow('Доска торца (нижняя)', tl.w0, 1)] : []),
+      ...(main > 0 ? [torecRow('Доска торца', tl.m, main)] : []),
+      ...(topW !== tl.m ? [torecRow('Доска торца (верхняя)', topW, 1)] : []),
+    ];
+  }
 
   const totalVolume = rowsVolume(dnoRows) + rowsVolume(lidRows) + rowsVolume(torecRows) * 2 + rowsVolume(bokRows) * 2;
   const woodDensity = Number.isFinite(input.woodDensity) && input.woodDensity > 0 ? input.woodDensity : WOOD_DENSITY_KG_M3;
@@ -4462,7 +4588,7 @@ function computeGost2991I(input) {
   const result = {
     L, W, H, mass: MASS, noLid,
     thickness: { bok: bokT, dno: dnoT, kryshka: lidT, torec: torecT },
-    gost: { bok: bok.thickness, dno: dno.thickness, torec: torecGost },
+    gost: { bok: bok.thickness, dno: dno.thickness, bokCorrected: bokG, dnoCorrected: dnoG, torec: torecGost },
     dno: dnoRows, kryshka: lidRows, torec: torecRows, bokovoy: bokRows,
     // Размеры для чертежей: дно и крышка - длина × ширина, щиты - длина × высота.
     drawing: { dnoL: len, dnoW: W + bokT * 2, bokL: len, torecW: W, H },
@@ -5133,6 +5259,9 @@ function buildCalcInput(){
     W: parseFloat(document.getElementById('W').value),
     H: parseFloat(document.getElementById('H').value),
     MASS: parseFloat(document.getElementById('M').value),
+    species: (document.querySelector('input[name="species"]:checked') || {}).value || 'conifer',
+    concentrated: document.getElementById('concentrated').checked,
+    packet: document.getElementById('packet').checked,
     roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
     noLid: document.getElementById('noLid').checked,
     availableThicknesses: thicknessPicker.get(),
