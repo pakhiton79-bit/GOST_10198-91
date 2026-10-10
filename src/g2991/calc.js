@@ -1,7 +1,14 @@
-// ГОСТ 2991-85, тип I: сбор входных данных, расчёт в браузере
-// (computeGost2991I, src/g2991/i/compute/compute.js) и вывод результата. Кнопка «Рассчитать»
+// ГОСТ 2991-85: сбор входных данных страницы типа, расчёт в браузере
+// (G2991_TYPE.compute - src/g2991/<тип>/compute/compute.js) и вывод
+// результата. Кнопка «Рассчитать»
 // вызывает общую обёртку calculate() из common-calc-state.js, та -
 // calculateNow().
+
+// Галочка опций; нет такой у типа - false.
+function checked(id){
+  const el = document.getElementById(id);
+  return !!(el && el.checked);
+}
 
 // Тело запроса на расчёт. По нему же common-calc-state.js сравнивает текущую
 // форму с последним расчётом (calcStateSignature).
@@ -12,13 +19,14 @@ function buildCalcInput(){
     H: parseFloat(document.getElementById('H').value),
     MASS: parseFloat(document.getElementById('M').value),
     species: (document.querySelector('input[name="species"]:checked') || {}).value || 'conifer',
-    concentrated: document.getElementById('concentrated').checked,
-    packet: document.getElementById('packet').checked,
-    roundBoardWidths: !document.getElementById('noRoundBoardWidths').checked, // по умолчанию ширины округляются
-    noLid: document.getElementById('noLid').checked,
+    concentrated: checked('concentrated'),
+    packet: checked('packet'),
+    roundBoardWidths: !checked('noRoundBoardWidths'), // по умолчанию ширины округляются
+    verticalEnd: checked('verticalEnd'),               // только у II-1
+    noLid: checked('noLid'),
     availableThicknesses: thicknessPicker.get(),
     availableWidths: widthPicker.get(),
-    mainWidth: siteMainWidth2991(),
+    mainWidth: mainWidthPicker.get(),
     tableEdits: readTableEdits(),
     woodDensity: loadWoodDensity(WOOD_DENSITY_STORAGE_KEY),
   };
@@ -33,19 +41,19 @@ function showCalcError(text){
 }
 
 // Разделы таблицы деталей и их множители в объёме (щиты - по 2 шт.).
-const G2991_I_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2};
+const G2991_TABLE_SECTIONS = {dno:1, kryshka:1, torec:2, bokovoy:2};
 
 function calculateNow(){
   document.getElementById('err').textContent = '';
   const input = buildCalcInput();
-  const calc = computeGost2991I(input);
+  const calc = G2991_TYPE.compute(input);
   if(calc.error){
     showCalcError(calc.error);
     return;
   }
   // Ручные правки таблицы - поверх расчёта; объём, норма времени и масса
   // пересчитываются с их учётом.
-  if(applyTableEdits(calc, input.tableEdits, G2991_I_TABLE_SECTIONS)){
+  if(applyTableEdits(calc, input.tableEdits, G2991_TABLE_SECTIONS)){
     calc.normaVremeni = computeNormaVremeni(calc.totalVolume, TIME_SETTINGS_STORAGE_KEY);
     calc.crateMass = calc.totalVolume * calc.woodDensity;
   }
@@ -77,6 +85,6 @@ function errorFieldsFor(text){
   return [];
 }
 
-document.getElementById('boxView').src = BOX_G2991_I_IMG;
+document.getElementById('boxView').src = G2991_TYPE.boxImg;
 initTimeSettings(TIME_SETTINGS_STORAGE_KEY);
 initDensitySettings(WOOD_DENSITY_STORAGE_KEY);

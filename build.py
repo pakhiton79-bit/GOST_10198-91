@@ -460,71 +460,51 @@ III1_VARIANTS = [
      "/*__III1_VARIANT_FLAG__*/": "window.III1_OPTIMIZED = true; // оптимальный конструктивный вариант"},
 ]
 
-# ГОСТ 2991-85, тип I: расчёт деталей, чертежи (общая функция схемы - из II-1), печать.
-# Файлы разложены так же, как в gost_backend: compute/ - расчёт
-# (backend/src/g2991/i), остальное - интерфейс (frontend/public/js/g2991/i);
-# таблица 2 - общая для всех типов ГОСТ 2991-85 (src/g2991/table2.js),
-# findNegativeField и inputLimitsError - из helpers.js I-1.
+# ГОСТ 2991-85 (типы I и II-1). Файлы разложены так же, как в gost_backend:
+#   src/g2991/*.js         - общее для всех типов: таблицы ГОСТ (table2.js),
+#                            округление толщин (rounding.js), доски щитов
+#                            (boards.js), выпадающие списки «в наличии»
+#                            (stock.js), схемы узлов (panels.js) и скрипты
+#                            страницы: опции, вывод, печать, расчёт;
+#   src/g2991/<тип>/       - своё у типа: compute/compute.js - расчёт
+#                            (backend/src/g2991/<тип>), type.js - описание
+#                            типа и чертежи узлов, shell.html - страница.
+# findNegativeField, inputLimitsError и vol - из helpers.js I-1.
 G2991_DIR = SRC_DIR / "g2991"
-G2991_I_DIR = G2991_DIR / "i"
-G2991_I_SHELL = G2991_I_DIR / "shell.html"
-G2991_I_PARTS = {
-    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
-    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
-    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
-    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-    "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
-    "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
-    "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
-    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
-    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
-    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
-    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
-    # чертежи - общая функция плоской схемы из II-1 и свои узлы типа I
-    "/*__G2991_II1_PANELS_JS__*/": G2991_DIR / "ii1" / "diagrams" / "panels.js",
-    "/*__G2991_I_DIAGRAMS_JS__*/": G2991_I_DIR / "diagrams.js",
-    "/*__G2991_STOCK_JS__*/": G2991_DIR / "stock.js",
-    "/*__G2991_I_OPTIONS_JS__*/": G2991_I_DIR / "options.js",
-    "/*__G2991_I_COMPUTE_JS__*/": G2991_I_DIR / "compute" / "compute.js",
-    "/*__G2991_I_RENDER_JS__*/": G2991_I_DIR / "render-g2991i.js",
-    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
-    "/*__G2991_I_PRINT_JS__*/": G2991_I_DIR / "print-g2991i.js",
-    "/*__G2991_I_CALC_JS__*/": G2991_I_DIR / "calc-g2991i.js",
-}
-G2991_I_VARIANTS = [
-    {"out_name": "GOST2991_85_I.html"},
-]
 
-# ГОСТ 2991-85, тип II-1: compute/ - расчёт (backend/src/g2991/ii1), остальное -
-# интерфейс (frontend/public/js/g2991/ii1); таблицы ГОСТ - src/g2991/table2.js,
-# списки «в наличии» - src/g2991/stock.js.
-G2991_II1_DIR = G2991_DIR / "ii1"
-G2991_II1_SHELL = G2991_II1_DIR / "shell.html"
-G2991_II1_PARTS = {
-    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
-    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
-    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
-    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-    "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
-    "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
-    "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
-    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
-    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
-    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
-    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
-    "/*__G2991_II1_PANELS_JS__*/": G2991_II1_DIR / "diagrams" / "panels.js",
-    "/*__G2991_STOCK_JS__*/": G2991_DIR / "stock.js",
-    "/*__G2991_II1_OPTIONS_JS__*/": G2991_II1_DIR / "options.js",
-    "/*__G2991_II1_COMPUTE_JS__*/": G2991_II1_DIR / "compute" / "compute.js",
-    "/*__G2991_II1_RENDER_JS__*/": G2991_II1_DIR / "render-g2991ii1.js",
-    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
-    "/*__G2991_II1_PRINT_JS__*/": G2991_II1_DIR / "print-g2991ii1.js",
-    "/*__G2991_II1_CALC_JS__*/": G2991_II1_DIR / "calc-g2991ii1.js",
-}
-G2991_II1_VARIANTS = [
-    {"out_name": "GOST2991_85_II1.html"},
+
+def g2991_parts(type_dir):
+    """Части страницы типа ГОСТ 2991-85 (одинаковые плейсхолдеры у всех типов)."""
+    return {
+        "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+        "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+        "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+        "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+        "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
+        "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
+        "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
+        "/*__G2991_BOARDS_JS__*/": G2991_DIR / "boards.js",
+        "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+        "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+        "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+        "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+        "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+        "/*__G2991_PANELS_JS__*/": G2991_DIR / "panels.js",
+        "/*__G2991_TYPE_JS__*/": type_dir / "type.js",
+        "/*__G2991_STOCK_JS__*/": G2991_DIR / "stock.js",
+        "/*__G2991_OPTIONS_JS__*/": G2991_DIR / "options.js",
+        "/*__G2991_COMPUTE_JS__*/": type_dir / "compute" / "compute.js",
+        "/*__G2991_RENDER_JS__*/": G2991_DIR / "render.js",
+        "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+        "/*__G2991_PRINT_JS__*/": G2991_DIR / "print.js",
+        "/*__G2991_CALC_JS__*/": G2991_DIR / "calc.js",
+    }
+
+
+# Типы: папка и имя готовой страницы.
+G2991_TYPES = [
+    (G2991_DIR / "i", "GOST2991_85_I.html"),
+    (G2991_DIR / "ii1", "GOST2991_85_II1.html"),
 ]
 
 LAUNCHER_DIR = SRC_DIR / "launcher"
@@ -624,10 +604,8 @@ def main():
         build_one(II2_SHELL, II2_PARTS, variant)
     for variant in III1_VARIANTS:
         build_one(III1_SHELL, III1_PARTS, variant)
-    for variant in G2991_I_VARIANTS:
-        build_one(G2991_I_SHELL, G2991_I_PARTS, variant)
-    for variant in G2991_II1_VARIANTS:
-        build_one(G2991_II1_SHELL, G2991_II1_PARTS, variant)
+    for type_dir, out_name in G2991_TYPES:
+        build_one(type_dir / "shell.html", g2991_parts(type_dir), {"out_name": out_name})
     for variant in LAUNCHER_VARIANTS:
         build_one(LAUNCHER_SHELL, LAUNCHER_PARTS, variant)
     for variant in TYPES_VARIANTS:
