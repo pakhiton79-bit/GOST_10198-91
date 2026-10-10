@@ -398,6 +398,7 @@ II2_PARTS = {
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
     "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__COMMON_VERSION_SWITCH_JS__*/": COMMON_VERSION_SWITCH_JS,
     "/*__II2_OPTIONS_JS__*/": II2_DIR / "options.js",
     "/*__II2_BOARD_GAPS_JS__*/": II2_DIR / "board-gaps.js",
     "/*__II2_MANUAL_COUNTS_JS__*/": II2_DIR / "manual-counts.js",
@@ -409,6 +410,52 @@ II2_PARTS = {
 II2_VARIANTS = [
     # torec.js II-1 без фото - готовой строкой (см. II2_II1_TOREC_JS выше).
     {"out_name": "GOST10198_91_II2.html", "/*__II1_DIAGRAM_TOREC_JS__*/": II2_II1_TOREC_JS},
+]
+
+# Тип II-2 (оптимальный) - независимая копия II-2 (src/ii2n) с изменениями
+# оптимального II-1: без опорных планок, каркас щитов ниже на поперечный брус
+# крышки, брус крышки = ширина груза + 2 стойки. Общие с II-1 части - те же.
+II2N_DIR = SRC_DIR / "ii2n"
+II2N_SHELL = II2N_DIR / "shell.html"
+II2N_PARTS = {
+    "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
+    "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
+    "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
+    "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
+    "/*__II1_HELPERS_JS__*/": II1_DIR / "compute" / "helpers.js",
+    "/*__II1_GOST_TABLES_JS__*/": II1_DIR / "compute" / "gost-tables.js",
+    "/*__II1_LOGIC_JS__*/": II1_DIR / "compute" / "logic.js",
+    "/*__II1_SIZING_JS__*/": II1_DIR / "compute" / "sizing.js",
+    "/*__II1_FRAME_JS__*/": II1_DIR / "compute" / "frame.js",
+    "/*__II2_BOARDS_CALC_JS__*/": II2N_DIR / "compute" / "boards.js",
+    "/*__II2_DNO_JS__*/": II2N_DIR / "compute" / "dno.js",
+    "/*__II2_KRYSHKA_JS__*/": II2N_DIR / "compute" / "kryshka.js",
+    "/*__II2_END_PANEL_JS__*/": II2N_DIR / "compute" / "end-panel.js",
+    "/*__II2_BOKOVOY_JS__*/": II2N_DIR / "compute" / "bokovoy.js",
+    "/*__II2_COMPUTE_JS__*/": II2N_DIR / "compute" / "compute.js",
+    "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
+    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1_DIR / "diagrams" / "kryshka.js",
+    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1_DIR / "diagrams" / "panel-generated.js",
+    "/*__II2_DIAGRAM_BOARDS_JS__*/": II2N_DIR / "diagrams" / "boards.js",
+    "/*__II2_DIAGRAM_DNO_JS__*/": II2N_DIR / "diagrams" / "dno.js",
+    "/*__II2_DIAGRAM_KRYSHKA_JS__*/": II2N_DIR / "diagrams" / "kryshka.js",
+    "/*__II2_DIAGRAM_PANEL_JS__*/": II2N_DIR / "diagrams" / "panel.js",
+    "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
+    "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
+    "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
+    "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
+    "/*__COMMON_VERSION_SWITCH_JS__*/": COMMON_VERSION_SWITCH_JS,
+    "/*__II2_OPTIONS_JS__*/": II2N_DIR / "options.js",
+    "/*__II2_BOARD_GAPS_JS__*/": II2N_DIR / "board-gaps.js",
+    "/*__II2_MANUAL_COUNTS_JS__*/": II2N_DIR / "manual-counts.js",
+    "/*__II2_FINE_THICKNESS_JS__*/": II2N_DIR / "fine-thickness.js",
+    "/*__II2_RENDER_JS__*/": II2N_DIR / "render-ii2n.js",
+    "/*__II2_PRINT_JS__*/": II2N_DIR / "print-ii2n.js",
+    "/*__II2_CALC_JS__*/": II2N_DIR / "calc-ii2n.js",
+}
+II2N_VARIANTS = [
+    {"out_name": "GOST10198_91_II2N.html", "/*__II1_DIAGRAM_TOREC_JS__*/": II2_II1_TOREC_JS},
 ]
 
 III1_DIR = SRC_DIR / "iii1"
@@ -600,6 +647,8 @@ def main():
         build_one(II1_SHELL, II1_PARTS, variant)
     for variant in II1N_VARIANTS:
         build_one(II1N_SHELL, II1N_PARTS, variant)
+    for variant in II2N_VARIANTS:
+        build_one(II2N_SHELL, II2N_PARTS, variant)
     for variant in II2_VARIANTS:
         build_one(II2_SHELL, II2_PARTS, variant)
     for variant in III1_VARIANTS:

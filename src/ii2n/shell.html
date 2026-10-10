@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Расчёт ящика - ГОСТ 10198-91 тип II-1 - Тара+</title>
+<title>Расчёт ящика - ГОСТ 10198-91 тип II-2 (оптимальный) - Тара+</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,__IMG:favicon.png__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,12 +35,12 @@
     <a href="index.html">Главная</a>
   </div>
   <header class="title-row">
-    <h1>ГОСТ 10198-91 тип II-1</h1>
+    <h1>ГОСТ 10198-91 тип II-2</h1>
     <input type="text" id="boxName" class="box-name-input" maxlength="100" placeholder="Номер или название ящика" aria-label="Номер или название ящика">
   </header>
-  <nav class="version-switch" id="versionSwitch" data-key="silvan-gost10198-ii1-version" aria-label="Версия расчёта">
-    <a class="version-opt" data-version="opt" href="GOST10198_91_II1N.html"><span>Оптимальный</span><span class="version-badge version-badge-danger">Не готово</span></a>
-    <a class="version-opt" data-version="gost" href="GOST10198_91_II1.html"><span>По ГОСТ</span><span class="version-badge">Требуется проверка</span></a>
+  <nav class="version-switch" id="versionSwitch" data-key="silvan-gost10198-ii2-version" aria-label="Версия расчёта">
+    <a class="version-opt" data-version="opt" href="GOST10198_91_II2N.html"><span>Оптимальный</span><span class="version-badge version-badge-danger">Не готово</span></a>
+    <a class="version-opt" data-version="gost" href="GOST10198_91_II2.html"><span>По ГОСТ</span><span class="version-badge">Требуется проверка</span></a>
   </nav>
 
   <div class="card">
@@ -117,6 +117,18 @@
 
 
   <div class="card">
+    <h2>Промежутки между досками обшивки</h2>
+    <div class="modal-field">
+      <label id="boardGapLabel" for="boardGapInput">Наибольший промежуток между досками, мм</label>
+      <div class="modal-slider-row">
+        <div class="jump-slider" id="boardGapSlider" aria-labelledby="boardGapLabel"></div>
+        <input type="number" id="boardGapInput" step="1" min="10" max="150" placeholder="10-150" oninput="onBoardGapInputChange()">
+      </div>
+      <div class="option-hint board-gap-hint">Обязательно для типа II-2. Доски по 100 мм на всех щитах: крайние - по краям щита, остальные равномерно между ними, промежуток между соседними - не больше указанного. При досках крышки поперёк ящика они продолжают линии досок боковых щитов.</div>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Дополнительные опции</h2>
     <div class="fastening-option-list">
       <div class="option-group-title">Доски</div>
@@ -191,10 +203,6 @@
         <input type="checkbox" id="bulkCargo">
         <span>Насыпной или незакреплённый груз<span class="option-hint">Обшивка стенок и крышки 19 мм вместо 16 мм (п. 1.6.13)</span></span>
       </label>
-      <label>
-        <input type="checkbox" id="addParchment">
-        <span>Добавить пергамин<span class="option-hint">Площадь внутренних поверхностей ящика</span></span>
-      </label>
     </div>
   </div>
 
@@ -217,6 +225,7 @@
   </div>
 
   <div id="results">
+    <div class="note note-danger" id="notReadyNote"><b>Оптимальный вариант II-2 ещё не готов.</b> Это рабочая копия II-2 для доработок - результат нельзя использовать в производстве.</div>
     <div class="note" id="warningsTop" style="margin-bottom:16px;"></div>
 
     <div class="card">
@@ -305,30 +314,34 @@
 /*__II1_GOST_TABLES_JS__*/
 /*__II1_LOGIC_JS__*/
 /*__II1_SIZING_JS__*/
-/*__II1_DNO_JS__*/
-/*__II1_KRYSHKA_JS__*/
 /*__II1_FRAME_JS__*/
-/*__II1_END_PANEL_JS__*/
-/*__II1_BOKOVOY_JS__*/
-/*__II1_COMPUTE_JS__*/
+/*__II2_BOARDS_CALC_JS__*/
+/*__II2_DNO_JS__*/
+/*__II2_KRYSHKA_JS__*/
+/*__II2_END_PANEL_JS__*/
+/*__II2_BOKOVOY_JS__*/
+/*__II2_COMPUTE_JS__*/
 /*__COMMON_DIAGRAMS_JS__*/
-/*__II1_DIAGRAM_DNO_JS__*/
 /*__II1_DIAGRAM_KRYSHKA_JS__*/
 /*__II1_DIAGRAM_PANEL_GENERATED_JS__*/
 /*__II1_DIAGRAM_TOREC_JS__*/
-/*__II1_DIAGRAM_BOK_JS__*/
+/*__II2_DIAGRAM_BOARDS_JS__*/
+/*__II2_DIAGRAM_DNO_JS__*/
+/*__II2_DIAGRAM_KRYSHKA_JS__*/
+/*__II2_DIAGRAM_PANEL_JS__*/
 /*__COMMON_CALC_STATE_JS__*/
 /*__COMMON_TABLE_EDITS_JS__*/
 /*__COMMON_DIAGRAM_FIT_JS__*/
 /*__COMMON_PRINT_JS__*/
 /*__COMMON_TIMESETTINGS_JS__*/
 /*__COMMON_VERSION_SWITCH_JS__*/
-/*__II1_OPTIONS_JS__*/
-/*__II1_MANUAL_COUNTS_JS__*/
-/*__II1_FINE_THICKNESS_JS__*/
-/*__II1_RENDER_JS__*/
-/*__II1_PRINT_JS__*/
-/*__II1_CALC_JS__*/
+/*__II2_OPTIONS_JS__*/
+/*__II2_BOARD_GAPS_JS__*/
+/*__II2_MANUAL_COUNTS_JS__*/
+/*__II2_FINE_THICKNESS_JS__*/
+/*__II2_RENDER_JS__*/
+/*__II2_PRINT_JS__*/
+/*__II2_CALC_JS__*/
 </script>
 </body>
 </html>

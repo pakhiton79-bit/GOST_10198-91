@@ -6,12 +6,12 @@ const TYPES = [
     name: 'Тип I',
     file: 'GOST2991_85_I.html',
     image: 'data:image/png;base64,__IMG:box_g2991_i.png__',
-    badge: 'Не готово',
-    badgeDanger: true
+    badge: 'Возможны неточности'
   },
   {
     name: 'Тип II-1',
     file: 'GOST2991_85_II1.html',
-    image: 'data:image/png;base64,__IMG:box_g2991_ii1.png__'
+    image: 'data:image/png;base64,__IMG:box_g2991_ii1.png__',
+    badge: 'Возможны неточности'
   }
 ];

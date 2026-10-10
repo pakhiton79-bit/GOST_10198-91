@@ -2100,8 +2100,8 @@ else initSiteSettings();
     <input type="text" id="boxName" class="box-name-input" maxlength="100" placeholder="Номер или название ящика" aria-label="Номер или название ящика">
   </header>
   <nav class="version-switch" id="versionSwitch" data-key="silvan-gost10198-ii1-version" aria-label="Версия расчёта">
-    <a class="version-opt" data-version="gost" href="GOST10198_91_II1.html"><span>По ГОСТ</span><span class="version-badge">Требуется проверка</span></a>
     <a class="version-opt" data-version="opt" href="GOST10198_91_II1N.html"><span>Оптимальный</span><span class="version-badge version-badge-danger">Не готово</span></a>
+    <a class="version-opt" data-version="gost" href="GOST10198_91_II1.html"><span>По ГОСТ</span><span class="version-badge">Требуется проверка</span></a>
   </nav>
 
   <div class="card">
@@ -6088,8 +6088,8 @@ function initDensitySettings(storageKey){
   };
 }
 
-// Переключатель версий типа (II-1, III-1; по указанию пользователя): на
-// странице расчёта - две кнопки-ссылки «По ГОСТ» / «Оптимальный»
+// Переключатель версий типа (II-1, II-2, III-1; по указанию пользователя): на
+// странице расчёта - две кнопки-ссылки «Оптимальный» / «По ГОСТ»
 // (#versionSwitch, data-key - ключ localStorage, у ссылок data-version).
 // Текущая - по имени файла страницы; открытая версия запоминается, и
 // карточка типа в списке ведёт на последнюю выбранную (по умолчанию -

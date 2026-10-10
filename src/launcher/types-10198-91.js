@@ -47,9 +47,8 @@ const TYPES = [
   },
   {
     name: 'Тип II-2',
-    file: 'GOST10198_91_II2.html',
-    image: 'data:image/png;base64,__IMG:box_ii2.png__',
-    badge: 'Требуется проверка'
+    versions: { key: 'silvan-gost10198-ii2-version', gost: 'GOST10198_91_II2.html', opt: 'GOST10198_91_II2N.html' },
+    image: 'data:image/png;base64,__IMG:box_ii2.png__'
   },
   {
     name: 'Тип III-1',
