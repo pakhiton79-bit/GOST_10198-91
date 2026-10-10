@@ -26,7 +26,7 @@ const G2991_TYPE = {
   key: 'ii1',
   title: 'тип II-1',
   subtitle: 'Ящик дощатый неразборный плотный, торцовые стенки на двух планках',
-  checkboxes: ['concentrated', 'packet', 'noRoundBoardWidths', 'verticalEnd', 'noLid'],
+  checkboxes: ['concentrated', 'packet', 'verticalEnd', 'noLid'],
   boxImg: BOX_G2991_II1_IMG,
   diagrams: diagramsG2991II1,
   compute: input => computeGost2991II1(input),   // расчёт в браузере (ii1/compute/compute.js)

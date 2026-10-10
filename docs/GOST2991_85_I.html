@@ -2223,11 +2223,6 @@ function siteConfirm(opts){
         <input type="checkbox" id="packet">
         <span>Пакетные или контейнерные перевозки<span class="option-hint">Толщина досок от 13 мм - на одну градацию меньше (п. 1.13)</span></span>
       </label>
-      <div class="option-group-title">Доски</div>
-      <label>
-        <input type="checkbox" id="noRoundBoardWidths">
-        <span>Не округлять ширину досок<span class="option-hint">Остаток закрывают доборные доски (не уже минимума таблицы 4). Без галочки все доски основной ширины (выбирается в карточке ширин, по умолчанию 100 мм): лишнее у последней доски подрежут на месте</span></span>
-      </label>
       <div class="option-group-title">Конструкция</div>
       <label>
         <input type="checkbox" id="noLid">
@@ -3020,14 +3015,13 @@ function g2991RoundWidth(w, widths) {
   const a = widths.find(v => v >= w);
   return a === undefined ? w : a;
 }
-// Раскладка досок щита (как в ГОСТ 10198-91, fillBoards): основная ширина -
-// mainW; с округлением (по умолчанию) все доски основной ширины (лишнее у
-// последней доски подрежут на месте); без округления - остаток одной
-// доборной доской, а если она уже минимума таблицы 4 (minW) - остаток с
-// одной основной делится на 2 доски. Доборные - вверх до ширины «в наличии».
-function g2991FillBoards(space, mainW, roundWidths, minW, widths) {
+// Раскладка досок щита: основная ширина - mainW; остаток - одной доборной
+// доской, а если она уже минимума таблицы 4 (minW) - остаток с одной
+// основной доской делится на две доборные. Ширины не округляются (по
+// указанию пользователя): сумма ширин равна размеру щита; доборные - вверх
+// до ширины «в наличии» (widths), если она выбрана.
+function g2991FillBoards(space, mainW, minW, widths) {
   space = Math.round(space);
-  if (roundWidths) return { mainQty: Math.ceil(space / mainW - 1e-9), extra: [], warn: false };
   let mainQty = Math.floor(space / mainW + 1e-9);
   const rem = space - mainQty * mainW;
   let extra = [], warn = false;
@@ -4474,7 +4468,7 @@ const G2991_TYPE = {
   key: 'i',
   title: 'тип I',
   subtitle: 'Ящик дощатый неразборный плотный, торцовые стенки без планок',
-  checkboxes: ['concentrated', 'packet', 'noRoundBoardWidths', 'noLid'],
+  checkboxes: ['concentrated', 'packet', 'noLid'],
   boxImg: BOX_G2991_I_IMG,
   diagrams: diagramsG2991I,
   compute: input => computeGost2991I(input),   // расчёт в браузере (i/compute/compute.js)
@@ -4736,21 +4730,20 @@ function torecLayout(H, torecW, bokJoints, minW, widths) {
   return { clash: true };
 }
 
-// Строки торца по раскладке torecLayout (снизу вверх). С округлением ширин
-// верхняя доска - шириной средних (лишнее подрежут на месте), без - по
-// остатку (вверх до ширины «в наличии»).
+// Строки торца по раскладке torecLayout (снизу вверх). Верхняя доска - по
+// остатку (вверх до ширины «в наличии»), сумма ширин равна высоте груза.
 function torecRows(layout, ctx) {
-  const { t, W, H, torecW, roundWidths, minW, widths, warnings } = ctx;
+  const { t, W, H, torecW, minW, widths, warnings } = ctx;
   const row = (name, w, qty) => ({ name, t, w, l: W, qty });
-  if (layout.single) return [row('Доска торца', roundWidths ? torecW : g2991RoundWidth(H, widths), 1)];
+  if (layout.single) return [row('Доска торца', g2991RoundWidth(H, widths), 1)];
   if (layout.clash) {
     warnings.push('Торец: не удалось развести стыки досок торца и бока - часть стыков торца совпадает со стыками бока (п. 1.2).');
-    const fb = g2991FillBoards(H, torecW, roundWidths, minW, widths);
+    const fb = g2991FillBoards(H, torecW, minW, widths);
     if (fb.warn) warnings.push(`Торец: доборная доска уже ${minW} мм (минимум по таблице 4 ГОСТ 2991-85).`);
     return g2991BoardRows('Доска торца', t, W, fb, torecW);
   }
   const { w0, m, k, top } = layout;
-  const topW = roundWidths ? m : g2991RoundWidth(top, widths);
+  const topW = g2991RoundWidth(top, widths);
   const middle = k + (w0 === m ? 1 : 0) + (topW === m ? 1 : 0);
   return [
     ...(w0 !== m ? [row('Доска торца (нижняя)', w0, 1)] : []),
@@ -4768,7 +4761,6 @@ function computeGost2991I(input) {
   const warnings = [];
   const opts = { species: SPECIES.includes(input.species) ? input.species : 'conifer', concentrated: !!input.concentrated, packet: !!input.packet };
   const noLid = !!input.noLid;
-  const roundWidths = input.roundBoardWidths !== false;
   const widths = input.availableWidths || [];
   const bw = g2991BoardWidths(input.mainWidth, widths);
   const minW = g2991MinBoardWidth(MASS);
@@ -4790,7 +4782,7 @@ function computeGost2991I(input) {
 
   // Детали.
   const fill = (space, label) => {
-    const fb = g2991FillBoards(space, bw.main, roundWidths, minW, widths);
+    const fb = g2991FillBoards(space, bw.main, minW, widths);
     if (fb.warn) warnings.push(`${label}: доборная доска уже ${minW} мм (минимум по таблице 4 ГОСТ 2991-85).`);
     return fb;
   };
@@ -4803,7 +4795,7 @@ function computeGost2991I(input) {
   const bokRows = g2991BoardRows('Доска бока', bokT, len, bokFill, bw.main);
   const bokJoints = g2991Joints(g2991LayoutWidths(bokFill, bw.main), H);
   const torec = torecRows(torecLayout(H, bw.torec, bokJoints, minW, widths),
-    { t: torecT, W, H, torecW: bw.torec, roundWidths, minW, widths, warnings });
+    { t: torecT, W, H, torecW: bw.torec, minW, widths, warnings });
 
   const totalVolume = g2991RowsVolume(dnoRows) + g2991RowsVolume(lidRows) + g2991RowsVolume(torec) * 2 + g2991RowsVolume(bokRows) * 2;
   const woodDensity = Number.isFinite(input.woodDensity) && input.woodDensity > 0 ? input.woodDensity : WOOD_DENSITY_KG_M3;
@@ -5492,7 +5484,6 @@ function buildCalcInput(){
     species: (document.querySelector('input[name="species"]:checked') || {}).value || 'conifer',
     concentrated: checked('concentrated'),
     packet: checked('packet'),
-    roundBoardWidths: !checked('noRoundBoardWidths'), // по умолчанию ширины округляются
     verticalEnd: checked('verticalEnd'),               // только у II-1
     noLid: checked('noLid'),
     availableThicknesses: thicknessPicker.get(),

@@ -2223,11 +2223,6 @@ function siteConfirm(opts){
         <input type="checkbox" id="packet">
         <span>Пакетные или контейнерные перевозки<span class="option-hint">Толщина досок от 13 мм - на одну градацию меньше (п. 1.13)</span></span>
       </label>
-      <div class="option-group-title">Доски</div>
-      <label>
-        <input type="checkbox" id="noRoundBoardWidths">
-        <span>Не округлять ширину досок<span class="option-hint">Остаток закрывают доборные доски (не уже минимума таблицы 4). Без галочки все доски основной ширины (выбирается в карточке ширин, по умолчанию 100 мм): лишнее у последней доски подрежут на месте</span></span>
-      </label>
       <div class="option-group-title">Конструкция</div>
       <label>
         <input type="checkbox" id="verticalEnd">
@@ -3024,14 +3019,13 @@ function g2991RoundWidth(w, widths) {
   const a = widths.find(v => v >= w);
   return a === undefined ? w : a;
 }
-// Раскладка досок щита (как в ГОСТ 10198-91, fillBoards): основная ширина -
-// mainW; с округлением (по умолчанию) все доски основной ширины (лишнее у
-// последней доски подрежут на месте); без округления - остаток одной
-// доборной доской, а если она уже минимума таблицы 4 (minW) - остаток с
-// одной основной делится на 2 доски. Доборные - вверх до ширины «в наличии».
-function g2991FillBoards(space, mainW, roundWidths, minW, widths) {
+// Раскладка досок щита: основная ширина - mainW; остаток - одной доборной
+// доской, а если она уже минимума таблицы 4 (minW) - остаток с одной
+// основной доской делится на две доборные. Ширины не округляются (по
+// указанию пользователя): сумма ширин равна размеру щита; доборные - вверх
+// до ширины «в наличии» (widths), если она выбрана.
+function g2991FillBoards(space, mainW, minW, widths) {
   space = Math.round(space);
-  if (roundWidths) return { mainQty: Math.ceil(space / mainW - 1e-9), extra: [], warn: false };
   let mainQty = Math.floor(space / mainW + 1e-9);
   const rem = space - mainQty * mainW;
   let extra = [], warn = false;
@@ -4478,7 +4472,7 @@ const G2991_TYPE = {
   key: 'ii1',
   title: 'тип II-1',
   subtitle: 'Ящик дощатый неразборный плотный, торцовые стенки на двух планках',
-  checkboxes: ['concentrated', 'packet', 'noRoundBoardWidths', 'verticalEnd', 'noLid'],
+  checkboxes: ['concentrated', 'packet', 'verticalEnd', 'noLid'],
   boxImg: BOX_G2991_II1_IMG,
   diagrams: diagramsG2991II1,
   compute: input => computeGost2991II1(input),   // расчёт в браузере (ii1/compute/compute.js)
@@ -4751,7 +4745,7 @@ function computeGost2991II1(input) {
 
   // Детали.
   const fill = (space, label) => {
-    const fb = g2991FillBoards(space, mainW, input.roundBoardWidths !== false, minW, widths);
+    const fb = g2991FillBoards(space, mainW, minW, widths);
     if (fb.warn) warnings.push(`${label}: доборная доска уже ${minW} мм (минимум по таблице 4 ГОСТ 2991-85).`);
     return fb;
   };
@@ -5455,7 +5449,6 @@ function buildCalcInput(){
     species: (document.querySelector('input[name="species"]:checked') || {}).value || 'conifer',
     concentrated: checked('concentrated'),
     packet: checked('packet'),
-    roundBoardWidths: !checked('noRoundBoardWidths'), // по умолчанию ширины округляются
     verticalEnd: checked('verticalEnd'),               // только у II-1
     noLid: checked('noLid'),
     availableThicknesses: thicknessPicker.get(),
