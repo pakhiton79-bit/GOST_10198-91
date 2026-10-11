@@ -3235,10 +3235,9 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     valid = [{count:finalCount, h:base.h, w:base.w, lengthUsed:base.lengthUsed, lengthSnapped:base.lengthSnapped}];
   }
 
-  let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
-  if(!chosen){
-    chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
-  }
+  // Всегда вариант с минимальным числом полозьев (по указанию пользователя;
+  // раньше - сначала тот, чья толщина есть «в наличии»).
+  const chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
   return {
     h: chosen.h, w: chosen.w, count: chosen.count,
     massUsed: massRow.mass, massSnapped,
@@ -3412,7 +3411,9 @@ function chooseSkids(c, skidLen, skidCalcWidth) {
     if (poloz.exceeded) {
       warnings.push('Масса вне диапазона п.1.6.5 (500–20000 кг) - сечение полоза принято по крайнему значению.');
     }
-    const count = Math.max((W > 1100) ? 3 : 2, minSkidsByWidth162(skidCalcWidth, poloz.w));
+    // Минимальное число полозьев с шагом осей не больше 1200 мм (п.1.6.2; по
+    // указанию пользователя, без правила «3 при ширине больше 1100»).
+    const count = minSkidsByWidth162(skidCalcWidth, poloz.w);
     return { count, t: roundUpToAvailable(poloz.h, 'Полоз'), w: poloz.w };
   }
   const sel = selectSkid19(MASS, skidLen, skidCalcWidth); // толщины «в наличии» - availableThicknesses из ../options.js

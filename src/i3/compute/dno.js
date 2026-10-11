@@ -11,7 +11,9 @@ function chooseSkids(c, skidLen, skidCalcWidth) {
     if (poloz.exceeded) {
       warnings.push('Масса вне диапазона п.1.6.5 (500–20000 кг) - сечение полоза принято по крайнему значению.');
     }
-    const count = Math.max((W > 1100) ? 3 : 2, minSkidsByWidth162(skidCalcWidth, poloz.w));
+    // Минимальное число полозьев с шагом осей не больше 1200 мм (п.1.6.2; по
+    // указанию пользователя, без правила «3 при ширине больше 1100»).
+    const count = minSkidsByWidth162(skidCalcWidth, poloz.w);
     return { count, t: roundUpToAvailable(poloz.h, 'Полоз'), w: poloz.w };
   }
   const sel = selectSkid19(MASS, skidLen, skidCalcWidth); // толщины «в наличии» - availableThicknesses из ../options.js

@@ -162,10 +162,9 @@ function selectSkid19(mass, workingLengthMm, widthMm){
     valid = [{count:finalCount, h:base.h, w:base.w, lengthUsed:base.lengthUsed, lengthSnapped:base.lengthSnapped}];
   }
 
-  let chosen = availableThicknesses.length ? valid.find(o=>availableThicknesses.includes(o.h)) : null;
-  if(!chosen){
-    chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
-  }
+  // Всегда вариант с минимальным числом полозьев (по указанию пользователя;
+  // раньше - сначала тот, чья толщина есть «в наличии»).
+  const chosen = valid.reduce((a,b)=> b.count<a.count ? b : a);
   return {
     h: chosen.h, w: chosen.w, count: chosen.count,
     massUsed: massRow.mass, massSnapped,
