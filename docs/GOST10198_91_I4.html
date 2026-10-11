@@ -2232,8 +2232,6 @@ function siteConfirm(opts){
       <div class="note" id="thicknessNote" style="display:none;margin-top:14px;"></div>
     </div>
 
-    <!-- Выбор способа крепления временно убран (по указанию пользователя), не удалять.
-         Всегда «Крепление к доскам дна»; «Крепление за полозья» в списке ниже тоже временно убрано.
     <div class="card">
       <h2>Тип крепления груза (сечение полоза)</h2>
       <div class="thickness-filter dropdown-wrap">
@@ -2255,7 +2253,6 @@ function siteConfirm(opts){
         </div>
       </div>
     </div>
-    -->
 
     <div class="card">
       <h2>Промежутки между досками обшивки</h2>
@@ -6495,9 +6492,7 @@ const FASTENING_LABELS = {
 let fasteningType = 'floor_boards'; // по умолчанию - к доскам дна (по указанию пользователя)
 try{
   const saved = localStorage.getItem(FASTENING_STORAGE_KEY);
-  // Крепление за полозья временно убрано (по указанию пользователя) -
-  // сохранённый выбор 'skid' не восстанавливается.
-  if(/* saved === 'skid' || */ saved === 'floor_boards') fasteningType = saved;
+  if(saved === 'skid' || saved === 'floor_boards') fasteningType = saved;
 }catch(e){}
 
 // «Убрать доски дна» - только при креплении за полозья: при креплении к
@@ -6526,9 +6521,7 @@ function toggleFasteningDropdown(){
   document.getElementById('fasteningDropdownPanel').classList.toggle('open');
 }
 
-// Переключатель способа крепления временно убран со страницы (по указанию
-// пользователя) - надпись на нём не обновляется, крепление всегда к доскам дна.
-// updateFasteningSummary();
+updateFasteningSummary();
 showRemoveFloorBoardsRow();
 
 // «Убрать подполозные доски» и «Погрузка погрузчиком» - взаимоисключающие.
