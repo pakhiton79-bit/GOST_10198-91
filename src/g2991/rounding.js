@@ -1,7 +1,7 @@
 // ГОСТ 2991-85: округление вверх до толщин «в наличии» и предупреждения -
 // копия makeRoundUpToAvailable / thicknessPartWarnings из helpers.js сайта
 // (backend/src/helpers.js): толщина по ГОСТ больше максимальной в наличии -
-// берётся толщина по ГОСТ с предупреждением.
+// берётся максимальная в наличии (тоньше ГОСТ) с предупреждением.
 
 function makeRoundUpToAvailable(availableThicknesses) {
   const state = { exceeded: false, parts: [] };
@@ -13,7 +13,7 @@ function makeRoundUpToAvailable(availableThicknesses) {
     for (const a of availableThicknesses) { if (t <= a) return a; }
     if (!label) state.exceeded = true;
     else state.parts.push({ label, t });
-    return t;
+    return availableThicknesses[availableThicknesses.length - 1];
   };
   fn.state = state;
   return fn;
@@ -22,5 +22,5 @@ function makeRoundUpToAvailable(availableThicknesses) {
 function thicknessPartWarnings(round, availableThicknesses) {
   const max = availableThicknesses[availableThicknesses.length - 1];
   return round.state.parts.map(p =>
-    `${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${max} мм - использовано ${p.t} мм по ГОСТ, такой толщины нет в наличии.`);
+    `${p.label}: по ГОСТ ${p.t} мм, в наличии максимум ${max} мм - использовано ${max} мм, это меньше, чем требует ГОСТ.`);
 }
