@@ -1590,11 +1590,10 @@
   /* 12. Полоса подготовки листа под кнопками печати. */
   .print-actions{position:relative;}
   .print-progress{position:absolute;left:0;right:0;bottom:-8px;height:3px;border-radius:2px;background:var(--rule);overflow:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease;}
-  .print-progress > span{display:block;height:100%;width:0;border-radius:2px;background:var(--accent);}
+  /* transform, а не width - полоса движется, даже пока страница занята сборкой листа */
+  .print-progress > span{display:block;height:100%;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;}
   .print-progress.run{opacity:1;}
-  .print-progress.run > span{width:85%;transition:width 1.6s cubic-bezier(.2,.7,.2,1);}
   .print-progress.done{opacity:0;transition:opacity .3s ease .35s;}
-  .print-progress.done > span{width:100%;transition:width .3s ease;}
   @media print{.print-progress{display:none !important;}}
   @media (prefers-reduced-motion:no-preference){
     .cb-dots i{animation:motion-dot .9s ease-in-out infinite;}
@@ -5219,7 +5218,7 @@ document.addEventListener('change', onAnyParamChange);
 //  3. Изменившиеся после пересчёта ячейки таблиц деталей коротко подсвечиваются.
 //  4. Размерные линии чертежей прорисовываются, когда чертёж виден на экране.
 //  7. Новое предупреждение выезжает сверху, значок ⚠ покачивается.
-// 12. Полоса под кнопками «Печать»/«Скачать PDF», пока готовится лист.
+// 12. Полоса под кнопками «Печать»/«Скачать PDF» - по этапам подготовки листа.
 // Галочки (6) и окна (8) - только CSS, переключатель версий (5) - в
 // common-version-switch.js. При «уменьшить движение» в системе ничего не
 // анимируется.
@@ -5386,12 +5385,29 @@ function motionPrintStart(){
   if(!bar) return;
   clearTimeout(motionPrintTimer);
   bar.className = 'print-progress';
+  const fill = bar.firstChild;
+  fill.style.transition = 'none';
+  fill.style.transform = 'scaleX(0)';
   void bar.offsetWidth;
   bar.classList.add('run');
+}
+// Этап подготовки пройден: полоса - на долю p (0..1) по факту. crawlMs - у
+// долгого этапа без своего прогресса (съёмка листа для PDF): полоса за это
+// время медленно ползёт к p, не доходя до следующей отметки раньше времени.
+// Промис - после отрисовки кадра, чтобы полоса успела сдвинуться до
+// следующего тяжёлого шага.
+function motionPrintStep(p, crawlMs){
+  const bar = document.querySelector('.print-actions .print-progress.run');
+  if(!bar) return Promise.resolve();
+  const fill = bar.firstChild;
+  fill.style.transition = crawlMs ? `transform ${crawlMs}ms cubic-bezier(.1,.6,.3,1)` : 'transform .25s ease';
+  fill.style.transform = `scaleX(${p})`;
+  return new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
 }
 function motionPrintEnd(){
   const bar = document.querySelector('.print-actions .print-progress.run');
   if(!bar) return;
+  motionPrintStep(1);
   bar.classList.add('done');
   motionPrintTimer = setTimeout(() => { bar.className = 'print-progress'; }, 700);
 }
@@ -6008,6 +6024,10 @@ function beginPrintJob(kind){
   // Кадр отрисовки - чтобы индикатор показался до тяжёлой сборки листа.
   return new Promise(r => requestAnimationFrame(() => setTimeout(() => r(prev), 0)));
 }
+// Этап подготовки листа пройден - полоса прогресса (common-motion.js) на долю p.
+function printStep(p, crawlMs){
+  return typeof motionPrintStep === 'function' ? motionPrintStep(p, crawlMs) : Promise.resolve();
+}
 function endPrintJob(kind, prev){
   printInProgress = false;
   const btn = document.getElementById('calcBtn');
@@ -6072,9 +6092,13 @@ function printBox(){
   beginPrintJob('printing').then(p=>{
     prev = p;
     buildAndSizePrintArea();
-    return waitImagesReady(document.getElementById('printScale'));
+    return printStep(.35);
+  }).then(()=>{
+    return waitImagesReady(document.getElementById('printScale')).then(()=>printStep(.7));
   }).then(()=>{
     fitPrintAreaToOnePage(document.getElementById('printArea'));
+    return printStep(1);
+  }).then(()=>{
     window.print();
   }).finally(()=>{ endPrintJob('printing', prev); });
 }
@@ -6252,12 +6276,19 @@ function downloadPdf(){
   beginPrintJob('pdf').then(p=>{
     prev = p;
     buildAndSizePrintArea();
-    return waitImagesReady(document.getElementById('printScale'));
+    return printStep(.1);
+  }).then(()=>{
+    return waitImagesReady(document.getElementById('printScale')).then(()=>printStep(.2));
   }).then(()=>{
     const printArea = document.getElementById('printArea');
     fitPrintAreaToOnePage(printArea);
     bakeDiagramArrowStrokeWidths(printArea);
-    return rasterizeDiagramArrows(printArea);
+    return printStep(.3);
+  }).then(()=>{
+    return rasterizeDiagramArrows(document.getElementById('printArea')).then(()=>printStep(.45));
+  }).then(()=>{
+    // Съёмка листа - самый долгий этап без своего прогресса: полоса ползёт.
+    return printStep(.9, 6000);
   }).then(()=>{
     const printArea = document.getElementById('printArea');
     // Масштаб 2x - иначе текст/тонкие линии чертежей на растровой картинке
@@ -6274,7 +6305,7 @@ function downloadPdf(){
         clonedEl.style.pointerEvents = 'auto';
       }
     });
-  }).then(canvas => {
+  }).then(canvas => printStep(.95).then(() => canvas)).then(canvas => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const m = PRINT_PAGE.marginMM;
