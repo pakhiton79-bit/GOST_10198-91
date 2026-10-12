@@ -1602,10 +1602,6 @@
     #calcBtn.is-done .cb-done svg path{stroke-dasharray:24;animation:motion-tick .32s ease-out backwards;}
     /* 2/3. Изменившиеся ячейки таблиц деталей. */
     #boardTables td.motion-flash{animation:motion-flash .9s ease-out;}
-    /* 4. Размерные линии чертежей, затем стрелки и подписи. */
-    #boardTables .motion-draw .diagram-arrows line{animation:motion-draw .7s cubic-bezier(.4,0,.2,1) backwards;}
-    #boardTables .motion-draw .diagram-arrows polygon{animation:motion-fade .25s ease-out .45s backwards;}
-    #boardTables .motion-draw .diagram-label{animation:motion-fade .3s ease-out .55s backwards;}
     /* 6. */
     input[type="checkbox"].motion-chk{animation:motion-chk .26s cubic-bezier(.3,1.6,.5,1);}
     /* 7. Предупреждения. */
@@ -1618,7 +1614,6 @@
   @keyframes motion-dot{0%,80%,100%{opacity:.4;transform:translateY(0);}40%{opacity:1;transform:translateY(-3px);}}
   @keyframes motion-tick{from{stroke-dashoffset:24;}to{stroke-dashoffset:0;}}
   @keyframes motion-flash{from{background-color:var(--accent-wash);}}
-  @keyframes motion-draw{from{stroke-dasharray:1;stroke-dashoffset:1;}to{stroke-dasharray:1;stroke-dashoffset:0;}}
   @keyframes motion-fade{from{opacity:0;}}
   @keyframes motion-chk{
     0%{transform:scale(.8);background-size:0 0;}
@@ -5588,14 +5583,13 @@ document.addEventListener('change', onAnyParamChange);
 //  1. Кнопка «Рассчитать»: точки, пока идёт расчёт, затем зелёная «Готово».
 //  2. Числа блока «Итог» досчитываются от прежних значений к новым.
 //  3. Изменившиеся после пересчёта ячейки таблиц деталей коротко подсвечиваются.
-//  4. Размерные линии чертежей прорисовываются, когда чертёж виден на экране.
 //  7. Новое предупреждение выезжает сверху, значок ⚠ покачивается.
 // 12. Полоса под кнопками «Печать»/«Скачать PDF» - по этапам подготовки листа.
 // Галочки (6) и окна (8) - только CSS, переключатель версий (5) - в
 // common-version-switch.js. При «уменьшить движение» в системе ничего не
 // анимируется.
 const motionOn = () => !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-let motionSnap = null, motionDotsTimer = null, motionDoneTimer = null, motionDrawObserver = null;
+let motionSnap = null, motionDotsTimer = null, motionDoneTimer = null;
 const motionCounters = new Map();
 
 // Кнопка «Рассчитать»: три слоя в одной ячейке сетки (ширина кнопки - по
@@ -5652,7 +5646,6 @@ function motionCalcEnd(ok){
       td.addEventListener('animationend', () => td.classList.remove('motion-flash'), { once: true });
     });
   }
-  motionWatchDiagrams();
   const warn = document.getElementById('warningsTop');
   if(warn && warn.style.display !== 'none' && warn.textContent.trim() && warn.textContent !== snap.warn) motionWarn(warn);
 }
@@ -5690,26 +5683,6 @@ function motionCount(el, oldText){
   requestAnimationFrame(step);
 }
 
-// Размерные линии: прорисовка запускается, когда чертёж появляется на экране.
-function motionWatchDiagrams(){
-  if(motionDrawObserver) motionDrawObserver.disconnect();
-  const wraps = document.querySelectorAll('#boardTables .diagram-wrap:not(.diagram-placeholder)');
-  if(!wraps.length || !window.IntersectionObserver) return;
-  motionDrawObserver = new IntersectionObserver(entries => entries.forEach(en => {
-    if(!en.isIntersecting) return;
-    motionDrawObserver.unobserve(en.target);
-    const wrap = en.target;
-    wrap.querySelectorAll('.diagram-arrows line').forEach(l => l.setAttribute('pathLength', '1'));
-    wrap.classList.add('motion-draw');
-    setTimeout(() => motionUndraw(wrap), 1300);
-  }));
-  wraps.forEach(w => motionDrawObserver.observe(w));
-}
-function motionUndraw(wrap){
-  wrap.classList.remove('motion-draw');
-  wrap.querySelectorAll('.diagram-arrows line[pathLength]').forEach(l => l.removeAttribute('pathLength'));
-}
-
 function motionWarn(warn){
   warn.querySelectorAll(':scope > div').forEach(d => {
     const t = d.firstChild;
@@ -5731,8 +5704,6 @@ function motionWarn(warn){
 function motionFinishAll(){
   motionCounters.forEach(job => { job.node.textContent = job.target; });
   motionCounters.clear();
-  if(motionDrawObserver) motionDrawObserver.disconnect();
-  document.querySelectorAll('#boardTables .motion-draw').forEach(motionUndraw);
 }
 window.addEventListener('beforeprint', motionFinishAll);
 
