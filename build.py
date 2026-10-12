@@ -94,6 +94,7 @@ OUT_DIR = ROOT / "docs"  # "docs" (не "dist") - так папку можно �
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
 COMMON_CALC_STATE_JS = SRC_DIR / "common-calc-state.js"
+COMMON_MOTION_JS = SRC_DIR / "common-motion.js"
 COMMON_TABLE_EDITS_JS = SRC_DIR / "common-table-edits.js"
 COMMON_DIAGRAM_FIT_JS = SRC_DIR / "common-diagram-fit.js"
 COMMON_PRINT_JS = SRC_DIR / "common-print.js"
@@ -141,6 +142,7 @@ I3_PARTS = {
     "/*__I3_DIAGRAM_END_PANEL_JS__*/": I3_DIR / "diagrams" / "end-panel.js",
     "/*__I3_DIAGRAM_BOKOVOY_JS__*/": I3_DIR / "diagrams" / "bokovoy.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -187,6 +189,7 @@ I4_PARTS = {
     "/*__I4_DIAGRAM_END_PANEL_JS__*/": I4_DIR / "diagrams" / "end-panel.js",
     "/*__I4_DIAGRAM_BOKOVOY_JS__*/": I4_DIR / "diagrams" / "bokovoy.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -224,6 +227,7 @@ I1_PARTS = {
     "/*__I1_DIAGRAM_PANEL_JS__*/": I1_DIR / "diagrams" / "panel.js",
     "/*__I1_DIAGRAM_TOREC_JS__*/": I1_DIR / "diagrams" / "torec.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -260,6 +264,7 @@ I2_PARTS = {
     "/*__I2_DIAGRAM_PANEL_JS__*/": I2_DIR / "diagrams" / "panel.js",
     "/*__I2_DIAGRAM_TOREC_JS__*/": I2_DIR / "diagrams" / "torec.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -301,6 +306,7 @@ II1_PARTS = {
     "/*__II1_DIAGRAM_TOREC_JS__*/": II1_DIR / "diagrams" / "torec.js",
     "/*__II1_DIAGRAM_BOK_JS__*/": II1_DIR / "diagrams" / "bok.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -343,6 +349,7 @@ II1N_PARTS = {
     "/*__II1_DIAGRAM_TOREC_JS__*/": II1N_DIR / "diagrams" / "torec.js",
     "/*__II1_DIAGRAM_BOK_JS__*/": II1N_DIR / "diagrams" / "bok.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -394,6 +401,7 @@ II2_PARTS = {
     "/*__II2_DIAGRAM_KRYSHKA_JS__*/": II2_DIR / "diagrams" / "kryshka.js",
     "/*__II2_DIAGRAM_PANEL_JS__*/": II2_DIR / "diagrams" / "panel.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -441,6 +449,7 @@ II2N_PARTS = {
     "/*__II2_DIAGRAM_KRYSHKA_JS__*/": II2N_DIR / "diagrams" / "kryshka.js",
     "/*__II2_DIAGRAM_PANEL_JS__*/": II2N_DIR / "diagrams" / "panel.js",
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -482,6 +491,7 @@ III1_PARTS = {
     "/*__III1_COMPUTE_JS__*/": III1_DIR / "compute" / "compute.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+    "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
     "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
     "/*__COMMON_DIAGRAM_FIT_JS__*/": COMMON_DIAGRAM_FIT_JS,
     "/*__COMMON_PRINT_JS__*/": COMMON_PRINT_JS,
@@ -532,6 +542,7 @@ def g2991_parts(type_dir):
         "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
         "/*__G2991_BOARDS_JS__*/": G2991_DIR / "boards.js",
         "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
+        "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
         "/*__COMMON_TABLE_EDITS_JS__*/": COMMON_TABLE_EDITS_JS,
         "/*__COMMON_TIMESETTINGS_JS__*/": COMMON_TIMESETTINGS_JS,
         "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,

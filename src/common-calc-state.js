@@ -179,6 +179,7 @@ async function calculate(){
   calcEverRun = true;
   setCalcInProgress(true);
   setCalcStatus('loading');
+  if(typeof motionCalcStart === 'function') motionCalcStart();
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
   try{
     await calculateNow();
@@ -208,6 +209,8 @@ async function calculate(){
       if(currentCalcStatus() === 'error' && errEl && errEl.textContent) calcErrorSnapshot = {sig: calcStateSignature(), text: errEl.textContent};
     }
     highlightErrorFields(true);
+    // Микроанимации результата (common-motion.js).
+    if(typeof motionCalcEnd === 'function') motionCalcEnd(currentCalcStatus() === 'check');
   }
 }
 // Предупреждение о ручных правках (по указанию пользователя): правки таблиц
