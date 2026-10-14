@@ -2,7 +2,7 @@
 // доски с промежутками (как у II-1, ../ii1/kryshka.js). Доски - поперёк
 // ящика, раскладываются по наружной длине ящика.
 
-// c - контекст расчёта (см. compute.js); s - согласованные размеры (../ii1/sizing.js).
+// c - контекст расчёта (см. compute.js); s - согласованные размеры (sizing.js).
 function buildKryshka(c, s) {
   const { L, W, warnings, skinT, optimizeSizes } = c;
   const rows = [];

@@ -2798,6 +2798,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
 </script>
 <script>
+// Своя копия src/i1/compute/helpers.js для типа ГОСТ 2991-85 - типы не зависят друг от друга
+// (правка одного не задевает другие).
 // ГОСТ 10198-91, тип I-1: общие расчётные утилиты.
 
 function roundup(x, decimals){
@@ -3105,7 +3107,7 @@ function thicknessPartWarnings(round, availableThicknesses) {
 
 // ГОСТ 2991-85: доски щитов - общее для всех типов. Ширины досок с учётом
 // «в наличии», строки таблицы деталей, объём, порядок досок в щите и стыки.
-// Копия backend/src/g2991/boards.js сайта; vol - из src/i1/compute/helpers.js,
+// Копия backend/src/g2991/boards.js сайта; vol - из src/g2991/helpers.js,
 // таблицы - из src/g2991/table2.js.
 
 // Доски торца типа I (по указанию пользователя - пошире основных, чтобы
@@ -4922,7 +4924,7 @@ const mainWidthPicker = makeMainWidthPicker({ id: 'mainWidth', storageKey: G2991
 // ширины «в наличии» (g2991BoardWidths, boards.js); доборные - как в ГОСТ
 // 10198-91 (g2991FillBoards), не уже минимума таблицы 4.
 // Расчёт идёт в браузере: findNegativeField, inputLimitsError - из
-// src/i1/compute/helpers.js; makeRoundUpToAvailable, thicknessPartWarnings - из
+// src/g2991/helpers.js; makeRoundUpToAvailable, thicknessPartWarnings - из
 // src/g2991/rounding.js; таблицы ГОСТ - из src/g2991/table2.js; доски щитов -
 // из src/g2991/boards.js; норма времени - computeNormaVremeni
 // (common-timesettings.js) по настройкам типа.

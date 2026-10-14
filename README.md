@@ -122,8 +122,8 @@ from a branch → папка `/docs`).
 - `src/i4/compute/` - расчёт: `compute.js` (`computeGost10198I4`, наибольший
   промежуток обязателен), `boards.js` (доски с промежутками -
   `fillGapBoards`), `dno.js`, `kryshka.js`, `end-panel.js`, `bokovoy.js`,
-  `plank-layout.js`; таблицы ГОСТ и `helpers.js` - общие с I-3
-  (`src/i3/compute`).
+  `plank-layout.js`; таблицы ГОСТ и `helpers.js` - своя копия из I-3
+  (`sections.js`, `data/`).
 - `src/i4/options.js`, `plank-layout.js`, `beams.js` - как у I-3;
   `board-gaps.js` - ползунок и поле наибольшего промежутка между досками (10-100 мм, запоминается).
 - `src/i4/calc-i4.js`, `render-i4.js`, `print-i4.js` - расчёт, вывод, печать.
@@ -169,7 +169,8 @@ from a branch → папка `/docs`).
   `fillGapBoards`, 10-150 мм), `dno.js`, `kryshka.js`, `end-panel.js`,
   `bokovoy.js` (при досках крышки поперёк - по линиям крышки, крайние доски
   уже 100 мм на толщину обшивки торца); согласование
-  размеров, каркасы и таблицы - общие с II-1 (`src/ii1/compute`).
+  размеров, каркасы и таблицы - свои копии из II-1 (`helpers.js`, `gost-tables.js`,
+  `logic.js`, `sizing.js`, `frame.js`).
 - `src/ii2/options.js`, `manual-counts.js`, `fine-thickness.js` - как у II-1;
   `board-gaps.js` - ползунок и поле наибольшего промежутка между досками
   (10-150 мм, запоминается).

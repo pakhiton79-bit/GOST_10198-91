@@ -24,7 +24,7 @@
 // (по умолчанию 100 мм), доски торца - 150 мм, обе вверх до ширины «в
 // наличии»; доборные - не уже минимума таблицы 4.
 // Расчёт идёт в браузере: findNegativeField, inputLimitsError - из
-// src/i1/compute/helpers.js; makeRoundUpToAvailable, thicknessPartWarnings - из
+// src/g2991/helpers.js; makeRoundUpToAvailable, thicknessPartWarnings - из
 // src/g2991/rounding.js; таблицы ГОСТ - из src/g2991/table2.js; доски щитов -
 // из src/g2991/boards.js; норма времени - computeNormaVremeni
 // (common-timesettings.js) по настройкам типа.

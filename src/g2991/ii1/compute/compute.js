@@ -29,7 +29,7 @@
 // ширины «в наличии» (g2991BoardWidths, boards.js); доборные - как в ГОСТ
 // 10198-91 (g2991FillBoards), не уже минимума таблицы 4.
 // Расчёт идёт в браузере: findNegativeField, inputLimitsError - из
-// src/i1/compute/helpers.js; makeRoundUpToAvailable, thicknessPartWarnings - из
+// src/g2991/helpers.js; makeRoundUpToAvailable, thicknessPartWarnings - из
 // src/g2991/rounding.js; таблицы ГОСТ - из src/g2991/table2.js; доски щитов -
 // из src/g2991/boards.js; норма времени - computeNormaVremeni
 // (common-timesettings.js) по настройкам типа.

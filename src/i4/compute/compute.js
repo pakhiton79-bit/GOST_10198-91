@@ -39,7 +39,7 @@ function makeThicknessOverrides(manualOverrides) {
 }
 
 // Расчёт идёт в браузере; функции узлов - из файлов этой папки, таблицы ГОСТ
-// - общие с I-3 (src/i3/compute). Толщины «в наличии» (availableThicknesses,
+// - копии из I-3 (свои в src/i4/compute). Толщины «в наличии» (availableThicknesses,
 // roundUpToAvailable, thicknessLimitExceeded) - из ../options.js.
 //
 // input: { fasteningType ('skid' - крепление за полозья | 'floor_boards' - к

@@ -160,8 +160,8 @@ I3_VARIANTS = [
 
 # Тип I-4 - отдельная копия I-3, обшивка с промежутками (как у I-2); файлы
 # разложены так же, как в gost_backend: compute/ - расчёт (backend/src/i4),
-# остальное - интерфейс и чертежи (frontend/public/js/i4). Таблицы ГОСТ -
-# общие с I-3 (src/i3/compute).
+# остальное - интерфейс и чертежи (frontend/public/js/i4). Таблицы ГОСТ и
+# helpers.js - своя копия из I-3 (src/i4/compute).
 I4_DIR = SRC_DIR / "i4"
 I4_SHELL = I4_DIR / "shell.html"
 I4_PARTS = {
@@ -169,11 +169,11 @@ I4_PARTS = {
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-    "/*__I4_HELPERS_JS__*/": I3_DIR / "compute" / "helpers.js",
-    "/*__I4_SECTIONS_JS__*/": I3_DIR / "compute" / "sections.js",
-    "/*__I4_TABLE19_JS__*/": I3_DIR / "compute" / "data" / "table19.js",
-    "/*__I4_TABLE4_JS__*/": I3_DIR / "compute" / "data" / "table4.js",
-    "/*__I4_TABLE14_JS__*/": I3_DIR / "compute" / "data" / "table14.js",
+    "/*__I4_HELPERS_JS__*/": I4_DIR / "compute" / "helpers.js",
+    "/*__I4_SECTIONS_JS__*/": I4_DIR / "compute" / "sections.js",
+    "/*__I4_TABLE19_JS__*/": I4_DIR / "compute" / "data" / "table19.js",
+    "/*__I4_TABLE4_JS__*/": I4_DIR / "compute" / "data" / "table4.js",
+    "/*__I4_TABLE14_JS__*/": I4_DIR / "compute" / "data" / "table14.js",
     "/*__I4_PLANK_LAYOUT_CALC_JS__*/": I4_DIR / "compute" / "plank-layout.js",
     "/*__I4_BOARDS_CALC_JS__*/": I4_DIR / "compute" / "boards.js",
     "/*__I4_DNO_JS__*/": I4_DIR / "compute" / "dno.js",
@@ -370,23 +370,21 @@ II2_DIR = SRC_DIR / "ii2"
 II2_SHELL = II2_DIR / "shell.html"
 # Тип II-2 - тот же ящик, что II-1, но обшивка с промежутками; файлы разложены
 # так же, как в gost_backend: compute/ - расчёт (backend/src/ii2; общие с II-1
-# части - из src/ii1/compute), остальное - интерфейс и чертежи
-# (frontend/public/js/ii2). Из чертежей II-1 берутся геометрия и подписи щитов
-# и крышки (torec.js, panel-generated.js, kryshka.js); у torec.js ссылки на
-# фото щитов II-1 вырезаются (II-2 их не показывает - иначе в страницу
-# попало бы ~2 МБ лишних картинок).
-II2_II1_TOREC_JS = re.sub(r'"data:image/jpeg;base64,__IMG:[A-Za-z0-9_.-]+__"', '""',
-                          (II1_DIR / "diagrams" / "torec.js").read_text(encoding="utf-8"))
+# части - свои копии в src/ii2/compute), остальное - интерфейс и чертежи
+# (frontend/public/js/ii2). Геометрия и подписи щитов и крышки - свои копии
+# чертежей II-1 (diagrams/torec.js, panel-generated.js, kryshka-gen.js); в
+# копии torec.js ссылок на фото щитов II-1 нет (II-2 их не показывает - иначе
+# в страницу попало бы ~2 МБ лишних картинок).
 II2_PARTS = {
     "/*__STYLE_CSS__*/": SRC_DIR / "style.css",
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-    "/*__II1_HELPERS_JS__*/": II1_DIR / "compute" / "helpers.js",
-    "/*__II1_GOST_TABLES_JS__*/": II1_DIR / "compute" / "gost-tables.js",
-    "/*__II1_LOGIC_JS__*/": II1_DIR / "compute" / "logic.js",
-    "/*__II1_SIZING_JS__*/": II1_DIR / "compute" / "sizing.js",
-    "/*__II1_FRAME_JS__*/": II1_DIR / "compute" / "frame.js",
+    "/*__II1_HELPERS_JS__*/": II2_DIR / "compute" / "helpers.js",
+    "/*__II1_GOST_TABLES_JS__*/": II2_DIR / "compute" / "gost-tables.js",
+    "/*__II1_LOGIC_JS__*/": II2_DIR / "compute" / "logic.js",
+    "/*__II1_SIZING_JS__*/": II2_DIR / "compute" / "sizing.js",
+    "/*__II1_FRAME_JS__*/": II2_DIR / "compute" / "frame.js",
     "/*__II2_BOARDS_CALC_JS__*/": II2_DIR / "compute" / "boards.js",
     "/*__II2_DNO_JS__*/": II2_DIR / "compute" / "dno.js",
     "/*__II2_KRYSHKA_JS__*/": II2_DIR / "compute" / "kryshka.js",
@@ -394,8 +392,9 @@ II2_PARTS = {
     "/*__II2_BOKOVOY_JS__*/": II2_DIR / "compute" / "bokovoy.js",
     "/*__II2_COMPUTE_JS__*/": II2_DIR / "compute" / "compute.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1_DIR / "diagrams" / "kryshka.js",
-    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1_DIR / "diagrams" / "panel-generated.js",
+    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II2_DIR / "diagrams" / "kryshka-gen.js",
+    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II2_DIR / "diagrams" / "panel-generated.js",
+    "/*__II1_DIAGRAM_TOREC_JS__*/": II2_DIR / "diagrams" / "torec.js",
     "/*__II2_DIAGRAM_BOARDS_JS__*/": II2_DIR / "diagrams" / "boards.js",
     "/*__II2_DIAGRAM_DNO_JS__*/": II2_DIR / "diagrams" / "dno.js",
     "/*__II2_DIAGRAM_KRYSHKA_JS__*/": II2_DIR / "diagrams" / "kryshka.js",
@@ -416,13 +415,13 @@ II2_PARTS = {
     "/*__II2_CALC_JS__*/": II2_DIR / "calc-ii2.js",
 }
 II2_VARIANTS = [
-    # torec.js II-1 без фото - готовой строкой (см. II2_II1_TOREC_JS выше).
-    {"out_name": "GOST10198_91_II2.html", "/*__II1_DIAGRAM_TOREC_JS__*/": II2_II1_TOREC_JS},
+    {"out_name": "GOST10198_91_II2.html"},
 ]
 
 # Тип II-2 (оптимальный) - независимая копия II-2 (src/ii2n) с изменениями
 # оптимального II-1: без опорных планок, каркас щитов ниже на поперечный брус
-# крышки, брус крышки = ширина груза + 2 стойки. Общие с II-1 части - те же.
+# крышки, брус крышки = ширина груза + 2 стойки. Общие с II-1 части - свои
+# копии (src/ii2n/compute, src/ii2n/diagrams).
 II2N_DIR = SRC_DIR / "ii2n"
 II2N_SHELL = II2N_DIR / "shell.html"
 II2N_PARTS = {
@@ -430,11 +429,11 @@ II2N_PARTS = {
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-    "/*__II1_HELPERS_JS__*/": II1_DIR / "compute" / "helpers.js",
-    "/*__II1_GOST_TABLES_JS__*/": II1_DIR / "compute" / "gost-tables.js",
-    "/*__II1_LOGIC_JS__*/": II1_DIR / "compute" / "logic.js",
-    "/*__II1_SIZING_JS__*/": II1_DIR / "compute" / "sizing.js",
-    "/*__II1_FRAME_JS__*/": II1_DIR / "compute" / "frame.js",
+    "/*__II1_HELPERS_JS__*/": II2N_DIR / "compute" / "helpers.js",
+    "/*__II1_GOST_TABLES_JS__*/": II2N_DIR / "compute" / "gost-tables.js",
+    "/*__II1_LOGIC_JS__*/": II2N_DIR / "compute" / "logic.js",
+    "/*__II1_SIZING_JS__*/": II2N_DIR / "compute" / "sizing.js",
+    "/*__II1_FRAME_JS__*/": II2N_DIR / "compute" / "frame.js",
     "/*__II2_BOARDS_CALC_JS__*/": II2N_DIR / "compute" / "boards.js",
     "/*__II2_DNO_JS__*/": II2N_DIR / "compute" / "dno.js",
     "/*__II2_KRYSHKA_JS__*/": II2N_DIR / "compute" / "kryshka.js",
@@ -442,8 +441,9 @@ II2N_PARTS = {
     "/*__II2_BOKOVOY_JS__*/": II2N_DIR / "compute" / "bokovoy.js",
     "/*__II2_COMPUTE_JS__*/": II2N_DIR / "compute" / "compute.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
-    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II1_DIR / "diagrams" / "kryshka.js",
-    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II1_DIR / "diagrams" / "panel-generated.js",
+    "/*__II1_DIAGRAM_KRYSHKA_JS__*/": II2N_DIR / "diagrams" / "kryshka-gen.js",
+    "/*__II1_DIAGRAM_PANEL_GENERATED_JS__*/": II2N_DIR / "diagrams" / "panel-generated.js",
+    "/*__II1_DIAGRAM_TOREC_JS__*/": II2N_DIR / "diagrams" / "torec.js",
     "/*__II2_DIAGRAM_BOARDS_JS__*/": II2N_DIR / "diagrams" / "boards.js",
     "/*__II2_DIAGRAM_DNO_JS__*/": II2N_DIR / "diagrams" / "dno.js",
     "/*__II2_DIAGRAM_KRYSHKA_JS__*/": II2N_DIR / "diagrams" / "kryshka.js",
@@ -464,7 +464,7 @@ II2N_PARTS = {
     "/*__II2_CALC_JS__*/": II2N_DIR / "calc-ii2n.js",
 }
 II2N_VARIANTS = [
-    {"out_name": "GOST10198_91_II2N.html", "/*__II1_DIAGRAM_TOREC_JS__*/": II2_II1_TOREC_JS},
+    {"out_name": "GOST10198_91_II2N.html"},
 ]
 
 III1_DIR = SRC_DIR / "iii1"
@@ -549,7 +549,7 @@ def g2991_parts(type_dir):
         "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
         "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
         "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-        "/*__G2991_I1_HELPERS_JS__*/": I1_DIR / "compute" / "helpers.js",
+        "/*__G2991_I1_HELPERS_JS__*/": G2991_DIR / "helpers.js",
         "/*__G2991_TABLE2_JS__*/": G2991_DIR / "table2.js",
         "/*__G2991_ROUNDING_JS__*/": G2991_DIR / "rounding.js",
         "/*__G2991_BOARDS_JS__*/": G2991_DIR / "boards.js",
