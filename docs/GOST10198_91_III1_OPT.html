@@ -3355,10 +3355,9 @@ function stabilizeSizes(c) {
     // Каркас снаружи обшивки: длина - по торцевым щитам, ширина - по боковым.
     len = L + (skinT + torFrameT) * 2;
     outerW = W + (skinT + bokFrameT) * 2;
-    // Полозья - между продольными брусьями дна; в оптимальном варианте
-    // (c.optimized, продольных брусьев нет) - по ширине груза и обшивке
-    // боковых щитов.
-    skidSpace = c.optimized ? W + skinT * 2 : outerW - BEAM_W * 2;
+    // Полозья - по ширине груза и обшивке боковых щитов (продольных брусьев
+    // дна нет).
+    skidSpace = W + skinT * 2;
 
     // Полозья: при сплошном жёстком основании - п.1.6.5 и число по ширине,
     // иначе - Табл. 19 (как у II-1). Шаг осей полозьев ≤ 1200 мм (п.1.6.2).
@@ -3436,7 +3435,7 @@ function stabilizeSizes(c) {
 // subLengthWarn - в таблице ⚠ вместо длины подполозной доски.
 function buildDno(c, s, subLengthWarn) {
   const { W, MASS, ov, round, warnings, removeSkidBoards, removeFloorBoards } = c;
-  const { skid, sub, len, outerW } = s;
+  const { skid, sub, len } = s;
   const rows = [];
 
   // Полоз (t9) и торцовый брус (t11): ручная толщина (ячейка таблицы или
@@ -3453,13 +3452,10 @@ function buildDno(c, s, subLengthWarn) {
   const beamGostT = round(endBeam.h, 'Торцовый брус дна');
   const beam = { t: ov('t11', beamGostT, 'Толщина торцового бруса дна'), w: endBeam.w, l: W, qty: 2 };
 
-  // Доски дна - поперёк ящика на всю наружную ширину, занимают наружную
-  // длину без ширины двух торцовых брусьев. Оптимальный вариант
-  // (c.optimized): длиной по ширине груза, занимают длину груза без ширины
-  // двух торцовых брусьев.
-  const opt = !!c.optimized;
-  const floorT = s.floorBoardT, floorLen = opt ? W : outerW;
-  const fb = fillBoards((opt ? c.L : len) - beam.w * 2, c.roundBoardWidths);
+  // Доски дна - поперёк ящика по ширине груза, занимают длину груза без
+  // ширины двух торцовых брусьев.
+  const floorT = s.floorBoardT, floorLen = W;
+  const fb = fillBoards(c.L - beam.w * 2, c.roundBoardWidths);
   if (!removeFloorBoards) {
     if (fb.mainQty > 0) rows.push({ name: 'Доска дна', t: floorT, w: 100, l: floorLen, qty: fb.mainQty, overrideKey: 'floorBoardT' });
     fb.extra.forEach((e, i) => {
@@ -3470,14 +3466,10 @@ function buildDno(c, s, subLengthWarn) {
     if (fb.singleNarrow) warnings.push('Доска дна: одна доска уже менее 100 мм.');
   }
 
-  // Продольные брусья дна - как горизонтальный брус бокового щита; в
-  // оптимальном варианте их нет.
-  const dnoBeam = { t: s.dnoBeamT, w: s.beamW, l: len, qty: opt ? 0 : 2 };
-  if (!opt) rows.push({ name: 'Продольный брус дна', t: dnoBeam.t, w: dnoBeam.w, l: dnoBeam.l, qty: dnoBeam.qty, overrideKey: 'tDnoBeam' });
+  // Продольных брусьев дна нет.
   rows.push({ name: 'Торцовый брус дна', t: beam.t, w: beam.w, l: beam.l, qty: beam.qty, overrideKey: 't11' });
 
   const volume = vol(skid.t, skid.w, len, skid.count) + (removeSkidBoards ? 0 : vol(sub.t, sub.w, sub.l, sub.qty)) + vol(beam.t, beam.w, beam.l, beam.qty)
-    + vol(dnoBeam.t, dnoBeam.w, dnoBeam.l, dnoBeam.qty)
     + (removeFloorBoards ? 0 : (vol(floorT, 100, floorLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(floorT, e.width, floorLen, e.qty), 0)));
 
   return { rows, volume };
@@ -3639,10 +3631,6 @@ function buildEndPanel(c, s, frame, rask) {
 // ГОСТ 10198-91, тип III-1: щит боковой (расчёт на 1 щит, щитов 2). Щит -
 // на всю наружную длину ящика, высотой с груз.
 
-// Опорная планка крышки (п.1.8.2): ширина 50-75 мм - берём 75 мм (по
-// указанию пользователя), длина - длина груза.
-const OPORA_W = 75; // по ГОСТ, на имеющуюся ширину не округляется (по указанию пользователя)
-
 // c - контекст расчёта; s - согласованные размеры; frame - каркас (frame.js);
 // rask - толщина и ширина раскосины.
 function buildBokovoy(c, s, frame, rask) {
@@ -3661,9 +3649,8 @@ function buildBokovoy(c, s, frame, rask) {
   if (fb.warn) warnings.push('Доска обшивки бока: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска обшивки бока: одна доска уже менее 100 мм.');
 
-  // Опорная планка - толщина как у обшивки.
-  // Опорная планка - 1 шт. на щит (по указанию пользователя).
-  const opora = { t: skinT, w: OPORA_W, l: L, qty: 1 };
+  // Опорных планок нет (по указанию пользователя) - брусья крышки лежат на
+  // каркасе щитов.
 
   // X-образные раскосины: к каждой раскосине - встречная из 2 кусков по
   // (длина - ширина) / 2, та же толщина.
@@ -3679,10 +3666,9 @@ function buildBokovoy(c, s, frame, rask) {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
     rows.push({ name: 'Доска обшивки (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty, overrideKey: 'skinValue' });
   });
-  rows.push({ name: 'Опорная планка', t: opora.t, w: opora.w, l: opora.l, qty: opora.qty, overrideKey: 'skinValue' });
 
   const volume = vol(stojka.t, stojka.w, stojka.l, stojka.qty) + vol(horiz.t, horiz.w, horiz.l, horiz.qty)
-    + vol(rask.t, rask.w, raskLen, raskQty) + vol(opora.t, opora.w, opora.l, opora.qty)
+    + vol(rask.t, rask.w, raskLen, raskQty)
     + vol(skinT, 100, boardLen, fb.mainQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0)
     + (withX ? vol(rask.t, rask.w, (raskLen - rask.w) / 2, raskQty * 2) : 0);
 
@@ -3719,7 +3705,7 @@ function boltRows(mass, s, panelH) {
   ];
 }
 
-// ГОСТ 10198-91, тип III-1: расчёт каркасно-щитового плотного разборного
+// ГОСТ 10198-91, тип III-1 оптимальный (независимая копия III-1): расчёт каркасно-щитового плотного разборного
 // ящика с наружным каркасом (на болтах).
 //
 // Порядок расчёта:
@@ -3801,10 +3787,11 @@ function makeThicknessOverrides(manualOverrides, fine) {
 //   500-800 мм вручную; нет - штатно; при lidCrossBeamCount не учитывается),
 //   addParchment, fineThickness ({ skid, sub, endBeam, dnoBeam, floor,
 //   frame, skin, lidBeam } - толщины из «Тонкой настройки», мм;
-//   нет - по расчёту), manualOverrides, woodDensity, optimized (оптимальный
-//   конструктивный вариант по таблице заказчика: без продольных брусьев дна,
-//   щиты по высоте с досками дна, см. sizing.js, dno.js, kryshka.js) }.
-function computeGost10198III1(input) {
+//   нет - по расчёту), manualOverrides, woodDensity }. Оптимальный
+//   конструктивный вариант по таблице заказчика: без продольных брусьев дна
+//   (dno.js, sizing.js), щиты по высоте с досками дна, без опорных планок
+//   (bokovoy.js).
+function computeGost10198III1N(input) {
   const { L, W, H, MASS, woodDensity } = input;
   thicknessLimitExceeded = false; // взводит roundUpToAvailable
   thicknessLimitParts = [];
@@ -3884,13 +3871,12 @@ function computeGost10198III1(input) {
   const dno = buildDno(c, s, s.sub.l <= 0 || forkliftFail);
   const kryshka = buildKryshka(c, s);
 
-  // Каркасы щитов. Высота щита - высота груза; в оптимальном варианте
-  // (input.optimized) щиты закрывают и доски дна - высота груза + толщина
-  // доски дна.
+  // Каркасы щитов. Щиты закрывают и доски дна: высота щита - высота груза +
+  // толщина доски дна; крышка лежит сверху.
   // Торцевой щит - по ширине груза, боковой - по наружной длине ящика.
   // Штатное число стоек считается всегда - его клиент показывает центром
   // ползунков ручной настройки.
-  const panelH = input.optimized ? H + s.floorBoardT : H;
+  const panelH = H + s.floorBoardT;
   c.panelH = panelH;
   const torecSpace = W, bokSpace = s.len;
   const torecManual = input.torecPostCount > 0, bokManual = input.bokPostCount > 0;
@@ -3960,7 +3946,7 @@ function computeGost10198III1(input) {
     torecFrame, bokFrame, panelH,
     crossBeamCount: s.crossBeamCount, longbeamCount: s.longBeamCount,
     gapDistCross: Math.round(crossGap), axisDistCross: Math.round(s.crossBeamLayout.axis),
-    xRaskosina: !!input.xRaskosina, optimized: !!input.optimized,
+    xRaskosina: !!input.xRaskosina, optimized: true,
     standardTorecPostCount: torecStandard.count, standardBokPostCount: bokStandard.count,
     standardCrossBeamCount: s.standardCrossBeamCount, maxCrossBeamCount,
     // Болты - отдельный раздел, в объём не входят.
@@ -6929,7 +6915,6 @@ function buildCalcInput(){
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addParchment: document.getElementById('addParchment').checked,
-    optimized: III1_OPTIMIZED,
     torecPostCount: manualCount.torec,
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
@@ -6953,7 +6938,8 @@ function calculateNow(){
   const input = buildCalcInput();
   const tableEdits = readTableEdits();
 
-  const calc = computeGost10198III1(input);
+  // Оптимальный вариант - свой расчёт (iii1n/compute).
+  const calc = III1_OPTIMIZED ? computeGost10198III1N(input) : computeGost10198III1(input);
   if(calc.error){
     showCalcError(calc.error);
     return;

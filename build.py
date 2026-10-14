@@ -478,17 +478,6 @@ III1_PARTS = {
     "/*__COMMON_SETTINGS_JS__*/": COMMON_SETTINGS_JS,
     "/*__VENDOR_HTML2CANVAS_JS__*/": VENDOR_HTML2CANVAS_JS,
     "/*__VENDOR_JSPDF_JS__*/": VENDOR_JSPDF_JS,
-    "/*__III1_HELPERS_JS__*/": III1_DIR / "compute" / "helpers.js",
-    "/*__III1_GOST_TABLES_JS__*/": III1_DIR / "compute" / "gost-tables.js",
-    "/*__III1_LOGIC_JS__*/": III1_DIR / "compute" / "logic.js",
-    "/*__III1_SIZING_JS__*/": III1_DIR / "compute" / "sizing.js",
-    "/*__III1_DNO_JS__*/": III1_DIR / "compute" / "dno.js",
-    "/*__III1_KRYSHKA_JS__*/": III1_DIR / "compute" / "kryshka.js",
-    "/*__III1_FRAME_JS__*/": III1_DIR / "compute" / "frame.js",
-    "/*__III1_END_PANEL_JS__*/": III1_DIR / "compute" / "end-panel.js",
-    "/*__III1_BOKOVOY_JS__*/": III1_DIR / "compute" / "bokovoy.js",
-    "/*__III1_BOLTS_JS__*/": III1_DIR / "compute" / "bolts.js",
-    "/*__III1_COMPUTE_JS__*/": III1_DIR / "compute" / "compute.js",
     "/*__COMMON_DIAGRAMS_JS__*/": COMMON_DIAGRAMS_JS,
     "/*__COMMON_CALC_STATE_JS__*/": COMMON_CALC_STATE_JS,
     "/*__COMMON_MOTION_JS__*/": COMMON_MOTION_JS,
@@ -511,10 +500,33 @@ III1_PARTS = {
 }
 # Оптимальный конструктивный вариант III-1 - та же страница с флагом
 # window.III1_OPTIMIZED (см. src/iii1/options.js).
+# Файлы расчёта III-1 (compute/); у оптимального варианта - своя
+# независимая копия (src/iii1n/compute).
+III1_COMPUTE_FILES = {
+    "/*__III1_HELPERS_JS__*/": "helpers.js",
+    "/*__III1_GOST_TABLES_JS__*/": "gost-tables.js",
+    "/*__III1_LOGIC_JS__*/": "logic.js",
+    "/*__III1_SIZING_JS__*/": "sizing.js",
+    "/*__III1_DNO_JS__*/": "dno.js",
+    "/*__III1_KRYSHKA_JS__*/": "kryshka.js",
+    "/*__III1_FRAME_JS__*/": "frame.js",
+    "/*__III1_END_PANEL_JS__*/": "end-panel.js",
+    "/*__III1_BOKOVOY_JS__*/": "bokovoy.js",
+    "/*__III1_BOLTS_JS__*/": "bolts.js",
+    "/*__III1_COMPUTE_JS__*/": "compute.js",
+}
+
+
+def iii1_compute_parts(compute_dir):
+    return {k: compute_dir / f for k, f in III1_COMPUTE_FILES.items()}
+
+
 III1_VARIANTS = [
-    {"out_name": "GOST10198_91_III1.html", "/*__III1_VARIANT_TITLE__*/": "", "/*__III1_VARIANT_FLAG__*/": ""},
+    {"out_name": "GOST10198_91_III1.html", "/*__III1_VARIANT_TITLE__*/": "", "/*__III1_VARIANT_FLAG__*/": "",
+     **iii1_compute_parts(III1_DIR / "compute")},
     {"out_name": "GOST10198_91_III1_OPT.html", "/*__III1_VARIANT_TITLE__*/": " (оптимальный)",
-     "/*__III1_VARIANT_FLAG__*/": "window.III1_OPTIMIZED = true; // оптимальный конструктивный вариант"},
+     "/*__III1_VARIANT_FLAG__*/": "window.III1_OPTIMIZED = true; // оптимальный конструктивный вариант",
+     **iii1_compute_parts(SRC_DIR / "iii1n" / "compute")},
 ]
 
 # ГОСТ 2991-85 (типы I и II-1). Файлы разложены так же, как в gost_backend:

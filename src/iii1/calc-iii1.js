@@ -40,7 +40,6 @@ function buildCalcInput(){
     addRaskosina: document.getElementById('addRaskosina').checked,
     xRaskosina: document.getElementById('xRaskosina').checked,
     addParchment: document.getElementById('addParchment').checked,
-    optimized: III1_OPTIMIZED,
     torecPostCount: manualCount.torec,
     bokPostCount: manualCount.bok,
     lidCrossBeamCount: manualCount.cross,
@@ -64,7 +63,8 @@ function calculateNow(){
   const input = buildCalcInput();
   const tableEdits = readTableEdits();
 
-  const calc = computeGost10198III1(input);
+  // Оптимальный вариант - свой расчёт (iii1n/compute).
+  const calc = III1_OPTIMIZED ? computeGost10198III1N(input) : computeGost10198III1(input);
   if(calc.error){
     showCalcError(calc.error);
     return;
