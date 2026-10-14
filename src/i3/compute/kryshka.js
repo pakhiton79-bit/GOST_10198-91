@@ -81,6 +81,6 @@ function buildKryshka(c, len, outerW) {
   const volume = vol(wall, PLANK_W, width, planks.count) + vol(wall, 100, len, fb.mainQty) + vol(beamT, BEAM_W, beamLen, beams.count)
     + fb.extra.reduce((s, e) => s + vol(wall, e.width, len, e.qty), 0);
 
-  return { rows, volume, planks, standardPlanks: standard, beams, beamW: BEAM_W, beamSideGap };
+  return { rows, volume, planks, standardPlanks: standard, beams, beamW: BEAM_W, beamT, beamSideGap };
 }
 

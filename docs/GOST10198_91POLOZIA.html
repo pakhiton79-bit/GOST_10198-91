@@ -3623,7 +3623,7 @@ function buildKryshka(c, len, outerW) {
   const volume = vol(wall, PLANK_W, width, planks.count) + vol(wall, 100, len, fb.mainQty) + vol(beamT, BEAM_W, beamLen, beams.count)
     + fb.extra.reduce((s, e) => s + vol(wall, e.width, len, e.qty), 0);
 
-  return { rows, volume, planks, standardPlanks: standard, beams, beamW: BEAM_W, beamSideGap };
+  return { rows, volume, planks, standardPlanks: standard, beams, beamW: BEAM_W, beamT, beamSideGap };
 }
 
 
@@ -3637,8 +3637,8 @@ function floorsForHeight(H) {
   return H > 2000 ? 2 : 1;
 }
 
-// c - контекст расчёта (см. compute.js); t12 - толщина доски дна (щит
-// закрывает груз и доску дна).
+// c - контекст расчёта (см. compute.js); t12 - толщина доски дна плюс
+// поперечного бруса крышки (щит закрывает груз, доску дна и брус крышки).
 function buildEndPanel(c, t12) {
   const { W, H, wall, warnings } = c;
   const floors = floorsForHeight(H);
@@ -3710,7 +3710,8 @@ const MAX_OVERHANG = 70;
 
 // c - контекст расчёта (см. compute.js); p - размеры из других узлов:
 //   len         - длина щита (= длина полоза);
-//   t12, skidT  - толщины доски дна и полоза;
+//   t12, skidT  - толщина доски дна (плюс поперечного бруса крышки - щит
+//                 закрывает и его) и полоза;
 //   plankQty    - число поясов планок (из крышки);
 //   sectionW    - шаг поясов по осям (зазор + ширина планки), 0 при 1 поясе.
 function buildBokovoy(c, p) {
@@ -3857,16 +3858,18 @@ function computeGost10198I3(input) {
 
   const outerL = len;
   const outerW = W + wall * 4;
-  const outerH = (input.removeSkidBoards ? 0 : dno.subT) + dno.skidT + dno.t12 + wall + wall + H;
-
   const kryshka = buildKryshka(c, len, outerW);
   if (kryshka.error) return { error: kryshka.error };
+  // Внутренние поперечные брусья крышки не заходят в пространство груза (по
+  // указанию пользователя): щиты выше на толщину бруса, наружная высота тоже.
+  const lidT = kryshka.beamT;
+  const outerH = (input.removeSkidBoards ? 0 : dno.subT) + dno.skidT + dno.t12 + wall + wall + H + lidT;
   const { planks, beams } = kryshka;
   // Шаг поясов по осям - ширина секции бокового щита.
   const sectionW = planks.count > 1 ? planks.gap + PLANK_W : 0;
 
-  const endPanel = buildEndPanel(c, dno.t12);
-  const bokovoy = buildBokovoy(c, { len, t12: dno.t12, skidT: dno.skidT, plankQty: planks.count, sectionW });
+  const endPanel = buildEndPanel(c, dno.t12 + lidT);
+  const bokovoy = buildBokovoy(c, { len, t12: dno.t12 + lidT, skidT: dno.skidT, plankQty: planks.count, sectionW });
 
   // --- 4. Итог ---
   const totalVolume = dno.volume + kryshka.volume + 2 * endPanel.volume + 2 * bokovoy.volume;
@@ -3899,7 +3902,7 @@ function computeGost10198I3(input) {
     edgeDistKryshka: planks.edgeDist, l21: beams.count, w21: kryshka.beamW, l19: planks.count, bokSectionW: sectionW, plankGap: planks.gap,
     beamEdgeDist: beams.edgeDist, beamGap: beams.gap, beamSideGap: kryshka.beamSideGap, standardBeamCount: beams.standardCount,
     standardPlankCount: kryshka.standardPlanks.count, standardPlankGap: kryshka.standardPlanks.gap,
-    k32: endPanel.boardLen, torecSections: endPanel.sections, torecHasRaskosina: endPanel.hasRaskosina, HplusT12: H + dno.t12,
+    k32: endPanel.boardLen, torecSections: endPanel.sections, torecHasRaskosina: endPanel.hasRaskosina, HplusT12: H + dno.t12 + lidT, lidBeamT: lidT,
     torecNoRaskosinaDiagram: endPanel.noRaskosinaDiagram, torecFloors: endPanel.floors, k30plusW31: endPanel.floorSpan,
     H, t12: dno.t12, k41: len, bokOverhang: bokovoy.overhang, l42: bokovoy.raskQty, bokFloors: bokovoy.floors, bokVertSpan: bokovoy.vertSpan,
     k40: bokovoy.vertLen, w43: bokovoy.horizW, xRaskosina: !!input.xRaskosina, t20: wall,
@@ -3907,7 +3910,7 @@ function computeGost10198I3(input) {
     // периметру торца: длина одной ленты = (ширина груза + 2 доски бока +
     // высота груза + доска крышки + доска дна) × 2, лент 2; без досок дна
     // («Убрать доски дна») их толщина 0. В объём не входит.
-    endTape: input.addEndTape ? [{ name: 'Обшивочная лента', l: Math.ceil(((W + wall * 2) + (H + wall + dno.t12)) * 2 - 1e-9), qty: 2 }] : [],
+    endTape: input.addEndTape ? [{ name: 'Обшивочная лента', l: Math.ceil(((W + wall * 2) + (H + wall + dno.t12 + lidT)) * 2 - 1e-9), qty: 2 }] : [],
     // Пергамин (галочка «Добавить пергамин») - площадь внутренних поверхностей
     // ящика по размерам груза: 2×(Д×Ш + Д×В + Ш×В), м², вверх до 0.01. Не
     // пиломатериал - в объём, массу и норму времени не входит.
@@ -5298,7 +5301,7 @@ function diagramBokovoyFor(calc){
   if((calc.xRaskosina && calc.l42 > 0) || calc.l19 > 4){
     return diagramBokovoyGen(calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.HplusT12, calc.l19, calc.bokFloors, calc.xRaskosina, calc.k40, calc.w43, calc.bokSectionW, calc.t20, calc.l42 > 0, calc.plankGap);
   }
-  return diagramBokovoy(calc.H, calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43, calc.plankGap, calc.t20);
+  return diagramBokovoy(calc.H + (calc.lidBeamT || 0), calc.t12, calc.t41, calc.k41, calc.bokOverhang, calc.edgeDistKryshka, calc.l42, calc.bokFloors, calc.bokVertSpan, calc.l19, calc.k40, calc.w43, calc.plankGap, calc.t20);
 }
 
 // Состояние расчёта (общее для всех типов): статусы рядом с кнопками
