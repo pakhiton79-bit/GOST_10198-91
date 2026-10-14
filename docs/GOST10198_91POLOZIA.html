@@ -4682,13 +4682,10 @@ function diagramEndPanel2Floors3Raskosina(heightPlusT12Val, floorSpanVal, planLe
 function diagramEndPanel(k32val, sectionsVal, hasRaskosinaVal, innerWidthVal, heightPlusT12Val, useNoRaskosinaDiagram, floorsVal, floorSpanVal){
   // Новый фото-чертёж (рамка) показываем только при H≤600 либо когда раскосина не
   // требуется по углу (1 секция, угол >60°); при W≤600 и H>600 - заглушка (по указанию
-  // пользователя). Для 1, 2 и 3 раскосин - свои фото.
-  // Для секций больше 3 (пока максимум 4) фото ещё нет - показываем чертёж с
-  // максимальным доступным числом раскосин (3) вместо заглушки: расположение планок
-  // то же самое, просто не хватает одной секции на фото.
-  // Для щита на 2 этажа (наружная высота >2000мм) фото есть для 1, 2 и 3 раскосин на
-  // этаж (1, 2 или 3 секции по ширине). Для 4 секций - тот же приём, что и на 1 этаже:
-  // показываем фото с максимальным доступным числом раскосин (3) вместо заглушки.
+  // пользователя). Для 1, 2 и 3 раскосин - свои фото; для щита на 2 этажа
+  // (наружная высота >2000мм) - для 1, 2 и 3 раскосин на этаж. Больше 3 секций
+  // и X-раскосины - сгенерированная схема (diagramEndPanelFor ниже), сюда не
+  // попадают.
   if(floorsVal === 2){
     if(hasRaskosinaVal && sectionsVal <= 1){
       return diagramEndPanel2Floors1Raskosina(heightPlusT12Val, floorSpanVal, innerWidthVal);
@@ -5141,9 +5138,8 @@ function diagramBokovoy(Hmm, t12val, t41val, k41val, overhangVal, edgeDistVal, r
     return diagramBokovoy2Floors4Planks(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankLenVal, midPlankWidthVal, plankGapVal, lidTVal);
   }
   // Выбор фото идёт по числу планок (plankCountVal = l19) и наличию раскосины
-  // (raskosinCountVal > 0 <=> bokHasRaskosina). Для 5+ планок фото ещё нет -
-  // показываем чертёж с максимальным доступным числом планок (4): расположение
-  // то же самое, просто на фото меньше планок, чем в реальном ящике.
+  // (raskosinCountVal > 0 <=> bokHasRaskosina). 5+ планок и X-раскосины -
+  // сгенерированная схема (diagramBokovoyFor ниже), сюда не попадают.
   if(plankCount <= 2){
     return hasRaskosina
       ? diagramBokovoy2Planks1Raskosina(k41val, overhangVal, edgeDistVal, heightPlusFloor, plankGapVal, lidTVal)
