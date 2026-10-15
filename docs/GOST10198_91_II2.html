@@ -3691,11 +3691,12 @@ function buildEndPanel(c, s, frame, rask) {
   const raskLen = Math.sqrt(Math.pow(frame.sectionW, 2) + Math.pow(frame.len, 2));
   const raskQty = frame.hasRaskosina ? (frame.count - 1) * frame.floors : 0;
 
-  // Доски обшивки - на каждый этаж, по наружной ширине ящика, с
+  // Доски обшивки - цельные на всю высоту щита (каркас и брусья крышки над
+  // ним; по указанию пользователя - и у 2-этажного), по наружной ширине ящика, с
   // промежутками.
-  const boardLen = 100 * 2 + frame.len + s.longBeamT;
+  const boardLen = frame.height + s.longBeamT;
   const fb = fillGapBoards(s.outerW, c.roundBoardWidths, c.boardGapMax, 'Щит торцевой', warnings);
-  const boardQty = fb.mainQty * frame.floors;
+  const boardQty = fb.mainQty;
   if (fb.warn) warnings.push('Доска торца: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска торца: одна доска уже менее 100 мм.');
 
@@ -3711,12 +3712,12 @@ function buildEndPanel(c, s, frame, rask) {
   if (boardQty > 0) rows.push({ name: 'Доска', t: skinT, w: 100, l: boardLen, qty: boardQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
-    rows.push({ name: 'Доска (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty * frame.floors, overrideKey: 'skinValue' });
+    rows.push({ name: 'Доска (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty, overrideKey: 'skinValue' });
   });
 
   const volume = vol(stojka.t, stojka.w, stojka.l, stojka.qty) + vol(horiz.t, horiz.w, horiz.l, horiz.qty)
     + vol(rask.t, rask.w, raskLen, raskQty)
-    + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty * frame.floors), 0)
+    + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0)
     + (withX ? vol(rask.t, rask.w, (raskLen - rask.w) / 2, raskQty * 2) : 0);
 
   return { rows, volume, boardGap: fb.gap };
@@ -3759,9 +3760,11 @@ function buildBokovoy(c, s, frame, rask) {
   // Опорная планка - 1 шт. на щит (по указанию пользователя).
   const opora = { t: skinT, w: Math.min(75, Math.max(50, Math.floor(STOJKA_W - s.crossBeamT))), l: horiz.l, qty: 1 };
 
-  const boardLen = 100 * 2 + frame.len + s.longBeamT;
+  // Длина доски - на всю высоту щита (каркас и брусья крышки над ним;
+  // по указанию пользователя - цельная и у 2-этажного).
+  const boardLen = frame.height + s.longBeamT;
   const fb = sideBoards(c, s, L + s.stojkaT * 2);
-  const boardQty = fb.mainQty * frame.floors;
+  const boardQty = fb.mainQty;
   if (fb.warn) warnings.push('Доска бока: остаток - нестандартная ширина (вне 75–99 мм).');
   if (fb.singleNarrow) warnings.push('Доска бока: одна доска уже менее 100 мм.');
 
@@ -3778,12 +3781,12 @@ function buildBokovoy(c, s, frame, rask) {
   if (boardQty > 0) rows.push({ name: 'Доска', t: skinT, w: 100, l: boardLen, qty: boardQty, overrideKey: 'skinValue' });
   fb.extra.forEach((e, i) => {
     const suffix = fb.extra.length > 1 ? ' ' + (i + 1) : '';
-    rows.push({ name: e.name || 'Доска (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty * frame.floors, overrideKey: 'skinValue' });
+    rows.push({ name: e.name || 'Доска (дополнительная)' + suffix, t: skinT, w: e.width, l: boardLen, qty: e.qty, overrideKey: 'skinValue' });
   });
 
   const volume = vol(stojka.t, stojka.w, stojka.l, stojka.qty) + vol(horiz.t, horiz.w, horiz.l, horiz.qty)
     + vol(rask.t, rask.w, raskLen, raskQty) + vol(opora.t, opora.w, opora.l, opora.qty)
-    + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty * frame.floors), 0)
+    + vol(skinT, 100, boardLen, boardQty) + fb.extra.reduce((s2, e) => s2 + vol(skinT, e.width, boardLen, e.qty), 0)
     + (withX ? vol(rask.t, rask.w, (raskLen - rask.w) / 2, raskQty * 2) : 0);
 
   return { rows, volume, boardGap: fb.gap };
@@ -4391,7 +4394,7 @@ function kryshkaGenerated(longbeamCount, crossBeamCount, lengthVal, gapDistVal, 
 // Подписи сгенерированной крышки: записи фото-шаблона, у которых подписи
 // отступа и толщины бокового щита привязаны к первому поперечному брусу -
 // сдвинуты к его месту (xb - левая кромка, w - ширина).
-function kryshkaGeneratedRecords(g, torecBoard, sideFrame, width, length, edgeDist, beamGap){
+function kryshkaGeneratedRecords(g, torecBoard, sideFrame, width, length, edgeDist, beamGap, sideEdge){
   const xb = g.firstBeamX, w = g.beamW;
   if(g.tpl === '0_3') return [
     {type:'line', x1:xb + w, y1:716, x2:xb, y2:716},
@@ -4417,14 +4420,16 @@ function kryshkaGeneratedRecords(g, torecBoard, sideFrame, width, length, edgeDi
   // поперечного бруса (он - на p ниже, чем был).
   const p = g.pad || 0;
   // Выступ досок по боку. С продольными брусьями (p > 0) - по указанию
-  // пользователя две выноски: край досок - крайний продольный брус (как у
-  // торцов, torecBoard) и продольный брус - поперечный (beamGap); иначе одна
-  // - край досок - поперечный брус (sideFrame).
+  // пользователя две выноски: край досок - крайний продольный брус
+  // (sideEdge - обшивка бока; продольные брусья по ширине не укорачиваются)
+  // и продольный брус - поперечный (beamGap - стойка бока и укорочение
+  // поперечного бруса при оптимизации размеров); иначе одна - край досок -
+  // поперечный брус (sideFrame).
   const yl = 10.5 + p, yc = 49 + p, xa = xb - 40;
-  const sideRecords = p > 0 && beamGap !== undefined ? [
+  const sideRecords = p > 0 && beamGap !== undefined && sideEdge !== undefined ? [
     {type:'line', x1:xa - 20, y1:12, x2:xa + 20, y2:11},
     {type:'line', x1:xa, y1:12, x2:xa, y2:yl},
-    {type:'single', x1:-134, y1:-60, x2:xa, y2:(12 + yl) / 2, lx:-145, ly:-60, text:torecBoard+' мм'},
+    {type:'single', x1:-134, y1:-60, x2:xa, y2:(12 + yl) / 2, lx:-145, ly:-60, text:sideEdge+' мм'},
     {type:'line', x1:xb, y1:yl, x2:xb + w, y2:yl},
     {type:'line', x1:xb, y1:yc, x2:xb + w, y2:yc},
     {type:'line', x1:xb + 0.65 * w, y1:yl, x2:xb + 0.65 * w, y2:yc},
@@ -5176,7 +5181,7 @@ function ii2KryshkaImage(calc, crossBeamW){
 function diagramKryshkaII2(calc){
   const g = ii2KryshkaImage(calc, crossBeamWidth(calc.kryshka));
   if(!g) return diagramTooDense();
-  const records = kryshkaGeneratedRecords(g, dimLabel(calc.lidOverhangLong), dimLabel(calc.lidOverhangCross), dimLabel(calc.outerW), dimLabel(calc.k9Base), dimLabel(calc.edgeDistCross), dimLabel(calc.lidOverhangCross - calc.lidOverhangLong))
+  const records = kryshkaGeneratedRecords(g, dimLabel(calc.lidOverhangLong), dimLabel(calc.lidOverhangCross), dimLabel(calc.outerW), dimLabel(calc.k9Base), dimLabel(calc.edgeDistCross), dimLabel(calc.lidOverhangCross - calc.skin.value), dimLabel(calc.skin.value))
     .concat(kryshkaGapRecords(g, dimLabel(calc.gapDistCross)));
   const bg = calc.boardGaps.kryshka, k = g.IW / DIAGRAM_DEFAULT_WIDTH;
   if(bg){
