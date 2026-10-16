@@ -898,7 +898,8 @@
     border-top:0;
     border-bottom-color:var(--ink);
   }
-  .table-hint-first{pointer-events:auto;padding-right:32px;}
+  /* Плашка не мешает кликать по ячейкам под ней - клики ловит только крестик. */
+  .table-hint-first{padding-right:32px;}
   .table-hint-close{
     position:absolute;
     top:4px;
@@ -911,6 +912,7 @@
     line-height:1;
     cursor:pointer;
     opacity:.8;
+    pointer-events:auto;
   }
   .table-hint-close:hover{opacity:1;}
   @media print{ .table-hint{display:none;} }
@@ -3387,8 +3389,10 @@ function endBeamSection(mass){
 }
 
 // Продольные брусья крышки (только режим «поперечное расположение досок») - по
-// массе груза и расстоянию между осями поперечных брусьев крышки; строка выбирается
-// по фактическому расстоянию между осями САМИХ продольных брусьев (≤750 / >750).
+// расстоянию между осями поперечных брусьев крышки; строка выбирается по
+// фактическому расстоянию между осями САМИХ продольных брусьев (≤750 / >750).
+// Из таблицы берётся только ширина: толщина продольного бруса - всегда
+// толщина каркаса (по указанию пользователя, см. sizing.js).
 // «25×75, либо 25×100 при включённой «Округлить ширину досок»» - трактовка по
 // уточнению пользователя.
 const T_LONGBEAM_CROSS = [500,600,700,800,900,1000];
@@ -3431,7 +3435,7 @@ function stabilizeSizes(c) {
   let len = L, outerW = W, skidCalcWidth = W;
   let skid = { t: 0, w: 0, count: 0 }, skidTableInfo = null, polozSimpleExceeded = false;
   let crossBeamT = 0, crossBeamExceeded = false, crossBeamCount = 0, standardCrossBeamCount = 0;
-  let longBeamT = 0, longBeamW = 100, longBeamCount = 0, longBeamExceeded = false;
+  let longBeamT = 0, longBeamW = 100, longBeamCount = 0;
   let floorBoardT = 0, floorBoardExceeded = false;
   let sub = { t: 0, w: 0, l: 0, qty: 0 };
   let outerH = 0;
@@ -3502,8 +3506,11 @@ function stabilizeSizes(c) {
     const longBeamAxis = clearGapBySpan(W, 100, longBeamCount) + 100; // ось-в-ось
     const crossBeamAxis = (L + CROSS_BEAM_W) / (crossBeamCount + 1);
     const lb = longBeamSection(crossBeamAxis, c.roundBoardWidths, longBeamAxis);
-    longBeamT = ov('tLongbeam', round(lb.t), 'Толщина продольного бруса крышки');
-    longBeamW = lb.w; longBeamExceeded = lb.exceeded;
+    // Толщина продольного бруса - всегда толщина каркаса (стойки) по расчёту
+    // (по указанию пользователя); ручные правки бруса и стойки независимы.
+    // Таблица продольных брусьев задаёт только ширину.
+    longBeamT = ov('tLongbeam', round(stj.t), 'Толщина продольного бруса крышки');
+    longBeamW = lb.w;
   }
 
   return {
@@ -3511,7 +3518,7 @@ function stabilizeSizes(c) {
     skid, skidTableInfo, polozSimpleExceeded, sub,
     crossBeamT, crossBeamW: CROSS_BEAM_W, crossBeamCount, standardCrossBeamCount, crossBeamExceeded,
     crossBeamMaxGap: CROSS_BEAM_MAX_GAP,
-    longBeamT, longBeamW, longBeamCount, longBeamExceeded,
+    longBeamT, longBeamW, longBeamCount,
     floorBoardT, floorBoardExceeded,
   };
 }
@@ -3993,9 +4000,6 @@ function computeGost10198II2N(input) {
   }
   if (s.stojkaExceeded) {
     warnings.push('Масса или высота ящика вне табл. толщины стоек - сечение принято по крайнему значению.');
-  }
-  if (s.longBeamExceeded) {
-    warnings.push('Шаг осей брусьев крышки вне табл. продольных брусьев - сечение принято по крайнему значению.');
   }
   if (s.floorBoardExceeded) {
     warnings.push('Удельная нагрузка или шаг полозьев вне Табл. 4 - толщина доски дна принята по крайнему значению.');
