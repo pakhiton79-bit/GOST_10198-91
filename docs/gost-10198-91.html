@@ -1633,6 +1633,18 @@
   @keyframes motion-nudge{0%,100%{transform:rotate(0);}25%{transform:rotate(-14deg);}75%{transform:rotate(14deg);}}
   @keyframes motion-dialog{from{opacity:0;transform:translateY(6px) scale(.96);}}
 
+  /* Наведение (вариант D, по выбору пользователя): тёплый фон, мягкая
+     коричневая рамка, название сдвигается на 4 px. */
+  .type-info h3{transition:transform .2s ease;}
+  .type-card:not(.type-card-off):hover, .type-card:focus-visible{
+    border-color:color-mix(in srgb, var(--accent) 40%, var(--border-input));
+    background:var(--panel-hover);
+  }
+  .type-card:not(.type-card-off):hover .type-info h3, .type-card:focus-visible .type-info h3{transform:translateX(4px);}
+  @media (prefers-reduced-motion:reduce){
+    .type-info h3{transition:none;}
+    .type-card:hover .type-info h3, .type-card:focus-visible .type-info h3{transform:none;}
+  }
 </style>
 <script>
 // Общие настройки сайта - кнопка «Настройки» в верхней панели каждой
@@ -2277,10 +2289,6 @@ function siteConfirm(opts){
      src/launcher/types-10198-91.js). */
   .type-badge-ok{
     background:var(--ok);
-  }
-  .type-card:hover{
-    border-color:var(--accent);
-    background:var(--accent-wash);
   }
   /* Тип без страницы (плашка «Появится позже», badgeSoon): карточка не
      нажимается и приглушена, плашка серая. */
