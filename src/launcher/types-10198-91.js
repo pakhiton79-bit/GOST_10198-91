@@ -25,20 +25,17 @@ const TYPES = [
   {
     name: 'Тип I-2',
     file: 'GOST10198_91_I2.html',
-    image: 'data:image/png;base64,__IMG:box_i2.png__',
-    badge: 'Требуется проверка'
+    image: 'data:image/png;base64,__IMG:box_i2.png__'
   },
   {
     name: 'Тип I-3',
     file: 'GOST10198_91POLOZIA.html',
-    image: 'data:image/png;base64,__IMG:box.png__',
-    badge: 'Требуется проверка'
+    image: 'data:image/png;base64,__IMG:box.png__'
   },
   {
     name: 'Тип I-4',
     file: 'GOST10198_91_I4.html',
-    image: 'data:image/png;base64,__IMG:box_i4.png__',
-    badge: 'Требуется проверка'
+    image: 'data:image/png;base64,__IMG:box_i4.png__'
   },
   {
     name: 'Тип II-1',
