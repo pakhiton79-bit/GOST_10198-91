@@ -93,6 +93,29 @@ OUT_DIR = ROOT / "docs"  # "docs" (не "dist") - так папку можно �
 
 IMG_PLACEHOLDER = re.compile(r"__IMG:([A-Za-z0-9_.-]+)__")
 
+# Шрифт Inter (SIL OFL 1.1, src/fonts/OFL.txt) - встроен в каждую страницу
+# (base64), а не с Google Fonts: страница не обращается к зарубежным серверам
+# и остаётся самодостаточной. Латиница и кириллица, начертания 400-700.
+FONTS_DIR = SRC_DIR / "fonts"
+FONTS_PLACEHOLDER = "/*__FONTS_CSS__*/"
+FONT_RANGES = {
+    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+    "cyrillic": "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116",
+}
+
+
+def fonts_css():
+    rules = []
+    for weight in (400, 500, 600, 700):
+        for subset, rng in FONT_RANGES.items():
+            data = base64.b64encode((FONTS_DIR / f"inter-{subset}-{weight}-normal.woff2").read_bytes()).decode("ascii")
+            rules.append(f"@font-face{{font-family:'Inter';font-style:normal;font-weight:{weight};font-display:swap;"
+                         f"src:url(data:font/woff2;base64,{data}) format('woff2');unicode-range:{rng};}}")
+    return "".join(rules)
+
+
+FONTS_CSS = fonts_css()
+
 COMMON_CALC_STATE_JS = SRC_DIR / "common-calc-state.js"
 COMMON_MOTION_JS = SRC_DIR / "common-motion.js"
 COMMON_TABLE_EDITS_JS = SRC_DIR / "common-table-edits.js"
@@ -615,6 +638,10 @@ TYPES_VARIANTS = [
 
 def build_one(shell, parts, variant):
     text = shell.read_text(encoding="utf-8")
+    if FONTS_PLACEHOLDER not in text:
+        print(f"Плейсхолдер {FONTS_PLACEHOLDER} не найден в {shell}", file=sys.stderr)
+        sys.exit(1)
+    text = text.replace(FONTS_PLACEHOLDER, FONTS_CSS)
 
     for placeholder, path in parts.items():
         if placeholder not in text:
